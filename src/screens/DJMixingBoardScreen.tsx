@@ -1,3 +1,4 @@
+import { useNavigation } from "@react-navigation/native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -179,18 +180,20 @@ function BottomNavItem({
   icon,
   label,
   active = false,
+  onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   active?: boolean;
+  onPress?: () => void;
 }) {
   return (
-    <View style={styles.navItem}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}>
       <View style={[styles.navIconWrap, active && styles.navIconWrapActive]}>
         <Ionicons name={icon} size={20} color={active ? "#722BFF" : "#9E9AC5"} />
       </View>
       <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -278,6 +281,7 @@ function Turntable({
 }
 
 export function DJMixingBoardScreen() {
+  const navigation = useNavigation<any>();
   const { timelineItems } = useAppState();
 
   const waveformHeights = useMemo(
@@ -662,10 +666,14 @@ export function DJMixingBoardScreen() {
             </View>
 
             <View style={styles.bottomNav}>
-              <BottomNavItem icon="home" label="Dashboard" />
-              <BottomNavItem icon="headset" label="Mixer" active />
-              <BottomNavItem icon="folder" label="Playlists" />
-              <BottomNavItem icon="person" label="Announce" />
+              <BottomNavItem icon="home" label="Dashboard" onPress={() => navigation.getParent()?.navigate("Dashboard")} />
+              <BottomNavItem icon="headset" label="Mixer" active onPress={() => navigation.getParent()?.navigate("Mixer")} />
+              <BottomNavItem icon="folder" label="Playlists" onPress={() => navigation.getParent()?.navigate("Music")} />
+              <BottomNavItem
+                icon="person"
+                label="Announce"
+                onPress={() => navigation.getParent()?.navigate("Events", { screen: "Announcements" })}
+              />
             </View>
           </LinearGradient>
         </View>
