@@ -36,14 +36,14 @@ export function MusicUploadScreen() {
   const [playlistName, setPlaylistName] = useState("");
 
   const resolvePlaylistSongs = (songIds: string[]) =>
-    songIds.reduce<Array<{ id: string; songName: string; artist?: string; duration: string }>>((acc, songId) => {
+    songIds.reduce<Array<{ id: string; title: string; artist?: string; duration: string }>>((acc, songId) => {
       const song = songs.find((item) => item.id === songId);
       if (!song) {
         return acc;
       }
       acc.push({
         id: song.id,
-        songName: song.songName,
+        title: song.title || song.songName || "Track",
         artist: song.artist,
         duration: song.duration,
       });
@@ -109,7 +109,7 @@ export function MusicUploadScreen() {
                 <SongLibraryCard
                   key={song.id}
                   id={song.id}
-                  songName={song.songName}
+                  songName={song.title || song.songName || "Track"}
                   duration={song.duration}
                   fileType={song.fileType}
                   onAdd={() => addSong()}

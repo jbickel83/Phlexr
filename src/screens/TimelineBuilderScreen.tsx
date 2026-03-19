@@ -30,7 +30,7 @@ export function TimelineBuilderScreen() {
   const { timelineItems, announcements, songs, playlists, addTimelineItem, updateTimelineItem, deleteTimelineItem, reorderTimelineItems, saveCurrentEventSnapshot } =
     useAppState();
   const assignableMusic = useMemo(
-    () => [...songs.map((song) => song.songName), ...playlists.map((playlist) => playlist.name)],
+    () => [...songs.map((song) => song.title || song.songName || "Track"), ...playlists.map((playlist) => playlist.name)],
     [songs, playlists],
   );
   const [editingId, setEditingId] = useState<string | null>(null);

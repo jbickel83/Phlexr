@@ -28,7 +28,8 @@ export type TimelineItem = {
 
 export type Song = {
   id: string;
-  songName: string;
+  title: string;
+  songName?: string;
   artist?: string;
   duration: string;
   fileType: string;
@@ -136,7 +137,7 @@ type AppStateValue = {
   reorderSongs: () => void;
   createPlaylist: (name?: string) => void;
   assignSongsToPlaylist: () => void;
-  addSongToPlaylist: (playlistId: string, payload: { songName: string; artist?: string; duration?: string }) => void;
+  addSongToPlaylist: (playlistId: string, payload: { title: string; artist?: string; duration?: string }) => void;
   deleteSongFromPlaylist: (playlistId: string, songId: string) => void;
   moveSongInPlaylist: (playlistId: string, songId: string, direction: "up" | "down") => void;
   addAnnouncement: (draft: DraftAnnouncement) => void;
@@ -194,10 +195,10 @@ const demoEventRecord: SavedEventRecord = {
     { id: "demo-t5", title: "First Dance", time: "7:20 PM", music: "Perfect", announcementAttached: true },
   ],
   songs: [
-    { id: "demo-s1", songName: "Canon in D", artist: "Pachelbel Ensemble", duration: "3:45", fileType: "MP3", durationMillis: 225000 },
-    { id: "demo-s2", songName: "Grand Entrance Mix", artist: "CrowdKue Edit", duration: "2:12", fileType: "WAV", durationMillis: 132000 },
-    { id: "demo-s3", songName: "Perfect", artist: "Ed Sheeran", duration: "4:23", fileType: "MP3", durationMillis: 263000 },
-    { id: "demo-s4", songName: "Dinner Jazz Set", artist: "House Ensemble", duration: "18:40", fileType: "MP3", durationMillis: 1120000 },
+    { id: "demo-s1", title: "Canon in D", songName: "Canon in D", artist: "Pachelbel Ensemble", duration: "3:45", fileType: "MP3", durationMillis: 225000 },
+    { id: "demo-s2", title: "Grand Entrance Mix", songName: "Grand Entrance Mix", artist: "CrowdKue Edit", duration: "2:12", fileType: "WAV", durationMillis: 132000 },
+    { id: "demo-s3", title: "Perfect", songName: "Perfect", artist: "Ed Sheeran", duration: "4:23", fileType: "MP3", durationMillis: 263000 },
+    { id: "demo-s4", title: "Dinner Jazz Set", songName: "Dinner Jazz Set", artist: "House Ensemble", duration: "18:40", fileType: "MP3", durationMillis: 1120000 },
   ],
   playlists: [
     { id: "demo-p1", name: "Cocktail Hour", detail: "Ambient welcome and mingle music.", songIds: ["demo-s4"] },
@@ -321,10 +322,17 @@ function normalizeSongs(value: unknown): Song[] {
       return [];
     }
     const record = item as Partial<Song>;
+    const nextTitle =
+      typeof record.title === "string"
+        ? record.title
+        : typeof record.songName === "string"
+          ? record.songName
+          : `Track ${index + 1}`;
     return [
       {
         id: isNonEmptyString(record.id) ? record.id : createId(`song-${index}`),
-        songName: typeof record.songName === "string" ? record.songName : `Track ${index + 1}`,
+        title: nextTitle,
+        songName: nextTitle,
         artist: typeof record.artist === "string" ? record.artist : "",
         duration: typeof record.duration === "string" ? record.duration : "0:00",
         fileType: typeof record.fileType === "string" ? record.fileType : "FILE",
@@ -585,7 +593,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     if (!timelineItem?.music) {
       return null;
     }
-    const directSong = songs.find((song) => song.songName === timelineItem.music);
+    const directSong = songs.find((song) => (song.title || song.songName) === timelineItem.music);
     if (directSong) {
       return directSong;
     }
@@ -647,11 +655,11 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    setCurrentTrackName(resolvedSong.songName);
+    setCurrentTrackName(resolvedSong.title || resolvedSong.songName || null);
 
     if (!canUseNativeAudio) {
       setPlaybackState("playing");
-      setPlaybackPositionMillis((prev) => (currentTrackName === resolvedSong.songName ? prev : 0));
+      setPlaybackPositionMillis((prev) => (currentTrackName === (resolvedSong.title || resolvedSong.songName) ? prev : 0));
       setPlaybackDurationMillis(resolvedSong.durationMillis ?? 0);
       setAudioWarning(null);
       setCurrentTrackFallback(null);
@@ -662,7 +670,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       if (currentEvent.status.toLowerCase().includes("demo event")) {
         setPlaybackState("playing");
         setPlaybackPositionMillis((prev) =>
-          currentTrackName === resolvedSong.songName ? prev : 0,
+          currentTrackName === (resolvedSong.title || resolvedSong.songName) ? prev : 0,
         );
         setPlaybackDurationMillis(resolvedSong.durationMillis ?? 0);
         setAudioWarning(null);
@@ -1019,7 +1027,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
             id: createId("timeline"),
             title: payload?.title?.trim() || `New Moment ${prev.length + 1}`,
             time: payload?.time?.trim() || "",
-            music: payload?.music?.trim() || songs[0]?.songName || playlists[0]?.name || "",
+            music: payload?.music?.trim() || songs[0]?.title || songs[0]?.songName || playlists[0]?.name || "",
             announcementAttached: payload?.announcementAttached ?? false,
           },
         ]);
@@ -1042,7 +1050,8 @@ export function AppStateProvider({ children }: PropsWithChildren) {
           ...prev,
           {
             id: createId("song"),
-            songName: payload?.songName?.trim() || `Uploaded Track ${prev.length + 1}`,
+            title: payload?.title?.trim() || payload?.songName?.trim() || `Uploaded Track ${prev.length + 1}`,
+            songName: payload?.title?.trim() || payload?.songName?.trim() || `Uploaded Track ${prev.length + 1}`,
             artist: payload?.artist?.trim() || "",
             duration: payload?.duration?.trim() || formatDurationFromMillis(durationMillis) || "3:30",
             fileType: payload?.fileType?.trim() || "MP3",
@@ -1062,6 +1071,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
             ...prev,
             {
               id: createId("song"),
+              title: file.name.replace(/\.[^/.]+$/, ""),
               songName: file.name.replace(/\.[^/.]+$/, ""),
               artist: "",
               duration: "0:00",
@@ -1089,6 +1099,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
             ...prev,
             {
               id: createId("song"),
+              title: file.name.replace(/\.[^/.]+$/, ""),
               songName: file.name.replace(/\.[^/.]+$/, ""),
               artist: "",
               duration: formatDurationFromMillis(durationMillis),
@@ -1145,7 +1156,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         );
       },
       addSongToPlaylist: (playlistId, payload) => {
-        const title = payload.songName.trim();
+        const title = payload.title.trim();
         if (!title) {
           return;
         }
@@ -1153,6 +1164,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         const nextSongId = createId("song");
         const nextSong: Song = {
           id: nextSongId,
+          title,
           songName: title,
           artist: payload.artist?.trim() || "",
           duration: payload.duration?.trim() || "0:00",
@@ -1181,7 +1193,11 @@ export function AppStateProvider({ children }: PropsWithChildren) {
             if (playlist.id !== playlistId) {
               return playlist;
             }
-            const nextSongIds = playlist.songIds.filter((id) => id !== songId);
+            const currentIndex = playlist.songIds.indexOf(songId);
+            if (currentIndex < 0) {
+              return playlist;
+            }
+            const nextSongIds = playlist.songIds.filter((_, index) => index !== currentIndex);
             return {
               ...playlist,
               songIds: nextSongIds,

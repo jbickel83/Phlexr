@@ -7,7 +7,7 @@ import { colors, radii, spacing } from "../constants/theme";
 
 type PlaylistSongRow = {
   id: string;
-  songName: string;
+  title: string;
   artist?: string;
   duration: string;
 };
@@ -17,30 +17,35 @@ type PlaylistCardProps = {
   name: string;
   detail: string;
   songs: PlaylistSongRow[];
-  onAddSong: (playlistId: string, payload: { songName: string; artist?: string; duration?: string }) => void;
+  onAddSong: (playlistId: string, payload: { title: string; artist?: string; duration?: string }) => void;
   onDeleteSong: (playlistId: string, songId: string) => void;
   onMoveSong: (playlistId: string, songId: string, direction: "up" | "down") => void;
 };
 
 export function PlaylistCard({ id, name, detail, songs, onAddSong, onDeleteSong, onMoveSong }: PlaylistCardProps) {
   const [composerOpen, setComposerOpen] = useState(false);
-  const [songName, setSongName] = useState("");
+  const [songTitle, setSongTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [duration, setDuration] = useState("");
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   const resetComposer = () => {
-    setSongName("");
+    setSongTitle("");
     setArtist("");
     setDuration("");
+    setValidationMessage(null);
     setComposerOpen(false);
   };
 
   const handleAddSong = () => {
-    if (!songName.trim()) {
+    if (!songTitle.trim()) {
+      setValidationMessage("Enter a song title before saving.");
       return;
     }
+
+    setValidationMessage(null);
     onAddSong(id, {
-      songName,
+      title: songTitle,
       artist,
       duration,
     });
@@ -65,9 +70,10 @@ export function PlaylistCard({ id, name, detail, songs, onAddSong, onDeleteSong,
 
       {composerOpen ? (
         <View style={styles.composer}>
-          <TextFieldInput label="Song title" value={songName} onChangeText={setSongName} placeholder="Uptown Funk" />
+          <TextFieldInput label="Song title" value={songTitle} onChangeText={setSongTitle} placeholder="Uptown Funk" />
           <TextFieldInput label="Artist" value={artist} onChangeText={setArtist} placeholder="Bruno Mars" />
           <TextFieldInput label="Duration (optional)" value={duration} onChangeText={setDuration} placeholder="4:31" />
+          {validationMessage ? <Text style={styles.validationText}>{validationMessage}</Text> : null}
           <View style={styles.actions}>
             <ActionChip label="Save song" onPress={handleAddSong} />
             <ActionChip label="Cancel" onPress={resetComposer} />
@@ -85,7 +91,7 @@ export function PlaylistCard({ id, name, detail, songs, onAddSong, onDeleteSong,
           songs.map((song, index) => (
             <View key={`${id}-${song.id}`} style={styles.songRow}>
               <View style={styles.songCopy}>
-                <Text style={styles.songName}>{song.songName}</Text>
+                <Text style={styles.songName}>{song.title}</Text>
                 <Text style={styles.songMeta}>
                   {song.artist?.trim() ? `${song.artist} • ` : ""}
                   {song.duration || "0:00"}
@@ -159,6 +165,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(37,224,255,0.12)",
     backgroundColor: "rgba(8, 14, 26, 0.9)",
+  },
+  validationText: {
+    color: colors.warning,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "700",
   },
   songList: {
     gap: spacing.sm,
