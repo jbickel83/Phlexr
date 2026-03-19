@@ -23,7 +23,7 @@ export function AnnouncementsScreen() {
     deleteAnnouncement,
     saveCurrentEventSnapshot,
     isHydrating,
-    availableVoiceNames,
+    availableVoiceOptions,
     selectedVoiceName,
     speechRate,
     speechSupported,
@@ -58,6 +58,9 @@ export function AnnouncementsScreen() {
     setMessageText("");
     setTimelineMoment("No assignment");
   };
+
+  const previewAnnouncementText = messageText.trim() || announcements[0]?.previewText || "";
+  const previewAnnouncementTitle = title.trim() || announcements[0]?.title || "Announcement Preview";
 
   return (
     <LinearGradient colors={["#04070F", "#071120", "#0A1730"]} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.screen}>
@@ -117,14 +120,14 @@ export function AnnouncementsScreen() {
             <>
               <View style={styles.assignmentBlock}>
                 <Text style={styles.assignmentLabel}>Voice</Text>
-                <Text style={styles.voiceHint}>Google voices are prioritized first, then default system voices, then other available voices.</Text>
+                <Text style={styles.voiceHint}>Only the supported Google-style announcement voices are shown here.</Text>
                 <View style={styles.pillWrap}>
-                  {availableVoiceNames.map((voiceName) => (
+                  {availableVoiceOptions.map((voiceOption) => (
                     <SelectionPill
-                      key={voiceName}
-                      label={voiceName}
-                      active={selectedVoiceName === voiceName}
-                      onPress={() => setSelectedVoiceName(voiceName)}
+                      key={voiceOption.label}
+                      label={voiceOption.label}
+                      active={selectedVoiceName === voiceOption.voiceName}
+                      onPress={() => setSelectedVoiceName(voiceOption.voiceName)}
                     />
                   ))}
                 </View>
@@ -146,7 +149,7 @@ export function AnnouncementsScreen() {
                 <NeonButton
                   label="Play Announcement"
                   variant="secondary"
-                  onPress={() => speakAnnouncement({ title: editingId ? title : "Announcement Preview", text: messageText })}
+                  onPress={() => speakAnnouncement({ title: previewAnnouncementTitle, text: previewAnnouncementText })}
                 />
                 <NeonButton label={speechSpeaking ? "Stop Announcement" : "Stop"} variant="secondary" onPress={stopAnnouncementSpeech} />
               </View>

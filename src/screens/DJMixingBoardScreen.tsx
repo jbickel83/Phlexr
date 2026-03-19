@@ -900,7 +900,7 @@ export function DJMixingBoardScreen() {
               <BottomNavItem icon="folder" label="Playlists" onPress={() => navigation.getParent()?.navigate("Music")} />
               <BottomNavItem
                 icon="person"
-                label="Announce"
+                label="Ann."
                 onPress={() => navigation.getParent()?.navigate("Events", { screen: "Announcements" })}
               />
             </View>

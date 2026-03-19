@@ -81,6 +81,11 @@ export type ValidationEntry = {
   createdAt: string;
 };
 
+export type AnnouncementVoiceOption = {
+  label: "US Male" | "US Female" | "Spanish Male" | "Spanish Female";
+  voiceName: string;
+};
+
 type DraftAnnouncement = {
   title: string;
   messageText: string;
@@ -120,7 +125,7 @@ type AppStateValue = {
   playbackDurationMillis: number;
   audioWarning: string | null;
   currentTrackFallback: string | null;
-  availableVoiceNames: string[];
+  availableVoiceOptions: AnnouncementVoiceOption[];
   selectedVoiceName: string | null;
   speechRate: number;
   speechSupported: boolean;
@@ -292,6 +297,82 @@ function pickBestVoiceName(voices: SpeechSynthesisVoice[]) {
   }
   const sortedVoices = sortVoicesByPriority(voices);
   return sortedVoices[0]?.name ?? null;
+}
+
+function findVoiceMatch(
+  voices: SpeechSynthesisVoice[],
+  matcher: (voice: SpeechSynthesisVoice) => boolean,
+  excluded = new Set<string>(),
+) {
+  return sortVoicesByPriority(voices).find((voice) => !excluded.has(voice.name) && matcher(voice)) ?? null;
+}
+
+function buildAnnouncementVoiceOptions(voices: SpeechSynthesisVoice[]): AnnouncementVoiceOption[] {
+  const googleVoices = voices.filter((voice) => voice.name.toLowerCase().includes("google"));
+  const used = new Set<string>();
+
+  const usMale =
+    findVoiceMatch(
+      googleVoices,
+      (voice) =>
+        (voice.lang === "en-US" || /us english|english \(united states\)/i.test(voice.name)) &&
+        /male/i.test(voice.name),
+      used,
+    ) ??
+    findVoiceMatch(
+      googleVoices,
+      (voice) => voice.lang === "en-US" || /us english|english \(united states\)/i.test(voice.name),
+      used,
+    );
+  if (usMale) used.add(usMale.name);
+
+  const usFemale =
+    findVoiceMatch(
+      googleVoices,
+      (voice) =>
+        (voice.lang === "en-US" || /us english|english \(united states\)/i.test(voice.name)) &&
+        /female/i.test(voice.name),
+      used,
+    ) ??
+    findVoiceMatch(
+      googleVoices,
+      (voice) => voice.lang === "en-US" || /us english|english \(united states\)/i.test(voice.name),
+      used,
+    );
+  if (usFemale) used.add(usFemale.name);
+
+  const spanishMale =
+    findVoiceMatch(
+      googleVoices,
+      (voice) => (voice.lang.startsWith("es") || /espa[nñ]ol|spanish/i.test(voice.name)) && /male/i.test(voice.name),
+      used,
+    ) ??
+    findVoiceMatch(
+      googleVoices,
+      (voice) => voice.lang.startsWith("es") || /espa[nñ]ol|spanish/i.test(voice.name),
+      used,
+    );
+  if (spanishMale) used.add(spanishMale.name);
+
+  const spanishFemale =
+    findVoiceMatch(
+      googleVoices,
+      (voice) => (voice.lang.startsWith("es") || /espa[nñ]ol|spanish/i.test(voice.name)) && /female/i.test(voice.name),
+      used,
+    ) ??
+    findVoiceMatch(
+      googleVoices,
+      (voice) => voice.lang.startsWith("es") || /espa[nñ]ol|spanish/i.test(voice.name),
+      used,
+    );
+  if (spanishFemale) used.add(spanishFemale.name);
+
+  return [
+    usMale ? { label: "US Male", voiceName: usMale.name } : null,
+    usFemale ? { label: "US Female", voiceName: usFemale.name } : null,
+    spanishMale ? { label: "Spanish Male", voiceName: spanishMale.name } : null,
+    spanishFemale ? { label: "Spanish Female", voiceName: spanishFemale.name } : null,
+  ].filter((item): item is AnnouncementVoiceOption => Boolean(item));
 }
 
 function createId(prefix: string) {
@@ -545,7 +626,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const [playbackDurationMillis, setPlaybackDurationMillis] = useState(0);
   const [audioWarning, setAudioWarning] = useState<string | null>(null);
   const [currentTrackFallback, setCurrentTrackFallback] = useState<string | null>(null);
-  const [availableVoiceNames, setAvailableVoiceNames] = useState<string[]>([]);
+  const [availableVoiceOptions, setAvailableVoiceOptions] = useState<AnnouncementVoiceOption[]>([]);
   const [selectedVoiceName, setSelectedVoiceNameState] = useState<string | null>(null);
   const [speechRate, setSpeechRateState] = useState(1);
   const [speechSpeaking, setSpeechSpeaking] = useState(false);
@@ -868,11 +949,15 @@ export function AppStateProvider({ children }: PropsWithChildren) {
           .getVoices()
           .filter((voice) => Boolean(voice.name)),
       );
-      const voiceNames = prioritizedVoices.map((voice) => voice.name);
-      const bestVoiceName = pickBestVoiceName(prioritizedVoices);
+      const voiceOptions = buildAnnouncementVoiceOptions(prioritizedVoices);
+      const visibleVoiceNames = voiceOptions.map((option) => option.voiceName);
+      const bestVoiceName =
+        voiceOptions.find((option) => option.label === "US Male")?.voiceName ??
+        voiceOptions[0]?.voiceName ??
+        pickBestVoiceName(prioritizedVoices);
 
-      setAvailableVoiceNames(voiceNames);
-      setSelectedVoiceNameState((prev) => (prev && voiceNames.includes(prev) ? prev : bestVoiceName));
+      setAvailableVoiceOptions(voiceOptions);
+      setSelectedVoiceNameState((prev) => (prev && visibleVoiceNames.includes(prev) ? prev : bestVoiceName));
     };
 
     syncVoices();
@@ -1130,7 +1215,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       playbackDurationMillis,
       audioWarning,
       currentTrackFallback,
-      availableVoiceNames,
+      availableVoiceOptions,
       selectedVoiceName,
       speechRate,
       speechSupported: canUseSpeechSynthesis,
@@ -1579,7 +1664,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     activeAnnouncementTitle,
     announcementState,
     announcements,
-    availableVoiceNames,
+    availableVoiceOptions,
     audioWarning,
     autopilotRunning,
     countdownSeconds,
