@@ -29,6 +29,7 @@ export type TimelineItem = {
 export type Song = {
   id: string;
   songName: string;
+  artist?: string;
   duration: string;
   fileType: string;
   uri?: string;
@@ -135,6 +136,9 @@ type AppStateValue = {
   reorderSongs: () => void;
   createPlaylist: (name?: string) => void;
   assignSongsToPlaylist: () => void;
+  addSongToPlaylist: (playlistId: string, payload: { songName: string; artist?: string; duration?: string }) => void;
+  deleteSongFromPlaylist: (playlistId: string, songId: string) => void;
+  moveSongInPlaylist: (playlistId: string, songId: string, direction: "up" | "down") => void;
   addAnnouncement: (draft: DraftAnnouncement) => void;
   updateAnnouncement: (id: string, draft: DraftAnnouncement) => void;
   deleteAnnouncement: (id: string) => void;
@@ -190,10 +194,10 @@ const demoEventRecord: SavedEventRecord = {
     { id: "demo-t5", title: "First Dance", time: "7:20 PM", music: "Perfect", announcementAttached: true },
   ],
   songs: [
-    { id: "demo-s1", songName: "Canon in D", duration: "3:45", fileType: "MP3", durationMillis: 225000 },
-    { id: "demo-s2", songName: "Grand Entrance Mix", duration: "2:12", fileType: "WAV", durationMillis: 132000 },
-    { id: "demo-s3", songName: "Perfect", duration: "4:23", fileType: "MP3", durationMillis: 263000 },
-    { id: "demo-s4", songName: "Dinner Jazz Set", duration: "18:40", fileType: "MP3", durationMillis: 1120000 },
+    { id: "demo-s1", songName: "Canon in D", artist: "Pachelbel Ensemble", duration: "3:45", fileType: "MP3", durationMillis: 225000 },
+    { id: "demo-s2", songName: "Grand Entrance Mix", artist: "CrowdKue Edit", duration: "2:12", fileType: "WAV", durationMillis: 132000 },
+    { id: "demo-s3", songName: "Perfect", artist: "Ed Sheeran", duration: "4:23", fileType: "MP3", durationMillis: 263000 },
+    { id: "demo-s4", songName: "Dinner Jazz Set", artist: "House Ensemble", duration: "18:40", fileType: "MP3", durationMillis: 1120000 },
   ],
   playlists: [
     { id: "demo-p1", name: "Cocktail Hour", detail: "Ambient welcome and mingle music.", songIds: ["demo-s4"] },
@@ -232,6 +236,16 @@ function formatDurationFromMillis(durationMillis?: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function createPlaylistDetail(songCount: number) {
+  if (songCount <= 0) {
+    return "No songs added yet.";
+  }
+  if (songCount === 1) {
+    return "1 song ready in this playlist.";
+  }
+  return `${songCount} songs ready in this playlist.`;
 }
 
 function createId(prefix: string) {
@@ -311,6 +325,7 @@ function normalizeSongs(value: unknown): Song[] {
       {
         id: isNonEmptyString(record.id) ? record.id : createId(`song-${index}`),
         songName: typeof record.songName === "string" ? record.songName : `Track ${index + 1}`,
+        artist: typeof record.artist === "string" ? record.artist : "",
         duration: typeof record.duration === "string" ? record.duration : "0:00",
         fileType: typeof record.fileType === "string" ? record.fileType : "FILE",
         uri: typeof record.uri === "string" ? record.uri : undefined,
@@ -1028,6 +1043,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
           {
             id: createId("song"),
             songName: payload?.songName?.trim() || `Uploaded Track ${prev.length + 1}`,
+            artist: payload?.artist?.trim() || "",
             duration: payload?.duration?.trim() || formatDurationFromMillis(durationMillis) || "3:30",
             fileType: payload?.fileType?.trim() || "MP3",
             uri: payload?.uri,
@@ -1047,6 +1063,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
             {
               id: createId("song"),
               songName: file.name.replace(/\.[^/.]+$/, ""),
+              artist: "",
               duration: "0:00",
               fileType: extension,
               uri: file.uri,
@@ -1073,6 +1090,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
             {
               id: createId("song"),
               songName: file.name.replace(/\.[^/.]+$/, ""),
+              artist: "",
               duration: formatDurationFromMillis(durationMillis),
               fileType: extension,
               uri: file.uri,
@@ -1095,6 +1113,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
           prev.map((playlist) => ({
             ...playlist,
             songIds: playlist.songIds.filter((songId) => songId !== id),
+            detail: createPlaylistDetail(playlist.songIds.filter((songId) => songId !== id).length),
           })),
         );
       },
@@ -1107,7 +1126,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
           {
             id: createId("playlist"),
             name: name?.trim() || `Playlist ${prev.length + 1}`,
-            detail: "New playlist ready for song assignment.",
+            detail: createPlaylistDetail(0),
             songIds: [],
           },
         ]);
@@ -1119,10 +1138,80 @@ export function AppStateProvider({ children }: PropsWithChildren) {
               ? {
                   ...playlist,
                   songIds: songs.map((song) => song.id),
-                  detail: `${songs.length} local songs assigned to this playlist.`,
+                  detail: createPlaylistDetail(songs.length),
                 }
               : playlist,
           ),
+        );
+      },
+      addSongToPlaylist: (playlistId, payload) => {
+        const title = payload.songName.trim();
+        if (!title) {
+          return;
+        }
+
+        const nextSongId = createId("song");
+        const nextSong: Song = {
+          id: nextSongId,
+          songName: title,
+          artist: payload.artist?.trim() || "",
+          duration: payload.duration?.trim() || "0:00",
+          fileType: "LOCAL",
+        };
+
+        setSongs((prev) => [...prev, nextSong]);
+        setPlaylists((prev) =>
+          prev.map((playlist) => {
+            if (playlist.id !== playlistId) {
+              return playlist;
+            }
+            const nextSongIds = [...playlist.songIds, nextSongId];
+            return {
+              ...playlist,
+              songIds: nextSongIds,
+              detail: createPlaylistDetail(nextSongIds.length),
+            };
+          }),
+        );
+        setPersistenceMessage(null);
+      },
+      deleteSongFromPlaylist: (playlistId, songId) => {
+        setPlaylists((prev) =>
+          prev.map((playlist) => {
+            if (playlist.id !== playlistId) {
+              return playlist;
+            }
+            const nextSongIds = playlist.songIds.filter((id) => id !== songId);
+            return {
+              ...playlist,
+              songIds: nextSongIds,
+              detail: createPlaylistDetail(nextSongIds.length),
+            };
+          }),
+        );
+      },
+      moveSongInPlaylist: (playlistId, songId, direction) => {
+        setPlaylists((prev) =>
+          prev.map((playlist) => {
+            if (playlist.id !== playlistId) {
+              return playlist;
+            }
+            const currentIndex = playlist.songIds.indexOf(songId);
+            if (currentIndex < 0) {
+              return playlist;
+            }
+            const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+            if (nextIndex < 0 || nextIndex >= playlist.songIds.length) {
+              return playlist;
+            }
+            const nextSongIds = [...playlist.songIds];
+            [nextSongIds[currentIndex], nextSongIds[nextIndex]] = [nextSongIds[nextIndex], nextSongIds[currentIndex]];
+            return {
+              ...playlist,
+              songIds: nextSongIds,
+              detail: createPlaylistDetail(nextSongIds.length),
+            };
+          }),
         );
       },
       addAnnouncement: (draft) => {

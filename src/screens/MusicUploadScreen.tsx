@@ -25,12 +25,30 @@ export function MusicUploadScreen() {
     reorderSongs,
     createPlaylist,
     assignSongsToPlaylist,
+    addSongToPlaylist,
+    deleteSongFromPlaylist,
+    moveSongInPlaylist,
     saveCurrentEventSnapshot,
     audioWarning,
     persistenceMessage,
     isHydrating,
   } = useAppState();
   const [playlistName, setPlaylistName] = useState("");
+
+  const resolvePlaylistSongs = (songIds: string[]) =>
+    songIds.reduce<Array<{ id: string; songName: string; artist?: string; duration: string }>>((acc, songId) => {
+      const song = songs.find((item) => item.id === songId);
+      if (!song) {
+        return acc;
+      }
+      acc.push({
+        id: song.id,
+        songName: song.songName,
+        artist: song.artist,
+        duration: song.duration,
+      });
+      return acc;
+    }, []);
 
   const handlePickAudio = async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -131,7 +149,21 @@ export function MusicUploadScreen() {
               <EmptyStateCard title="No playlists yet" description="Create the first playlist to start grouping songs for event moments." />
             ) : (
               playlists.map((playlist) => (
-                <PlaylistCard key={playlist.id} name={playlist.name} detail={playlist.detail} onCreate={createPlaylist} onAssign={assignSongsToPlaylist} />
+                <PlaylistCard
+                  key={playlist.id}
+                  id={playlist.id}
+                  name={playlist.name}
+                  detail={playlist.detail}
+                  songs={resolvePlaylistSongs(playlist.songIds)}
+                  onAddSong={addSongToPlaylist}
+                  onDeleteSong={(playlistId, songId) =>
+                    Alert.alert("Remove song from playlist?", "This will remove the song from this playlist right away.", [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Remove", style: "destructive", onPress: () => deleteSongFromPlaylist(playlistId, songId) },
+                    ])
+                  }
+                  onMoveSong={moveSongInPlaylist}
+                />
               ))
             )}
           </View>
