@@ -37,19 +37,6 @@ type KnobKey = "effects" | "mid" | "treble" | "bass";
 
 type MixerKnobValues = Record<KnobKey, number>;
 
-type WebAudioDeckNodes = {
-  input: GainNode;
-  master: GainNode;
-  lowShelf: BiquadFilterNode;
-  mid: BiquadFilterNode;
-  highShelf: BiquadFilterNode;
-  delay: DelayNode;
-  feedback: GainNode;
-  wet: GainNode;
-  oscA: OscillatorNode;
-  oscB: OscillatorNode;
-};
-
 type ScratchMeta = {
   angle: number;
   positionMs: number;
@@ -78,10 +65,6 @@ function normalizeAngleDelta(delta: number) {
   if (delta > 180) return delta - 360;
   if (delta < -180) return delta + 360;
   return delta;
-}
-
-function isWebAudioSupported() {
-  return typeof window !== "undefined" && Boolean(window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
 }
 
 function BrandMark() {
@@ -350,7 +333,17 @@ function Turntable({
 
 export function DJMixingBoardScreen() {
   const navigation = useNavigation<any>();
-  const { timelineItems } = useAppState();
+  const {
+    timelineItems,
+    songs,
+    currentTrackName,
+    playbackState,
+    playbackPositionMillis,
+    playbackDurationMillis,
+    startAutopilot,
+    resumeCurrentTrack,
+    stopCurrentTrack,
+  } = useAppState();
   const { width, height } = useWindowDimensions();
   const isPortraitMobile = width <= 480 && height >= width;
   const isCompactPortrait = width <= 390 && height >= width;
@@ -371,7 +364,7 @@ export function DJMixingBoardScreen() {
     durationMs: 225000,
     positionMs: 83000,
     cuePointMs: 0,
-    isPlaying: true,
+    isPlaying: false,
     isScratching: false,
     wasPlayingBeforeScratch: false,
     bpm: 95,
@@ -409,11 +402,6 @@ export function DJMixingBoardScreen() {
   const [rightPlatterSize, setRightPlatterSize] = useState(0);
 
   const lastTickRef = useRef(Date.now());
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const deckAudioNodesRef = useRef<Record<DeckId, WebAudioDeckNodes | null>>({
-    left: null,
-    right: null,
-  });
   const scratchRef = useRef<Record<DeckId, ScratchMeta>>({
     left: { angle: 0, positionMs: 0 },
     right: { angle: 0, positionMs: 0 },
@@ -439,130 +427,21 @@ export function DJMixingBoardScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  const ensureAudioGraph = () => {
-    if (!isWebAudioSupported()) {
-      return null;
-    }
-
-    if (!audioContextRef.current) {
-      const WebAudioContext =
-        window.AudioContext ||
-        (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-
-      if (!WebAudioContext) {
-        return null;
-      }
-
-      const context = new WebAudioContext();
-      const createDeckNodes = (primaryFrequency: number, secondaryFrequency: number): WebAudioDeckNodes => {
-        const input = context.createGain();
-        const lowShelf = context.createBiquadFilter();
-        lowShelf.type = "lowshelf";
-        lowShelf.frequency.value = 180;
-
-        const mid = context.createBiquadFilter();
-        mid.type = "peaking";
-        mid.frequency.value = 1100;
-        mid.Q.value = 1.2;
-
-        const highShelf = context.createBiquadFilter();
-        highShelf.type = "highshelf";
-        highShelf.frequency.value = 3600;
-
-        const delay = context.createDelay(0.5);
-        const feedback = context.createGain();
-        const wet = context.createGain();
-        const master = context.createGain();
-
-        const oscA = context.createOscillator();
-        oscA.type = "sawtooth";
-        oscA.frequency.value = primaryFrequency;
-
-        const oscB = context.createOscillator();
-        oscB.type = "triangle";
-        oscB.frequency.value = secondaryFrequency;
-
-        const oscBGain = context.createGain();
-        oscBGain.gain.value = 0.42;
-
-        oscA.connect(input);
-        oscB.connect(oscBGain);
-        oscBGain.connect(input);
-        input.connect(lowShelf);
-        lowShelf.connect(mid);
-        mid.connect(highShelf);
-        highShelf.connect(master);
-        highShelf.connect(delay);
-        delay.connect(feedback);
-        feedback.connect(delay);
-        delay.connect(wet);
-        wet.connect(master);
-        master.connect(context.destination);
-
-        oscA.start();
-        oscB.start();
-
-        return { input, lowShelf, mid, highShelf, delay, feedback, wet, master, oscA, oscB };
-      };
-
-      audioContextRef.current = context;
-      deckAudioNodesRef.current = {
-        left: createDeckNodes(196, 392),
-        right: createDeckNodes(294, 147),
-      };
-    }
-
-    if (audioContextRef.current.state === "suspended") {
-      audioContextRef.current.resume().catch(() => undefined);
-    }
-
-    return deckAudioNodesRef.current;
-  };
-
   useEffect(() => {
-    const deckNodes = ensureAudioGraph();
-    if (!deckNodes || !audioContextRef.current) {
-      return;
-    }
+    const matchedSong =
+      songs.find((song) => (song.title || song.songName) === currentTrackName) ?? null;
 
-    const applyDeckMix = (deck: DeckId, deckState: DeckState, mixLevel: number) => {
-      const nodes = deckNodes[deck];
-      if (!nodes) {
-        return;
-      }
-
-      const playingLevel = deckState.isPlaying || deckState.isScratching ? 1 : 0;
-      nodes.master.gain.value = mixLevel * playingLevel;
-      nodes.lowShelf.gain.value = -14 + knobValues.bass * 28;
-      nodes.mid.gain.value = -12 + knobValues.mid * 24;
-      nodes.highShelf.gain.value = -14 + knobValues.treble * 28;
-      nodes.delay.delayTime.value = 0.04 + knobValues.effects * 0.26;
-      nodes.feedback.gain.value = 0.08 + knobValues.effects * 0.46;
-      nodes.wet.gain.value = knobValues.effects * 0.42;
-
-      const detuneBase = deckState.isScratching ? (deckState.positionMs % 2000) - 1000 : 0;
-      nodes.oscA.detune.value = detuneBase * 0.45;
-      nodes.oscB.detune.value = -detuneBase * 0.3;
-    };
-
-    applyDeckMix("left", leftDeck, leftDeck.volume * (1 - crossfader));
-    applyDeckMix("right", rightDeck, rightDeck.volume * crossfader);
-  }, [crossfader, knobValues, leftDeck, rightDeck]);
-
-  useEffect(
-    () => () => {
-      if (!audioContextRef.current) {
-        return;
-      }
-      audioContextRef.current.close().catch(() => undefined);
-      audioContextRef.current = null;
-      deckAudioNodesRef.current = { left: null, right: null };
-    },
-    [],
-  );
+    setLeftDeck((prev) => ({
+      ...prev,
+      title: currentTrackName || prev.title,
+      artist: matchedSong?.artist || prev.artist,
+      durationMs: playbackDurationMillis || matchedSong?.durationMillis || prev.durationMs,
+      positionMs: prev.isScratching ? prev.positionMs : playbackPositionMillis,
+      isPlaying: playbackState === "playing",
+    }));
+  }, [currentTrackName, playbackDurationMillis, playbackPositionMillis, playbackState, songs]);
 
   const handleScratchStart = (deck: DeckId, event: GestureResponderEvent) => {
-    ensureAudioGraph();
     const size = deck === "left" ? leftPlatterSize : rightPlatterSize;
     if (!size) return;
     const angle = getAngleFromPoint(event.nativeEvent.locationX, event.nativeEvent.locationY, size);
@@ -605,7 +484,6 @@ export function DJMixingBoardScreen() {
   };
 
   const handleCue = (deck: DeckId) => {
-    ensureAudioGraph();
     const setter = deck === "left" ? setLeftDeck : setRightDeck;
     setter((prev) => ({
       ...prev,
@@ -615,7 +493,6 @@ export function DJMixingBoardScreen() {
   };
 
   const handleSyncDeck = (deck: DeckId) => {
-    ensureAudioGraph();
     if (deck === "left") {
       setLeftDeck((prev) => ({
         ...prev,
@@ -634,29 +511,27 @@ export function DJMixingBoardScreen() {
     }));
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
+    await stopCurrentTrack();
     setLeftDeck((prev) => ({ ...prev, isPlaying: false, positionMs: prev.cuePointMs }));
     setRightDeck((prev) => ({ ...prev, isPlaying: false, positionMs: prev.cuePointMs }));
   };
 
-  const handlePlayPause = (deck: DeckId) => {
-    ensureAudioGraph();
-    const setter = deck === "left" ? setLeftDeck : setRightDeck;
-    setter((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
-  };
-
-  const handleGlobalPlay = () => {
-    ensureAudioGraph();
-    if (leftDeck.isPlaying || rightDeck.isPlaying) {
-      setLeftDeck((prev) => ({ ...prev, isPlaying: false }));
-      setRightDeck((prev) => ({ ...prev, isPlaying: false }));
+  const handleGlobalPlay = async () => {
+    if (playbackState === "playing") {
+      await stopCurrentTrack();
       return;
     }
-    setLeftDeck((prev) => ({ ...prev, isPlaying: true }));
+
+    if (playbackState === "paused" || currentTrackName) {
+      await resumeCurrentTrack();
+      return;
+    }
+
+    startAutopilot();
   };
 
   const handleSkip = () => {
-    ensureAudioGraph();
     setRightDeck((prev) => ({
       ...prev,
       title: "Can’t Stop the Feeling",

@@ -158,6 +158,9 @@ type AppStateValue = {
   startAutopilot: () => void;
   pauseAutopilot: () => void;
   resumeAutopilot: () => void;
+  pauseCurrentTrack: () => Promise<void>;
+  resumeCurrentTrack: () => Promise<void>;
+  stopCurrentTrack: () => Promise<void>;
   skipToNextTimelineItem: () => void;
   goToPreviousTimelineItem: () => void;
   restartCurrentTimelineItem: () => void;
@@ -1183,6 +1186,71 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     return () => clearInterval(interval);
   }, [playbackDurationMillis, playbackState, currentTrackName]);
 
+  const pauseCurrentTrack = async () => {
+    setAutopilotRunning(false);
+    if (!soundRef.current) {
+      if (currentTrackName) {
+        setPlaybackState((prev) => (prev === "warning" ? prev : "paused"));
+      }
+      return;
+    }
+
+    try {
+      await soundRef.current.pauseAsync();
+    } catch {
+      // noop for MVP control path
+    }
+
+    setPlaybackState((prev) => (prev === "warning" ? prev : "paused"));
+  };
+
+  const resumeCurrentTrack = async () => {
+    const currentTimelineItem = timelineItems[liveIndex] ?? null;
+
+    if (soundRef.current) {
+      try {
+        const status = await soundRef.current.getStatusAsync();
+        if (status.isLoaded) {
+          await soundRef.current.playAsync();
+          setManualOverride(false);
+          setAutopilotRunning(true);
+          setPlaybackState("playing");
+          return;
+        }
+      } catch {
+        // fall through to timeline replay path
+      }
+    }
+
+    if (!currentTimelineItem) {
+      return;
+    }
+
+    setManualOverride(false);
+    setAutopilotRunning(true);
+    await playResolvedSong(currentTimelineItem);
+  };
+
+  const stopCurrentTrack = async () => {
+    setAutopilotRunning(false);
+
+    if (soundRef.current) {
+      try {
+        await soundRef.current.stopAsync();
+      } catch {
+        try {
+          await soundRef.current.pauseAsync();
+          await soundRef.current.setPositionAsync(0);
+        } catch {
+          // noop for MVP control path
+        }
+      }
+    }
+
+    setPlaybackPositionMillis(0);
+    setPlaybackState(currentTrackName ? "paused" : "idle");
+  };
+
   const value = useMemo<AppStateValue>(() => {
     const nextAnnouncement = findAnnouncementForIndex(liveIndex + 1);
     const derivedAnnouncementState =
@@ -1563,6 +1631,9 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         setManualOverride(false);
         setAutopilotRunning(true);
       },
+      pauseCurrentTrack,
+      resumeCurrentTrack,
+      stopCurrentTrack,
       skipToNextTimelineItem: () => {
         setLiveIndex((prev) =>
           timelineItems.length === 0 ? 0 : Math.min(prev + 1, timelineItems.length - 1),
@@ -1678,10 +1749,12 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     liveIndex,
     manualOverride,
     persistenceMessage,
+    pauseCurrentTrack,
     playbackDurationMillis,
     playbackPositionMillis,
     playbackState,
     playlists,
+    resumeCurrentTrack,
     savedEvents,
     selectedVoiceName,
     selectedOutputLabel,
@@ -1690,6 +1763,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     speechMessage,
     speechRate,
     speechSpeaking,
+    stopCurrentTrack,
     timelineItems,
     validationEntries,
   ]);
