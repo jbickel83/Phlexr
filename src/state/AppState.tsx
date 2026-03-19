@@ -127,6 +127,7 @@ type AppStateValue = {
   nextAnnouncementTitle: string | null;
   nextAnnouncementText: string | null;
   currentTrackName: string | null;
+  currentPlaybackDeck: "trackA" | "trackB" | null;
   playbackState: "idle" | "playing" | "paused" | "warning";
   playbackPositionMillis: number;
   playbackDurationMillis: number;
@@ -170,6 +171,7 @@ type AppStateValue = {
   pauseCurrentTrack: () => Promise<void>;
   resumeCurrentTrack: () => Promise<void>;
   stopCurrentTrack: () => Promise<void>;
+  playDeck: (deck: "trackA" | "trackB") => Promise<void>;
   skipToNextTimelineItem: () => void;
   goToPreviousTimelineItem: () => void;
   restartCurrentTimelineItem: () => void;
@@ -649,6 +651,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const [currentAnnouncementText, setCurrentAnnouncementText] = useState<string | null>(null);
   const [completedAnnouncementIds, setCompletedAnnouncementIds] = useState<string[]>([]);
   const [currentTrackName, setCurrentTrackName] = useState<string | null>(null);
+  const [currentPlaybackDeck, setCurrentPlaybackDeck] = useState<"trackA" | "trackB" | null>(null);
   const [playbackState, setPlaybackState] = useState<"idle" | "playing" | "paused" | "warning">("idle");
   const [playbackPositionMillis, setPlaybackPositionMillis] = useState(0);
   const [playbackDurationMillis, setPlaybackDurationMillis] = useState(0);
@@ -664,6 +667,11 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const soundRef = useRef<Audio.Sound | null>(null);
   const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const currentSongIdRef = useRef<string | null>(null);
+  const countdownTargetTimeRef = useRef<number | null>(null);
+  const manualResumeSnapshotRef = useRef<{ shouldResume: boolean; remainingSeconds: number }>({
+    shouldResume: false,
+    remainingSeconds: AUTOPILOT_COUNTDOWN_SECONDS,
+  });
   const hasHydratedRef = useRef(false);
   const skipNextSavedSyncRef = useRef(false);
 
@@ -673,11 +681,13 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     setAutopilotRunning(false);
     setManualOverride(false);
     setCountdownSeconds(AUTOPILOT_COUNTDOWN_SECONDS);
+    countdownTargetTimeRef.current = null;
     setActiveAnnouncementTitle(null);
     setAnnouncementState("idle");
     setCurrentAnnouncementText(null);
     setCompletedAnnouncementIds([]);
     setCurrentTrackName(null);
+    setCurrentPlaybackDeck(null);
     setPlaybackState("idle");
     setPlaybackPositionMillis(0);
     setPlaybackDurationMillis(0);
@@ -834,6 +844,43 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     return songs.find((song) => song.id === firstSongId) ?? null;
   };
 
+  const resolveSongForDeck = (deck: "trackA" | "trackB") => {
+    const songId = deckAssignments[deck];
+    if (!songId) {
+      return null;
+    }
+    return songs.find((song) => song.id === songId) ?? null;
+  };
+
+  const resolveDeckForSong = (songId: string | null) => {
+    if (!songId) {
+      return null;
+    }
+    if (deckAssignments.trackA === songId) {
+      return "trackA" as const;
+    }
+    if (deckAssignments.trackB === songId) {
+      return "trackB" as const;
+    }
+    return null;
+  };
+
+  const scheduleCountdown = (seconds: number) => {
+    const nextSeconds = Math.max(1, Math.ceil(seconds));
+    setCountdownSeconds(nextSeconds);
+    countdownTargetTimeRef.current = Date.now() + nextSeconds * 1000;
+  };
+
+  const enterManualDeckMode = (remainingSeconds = countdownSeconds) => {
+    manualResumeSnapshotRef.current = {
+      shouldResume: autopilotRunning,
+      remainingSeconds: Math.max(1, remainingSeconds),
+    };
+    setManualOverride(true);
+    setAutopilotRunning(false);
+    countdownTargetTimeRef.current = null;
+  };
+
   const unloadCurrentSound = async () => {
     if (!canUseNativeAudio) {
       return;
@@ -859,36 +906,47 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     setPlaybackPositionMillis(status.positionMillis ?? 0);
     setPlaybackDurationMillis(status.durationMillis ?? 0);
     setPlaybackState(status.isPlaying ? "playing" : "paused");
+
+    if (status.didJustFinish) {
+      setPlaybackPositionMillis(status.durationMillis ?? 0);
+      if (manualOverride && currentPlaybackDeck) {
+        resumeAutoFlowAfterManual().catch(() => undefined);
+      }
+    }
   };
 
-  const playResolvedSong = async (timelineItem?: TimelineItem | null) => {
-    const resolvedSong = resolveSongForTimelineItem(timelineItem);
-
-    if (!timelineItem) {
-      setCurrentTrackName(null);
-      setPlaybackState("idle");
-      setAudioWarning(null);
-      setCurrentTrackFallback(null);
-      await unloadCurrentSound();
-      return;
-    }
-
+  const loadResolvedSong = async ({
+    resolvedSong,
+    fallbackLabel,
+    fallbackMessage,
+    shouldPlay,
+    playbackDeck,
+  }: {
+    resolvedSong: Song | null;
+    fallbackLabel?: string | null;
+    fallbackMessage?: string | null;
+    shouldPlay: boolean;
+    playbackDeck: "trackA" | "trackB" | null;
+  }) => {
     if (!resolvedSong) {
-      setCurrentTrackName(timelineItem.music || "Unassigned");
-      setPlaybackState("warning");
+      setCurrentTrackName(fallbackLabel ?? null);
+      setCurrentPlaybackDeck(playbackDeck);
+      setPlaybackState(fallbackMessage ? "warning" : "idle");
       setPlaybackPositionMillis(0);
       setPlaybackDurationMillis(0);
-      setAudioWarning("CrowdKue could not find a playable local track for this cue.");
-      setCurrentTrackFallback(getTrackFallbackMessage(timelineItem));
+      setAudioWarning(fallbackMessage ?? null);
+      setCurrentTrackFallback(fallbackMessage ?? null);
       await unloadCurrentSound();
       return;
     }
 
-    setCurrentTrackName(resolvedSong.title || resolvedSong.songName || null);
+    const resolvedTitle = resolvedSong.title || resolvedSong.songName || null;
+    setCurrentTrackName(resolvedTitle);
+    setCurrentPlaybackDeck(playbackDeck);
 
     if (!canUseNativeAudio) {
-      setPlaybackState("playing");
-      setPlaybackPositionMillis((prev) => (currentTrackName === (resolvedSong.title || resolvedSong.songName) ? prev : 0));
+      setPlaybackState(shouldPlay ? "playing" : "paused");
+      setPlaybackPositionMillis((prev) => (currentTrackName === resolvedTitle ? prev : 0));
       setPlaybackDurationMillis(resolvedSong.durationMillis ?? 0);
       setAudioWarning(null);
       setCurrentTrackFallback(null);
@@ -897,10 +955,8 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
     if (!resolvedSong.uri) {
       if (currentEvent.status.toLowerCase().includes("demo event")) {
-        setPlaybackState("playing");
-        setPlaybackPositionMillis((prev) =>
-          currentTrackName === (resolvedSong.title || resolvedSong.songName) ? prev : 0,
-        );
+        setPlaybackState(shouldPlay ? "playing" : "paused");
+        setPlaybackPositionMillis((prev) => (currentTrackName === resolvedTitle ? prev : 0));
         setPlaybackDurationMillis(resolvedSong.durationMillis ?? 0);
         setAudioWarning(null);
         setCurrentTrackFallback(null);
@@ -911,7 +967,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setPlaybackPositionMillis(0);
       setPlaybackDurationMillis(resolvedSong.durationMillis ?? 0);
       setAudioWarning("This track was restored from local metadata and may need to be re-selected on this device.");
-      setCurrentTrackFallback(getTrackFallbackMessage(timelineItem));
+      setCurrentTrackFallback(fallbackMessage ?? null);
       await unloadCurrentSound();
       return;
     }
@@ -921,10 +977,15 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
     if (currentSongIdRef.current === resolvedSong.id && soundRef.current) {
       const status = await soundRef.current.getStatusAsync();
-      if (status.isLoaded && !status.isPlaying) {
-        await soundRef.current.playAsync();
+      if (status.isLoaded) {
+        if (shouldPlay && !status.isPlaying) {
+          await soundRef.current.playAsync();
+        }
+        if (!shouldPlay && status.isPlaying) {
+          await soundRef.current.pauseAsync();
+        }
+        return;
       }
-      return;
     }
 
     await unloadCurrentSound();
@@ -934,15 +995,40 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       soundRef.current = sound;
       currentSongIdRef.current = resolvedSong.id;
       sound.setOnPlaybackStatusUpdate(syncPlaybackStatus);
-      await sound.loadAsync({ uri: resolvedSong.uri }, { shouldPlay: true });
+      await sound.loadAsync({ uri: resolvedSong.uri }, { shouldPlay, progressUpdateIntervalMillis: 250 });
       setPlaybackDurationMillis(resolvedSong.durationMillis ?? 0);
-      setPlaybackState("playing");
+      setPlaybackPositionMillis(0);
+      setPlaybackState(shouldPlay ? "playing" : "paused");
     } catch {
       setPlaybackState("warning");
       setAudioWarning("CrowdKue could not load this local audio file.");
-      setCurrentTrackFallback(getTrackFallbackMessage(timelineItem));
+      setCurrentTrackFallback(fallbackMessage ?? null);
       await unloadCurrentSound();
     }
+  };
+
+  const playResolvedSong = async (timelineItem?: TimelineItem | null) => {
+    const resolvedSong = resolveSongForTimelineItem(timelineItem);
+    const playbackDeck = resolveDeckForSong(resolvedSong?.id ?? null);
+
+    if (!timelineItem) {
+      await loadResolvedSong({
+        resolvedSong: null,
+        fallbackLabel: null,
+        fallbackMessage: null,
+        shouldPlay: false,
+        playbackDeck: null,
+      });
+      return;
+    }
+
+    await loadResolvedSong({
+      resolvedSong,
+      fallbackLabel: timelineItem.music || "Unassigned",
+      fallbackMessage: resolvedSong ? getTrackFallbackMessage(timelineItem) : "CrowdKue could not find a playable local track for this cue.",
+      shouldPlay: true,
+      playbackDeck,
+    });
   };
 
   useEffect(() => {
@@ -1113,25 +1199,33 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     }
 
     const interval = setInterval(() => {
-      setCountdownSeconds((prev) => {
-        if (prev > 1) {
-          return prev - 1;
+      const targetTime = countdownTargetTimeRef.current;
+      if (!targetTime) {
+        scheduleCountdown(countdownSeconds || AUTOPILOT_COUNTDOWN_SECONDS);
+        return;
+      }
+
+      const remainingMs = targetTime - Date.now();
+      const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+      setCountdownSeconds(remainingSeconds);
+
+      if (remainingMs > 0) {
+        return;
+      }
+
+      setLiveIndex((current) => {
+        if (current >= timelineItems.length - 1) {
+          setAutopilotRunning(false);
+          countdownTargetTimeRef.current = null;
+          return current;
         }
-
-        setLiveIndex((current) => {
-          if (current >= timelineItems.length - 1) {
-            setAutopilotRunning(false);
-            return current;
-          }
-          return current + 1;
-        });
-
-        return AUTOPILOT_COUNTDOWN_SECONDS;
+        countdownTargetTimeRef.current = Date.now() + AUTOPILOT_COUNTDOWN_SECONDS * 1000;
+        return current + 1;
       });
-    }, 1000);
+    }, 250);
 
     return () => clearInterval(interval);
-  }, [autopilotRunning, manualOverride, speechSpeaking, timelineItems.length]);
+  }, [autopilotRunning, countdownSeconds, manualOverride, speechSpeaking, timelineItems.length]);
 
   useEffect(() => {
     const currentTimelineItem = timelineItems[liveIndex] ?? null;
@@ -1149,7 +1243,9 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       setCurrentAnnouncementText(null);
       setAnnouncementState("idle");
     }
-    setCountdownSeconds(AUTOPILOT_COUNTDOWN_SECONDS);
+    if (autopilotRunning && !manualOverride) {
+      scheduleCountdown(AUTOPILOT_COUNTDOWN_SECONDS);
+    }
 
     if (autopilotRunning && !manualOverride) {
       playResolvedSong(currentTimelineItem).catch(() => undefined);
@@ -1173,10 +1269,12 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (manualOverride) {
-      if (soundRef.current) {
+      if (soundRef.current && currentPlaybackDeck === null) {
         soundRef.current.pauseAsync().catch(() => undefined);
       }
-      setPlaybackState((prev) => (prev === "warning" ? prev : "paused"));
+      if (currentPlaybackDeck === null) {
+        setPlaybackState((prev) => (prev === "warning" ? prev : "paused"));
+      }
       return;
     }
 
@@ -1192,7 +1290,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
     const currentTimelineItem = timelineItems[liveIndex] ?? null;
     playResolvedSong(currentTimelineItem).catch(() => undefined);
-  }, [autopilotRunning, currentTrackName, liveIndex, manualOverride, speechSpeaking, timelineItems]);
+  }, [autopilotRunning, currentPlaybackDeck, currentTrackName, liveIndex, manualOverride, speechSpeaking, timelineItems]);
 
   useEffect(() => {
     if (!autopilotRunning || manualOverride || speechSpeaking) {
@@ -1214,8 +1312,21 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     return () => clearInterval(interval);
   }, [playbackDurationMillis, playbackState, currentTrackName]);
 
+  useEffect(() => {
+    if (
+      !manualOverride ||
+      !currentPlaybackDeck ||
+      playbackState !== "playing" ||
+      playbackDurationMillis <= 0 ||
+      playbackPositionMillis < playbackDurationMillis
+    ) {
+      return;
+    }
+
+    resumeAutoFlowAfterManual().catch(() => undefined);
+  }, [currentPlaybackDeck, manualOverride, playbackDurationMillis, playbackPositionMillis, playbackState]);
+
   const pauseCurrentTrack = async () => {
-    setAutopilotRunning(false);
     if (!soundRef.current) {
       if (currentTrackName) {
         setPlaybackState((prev) => (prev === "warning" ? prev : "paused"));
@@ -1230,6 +1341,20 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     }
 
     setPlaybackState((prev) => (prev === "warning" ? prev : "paused"));
+  };
+
+  const resumeAutoFlowAfterManual = async () => {
+    const snapshot = manualResumeSnapshotRef.current;
+    setManualOverride(false);
+    setCurrentPlaybackDeck(null);
+
+    if (!snapshot.shouldResume || timelineItems.length === 0) {
+      return;
+    }
+
+    setAutopilotRunning(true);
+    scheduleCountdown(snapshot.remainingSeconds || AUTOPILOT_COUNTDOWN_SECONDS);
+    await playResolvedSong(timelineItems[liveIndex] ?? null);
   };
 
   const resumeCurrentTrack = async () => {
@@ -1260,8 +1385,6 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   };
 
   const stopCurrentTrack = async () => {
-    setAutopilotRunning(false);
-
     if (soundRef.current) {
       try {
         await soundRef.current.stopAsync();
@@ -1277,6 +1400,26 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
     setPlaybackPositionMillis(0);
     setPlaybackState(currentTrackName ? "paused" : "idle");
+
+    if (manualOverride && currentPlaybackDeck) {
+      await resumeAutoFlowAfterManual();
+    }
+  };
+
+  const playDeck = async (deck: "trackA" | "trackB") => {
+    const resolvedSong = resolveSongForDeck(deck);
+    const fallbackLabel = deck === "trackA" ? "Track A" : "Track B";
+    enterManualDeckMode();
+    setCurrentPlaybackDeck(deck);
+    await loadResolvedSong({
+      resolvedSong,
+      fallbackLabel,
+      fallbackMessage: resolvedSong
+        ? `Assigned ${fallbackLabel} track could not be loaded. Manual control is still available.`
+        : `No song is loaded into ${fallbackLabel}.`,
+      shouldPlay: true,
+      playbackDeck: deck,
+    });
   };
 
   const value = useMemo<AppStateValue>(() => {
@@ -1307,6 +1450,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       nextAnnouncementTitle: nextAnnouncement?.title ?? null,
       nextAnnouncementText: nextAnnouncement?.previewText ?? null,
       currentTrackName,
+      currentPlaybackDeck,
       playbackState,
       playbackPositionMillis,
       playbackDurationMillis,
@@ -1526,6 +1670,18 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       },
       assignSongToDeck: (deck, songId) => {
         setDeckAssignments((prev) => ({ ...prev, [deck]: songId }));
+        const resolvedSong = songs.find((song) => song.id === songId) ?? null;
+        enterManualDeckMode();
+        setCurrentPlaybackDeck(deck);
+        loadResolvedSong({
+          resolvedSong,
+          fallbackLabel: deck === "trackA" ? "Track A" : "Track B",
+          fallbackMessage: resolvedSong
+            ? `Assigned ${deck === "trackA" ? "Track A" : "Track B"} track could not be loaded.`
+            : `No song is loaded into ${deck === "trackA" ? "Track A" : "Track B"}.`,
+          shouldPlay: false,
+          playbackDeck: deck,
+        }).catch(() => undefined);
       },
       addSongToPlaylist: (playlistId, payload) => {
         const title = payload.title.trim();
@@ -1667,35 +1823,40 @@ export function AppStateProvider({ children }: PropsWithChildren) {
           return;
         }
         setManualOverride(false);
+        setCurrentPlaybackDeck(null);
         setAutopilotRunning(true);
-        setCountdownSeconds(AUTOPILOT_COUNTDOWN_SECONDS);
+        scheduleCountdown(AUTOPILOT_COUNTDOWN_SECONDS);
         triggerAnnouncementForIndex(liveIndex);
       },
       pauseAutopilot: () => {
         setAutopilotRunning(false);
+        countdownTargetTimeRef.current = null;
       },
       resumeAutopilot: () => {
         if (timelineItems.length === 0) {
           return;
         }
         setManualOverride(false);
+        setCurrentPlaybackDeck(null);
         setAutopilotRunning(true);
+        scheduleCountdown(countdownSeconds || AUTOPILOT_COUNTDOWN_SECONDS);
       },
       pauseCurrentTrack,
+      playDeck,
       resumeCurrentTrack,
       stopCurrentTrack,
       skipToNextTimelineItem: () => {
         setLiveIndex((prev) =>
           timelineItems.length === 0 ? 0 : Math.min(prev + 1, timelineItems.length - 1),
         );
-        setCountdownSeconds(AUTOPILOT_COUNTDOWN_SECONDS);
+        scheduleCountdown(AUTOPILOT_COUNTDOWN_SECONDS);
       },
       goToPreviousTimelineItem: () => {
         setLiveIndex((prev) => Math.max(prev - 1, 0));
-        setCountdownSeconds(AUTOPILOT_COUNTDOWN_SECONDS);
+        scheduleCountdown(AUTOPILOT_COUNTDOWN_SECONDS);
       },
       restartCurrentTimelineItem: () => {
-        setCountdownSeconds(AUTOPILOT_COUNTDOWN_SECONDS);
+        scheduleCountdown(AUTOPILOT_COUNTDOWN_SECONDS);
         setCompletedAnnouncementIds((prev) => {
           const matchingAnnouncement = findAnnouncementForIndex(liveIndex);
           if (!matchingAnnouncement) {
@@ -1790,6 +1951,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     autopilotRunning,
     countdownSeconds,
     currentAnnouncementText,
+    currentPlaybackDeck,
     currentEvent,
     currentTrackFallback,
     currentTrackName,
@@ -1801,6 +1963,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     deckAssignments,
     persistenceMessage,
     pauseCurrentTrack,
+    playDeck,
     playbackDurationMillis,
     playbackPositionMillis,
     playbackState,

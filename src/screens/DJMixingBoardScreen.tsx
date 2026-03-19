@@ -364,11 +364,11 @@ export function DJMixingBoardScreen() {
     songs,
     deckAssignments,
     currentTrackName,
+    currentPlaybackDeck,
     playbackState,
     playbackPositionMillis,
     playbackDurationMillis,
-    startAutopilot,
-    resumeCurrentTrack,
+    playDeck,
     stopCurrentTrack,
   } = useAppState();
   const { width, height } = useWindowDimensions();
@@ -602,19 +602,9 @@ export function DJMixingBoardScreen() {
     setRightDeck((prev) => ({ ...prev, isPlaying: false, positionMs: prev.cuePointMs }));
   };
 
-  const handleGlobalPlay = async () => {
-    if (playbackState === "playing") {
-      await stopCurrentTrack();
-      return;
-    }
-
-    flashButton("play");
-    if (playbackState === "paused" || currentTrackName) {
-      await resumeCurrentTrack();
-      return;
-    }
-
-    startAutopilot();
+  const handleDeckPlay = async (deck: "trackA" | "trackB") => {
+    flashButton(deck === "trackA" ? "playLeft" : "playRight");
+    await playDeck(deck);
   };
 
   const handleSkip = () => {
@@ -861,8 +851,19 @@ export function DJMixingBoardScreen() {
 
             <View style={[styles.transportRow, { gap: isPortraitMobile ? 10 : 14, paddingHorizontal: horizontalInset }]}>
               <MixerButton label="SYNC" onPress={() => handleSyncDeck("left")} tone="blue" active={buttonFlashState.syncLeft} />
+              <MixerButton
+                label="PLAY"
+                onPress={() => handleDeckPlay("trackA")}
+                tone="red"
+                active={(currentPlaybackDeck === "trackA" && playbackState === "playing") || buttonFlashState.playLeft}
+              />
               <MixerButton label="STOP" onPress={handleStop} tone="white" active={buttonFlashState.stop} />
-              <MixerButton label="PLAY" onPress={handleGlobalPlay} tone="red" active={playbackState === "playing" || buttonFlashState.play} />
+              <MixerButton
+                label="PLAY"
+                onPress={() => handleDeckPlay("trackB")}
+                tone="red"
+                active={(currentPlaybackDeck === "trackB" && playbackState === "playing") || buttonFlashState.playRight}
+              />
               <MixerButton label="SYNC" onPress={() => handleSyncDeck("right")} tone="blue" active={buttonFlashState.syncRight} />
             </View>
 
