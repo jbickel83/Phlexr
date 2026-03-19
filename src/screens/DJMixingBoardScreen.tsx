@@ -99,11 +99,13 @@ function MixerButton({
   onPress,
   tone = "dark",
   icon,
+  active = false,
 }: {
   label?: string;
   onPress: () => void;
   tone?: "dark" | "blue" | "white" | "purple" | "red";
   icon?: keyof typeof Ionicons.glyphMap;
+  active?: boolean;
 }) {
   const toneStyle =
     tone === "blue"
@@ -115,6 +117,17 @@ function MixerButton({
           : tone === "red"
             ? styles.buttonRed
             : styles.buttonDark;
+
+  const activeStyle =
+    tone === "blue"
+      ? styles.buttonBlueActive
+      : tone === "white"
+        ? styles.buttonWhiteActive
+        : tone === "purple"
+          ? styles.buttonPurpleActive
+          : tone === "red"
+            ? styles.buttonRedActive
+            : styles.buttonDarkActive;
 
   const glowStyle =
     tone === "blue"
@@ -128,13 +141,13 @@ function MixerButton({
             : styles.buttonGlowDark;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.mixerButton, toneStyle, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.mixerButton, toneStyle, active && activeStyle, pressed && styles.pressed]}>
       {icon ? (
-        <Ionicons name={icon} size={18} color={tone === "white" ? "#161726" : "#F8F7FF"} />
+        <Ionicons name={icon} size={18} color={tone === "white" && !active ? "#161726" : "#F8F7FF"} />
       ) : (
-        <Text style={[styles.mixerButtonLabel, tone === "white" && styles.mixerButtonLabelDark]}>{label}</Text>
+        <Text style={[styles.mixerButtonLabel, tone === "white" && !active && styles.mixerButtonLabelDark]}>{label}</Text>
       )}
-      <View style={[styles.mixerButtonGlow, glowStyle]} />
+      <View style={[styles.mixerButtonGlow, glowStyle, active && styles.mixerButtonGlowActive]} />
     </Pressable>
   );
 }
@@ -238,6 +251,7 @@ function Turntable({
   rotation,
   playbackScale,
   active = false,
+  glowStrength = 1,
   compact = false,
   onScratchStart,
   onScratchMove,
@@ -251,6 +265,7 @@ function Turntable({
   rotation: number;
   playbackScale: number;
   active?: boolean;
+  glowStrength?: number;
   compact?: boolean;
   onScratchStart: (event: GestureResponderEvent) => void;
   onScratchMove: (event: GestureResponderEvent) => void;
@@ -288,7 +303,7 @@ function Turntable({
             active ? styles.platterGlowActive : styles.platterGlowIdle,
             {
               shadowColor: ringColor,
-              opacity: active ? 0.96 : 0.68 + playbackScale * 0.18,
+              opacity: active ? Math.min(1, 0.9 * glowStrength + 0.08) : 0.64 + playbackScale * 0.16,
             },
           ]}
         >
@@ -302,10 +317,15 @@ function Turntable({
             style={[
               styles.platterRing,
               active ? styles.platterRingActive : styles.platterRingIdle,
-              { borderColor: active ? ringColor : `${ringColor}CC` },
+              {
+                borderColor: active ? ringColor : `${ringColor}CC`,
+                shadowColor: ringColor,
+                shadowOpacity: active ? 0.48 * glowStrength : 0,
+                shadowRadius: active ? 18 * glowStrength : 0,
+              },
             ]}
           >
-            <View style={[styles.platterHalo, { backgroundColor: ringColor, opacity: active ? 0.26 : 0.08 }]} />
+            <View style={[styles.platterHalo, { backgroundColor: ringColor, opacity: active ? 0.28 * glowStrength : 0.08 }]} />
             <View style={[styles.platterInnerRing, { transform: [{ rotate: `${rotation}deg` }] }]}>
               <View style={styles.vinylFace}>
                 <View style={styles.vinylGrooveLarge} />
@@ -400,6 +420,7 @@ export function DJMixingBoardScreen() {
     treble: 0.64,
     bass: 0.58,
   });
+  const [buttonFlashState, setButtonFlashState] = useState<Record<string, boolean>>({});
   const [leftSlider, setLeftSlider] = useState(0.2);
   const [rightSlider, setRightSlider] = useState(0.35);
   const [crossTrackWidth, setCrossTrackWidth] = useState(0);
@@ -413,6 +434,7 @@ export function DJMixingBoardScreen() {
     left: { angle: 0, positionMs: 0 },
     right: { angle: 0, positionMs: 0 },
   });
+  const buttonTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const assignedTrackA = songs.find((song) => song.id === deckAssignments.trackA) ?? null;
   const assignedTrackB = songs.find((song) => song.id === deckAssignments.trackB) ?? null;
@@ -436,6 +458,13 @@ export function DJMixingBoardScreen() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(
+    () => () => {
+      Object.values(buttonTimersRef.current).forEach((timer) => clearTimeout(timer));
+    },
+    [],
+  );
 
   useEffect(() => {
     const matchedPlayingSong = songs.find((song) => (song.title || song.songName) === currentTrackName) ?? null;
@@ -525,7 +554,19 @@ export function DJMixingBoardScreen() {
     }));
   };
 
+  const flashButton = (key: string) => {
+    setButtonFlashState((prev) => ({ ...prev, [key]: true }));
+    const existingTimer = buttonTimersRef.current[key];
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    buttonTimersRef.current[key] = setTimeout(() => {
+      setButtonFlashState((prev) => ({ ...prev, [key]: false }));
+    }, 420);
+  };
+
   const handleCue = (deck: DeckId) => {
+    flashButton(deck === "left" ? "cueLeft" : "cueRight");
     const setter = deck === "left" ? setLeftDeck : setRightDeck;
     setter((prev) => ({
       ...prev,
@@ -535,6 +576,7 @@ export function DJMixingBoardScreen() {
   };
 
   const handleSyncDeck = (deck: DeckId) => {
+    flashButton(deck === "left" ? "syncLeft" : "syncRight");
     if (deck === "left") {
       setLeftDeck((prev) => ({
         ...prev,
@@ -554,6 +596,7 @@ export function DJMixingBoardScreen() {
   };
 
   const handleStop = async () => {
+    flashButton("stop");
     await stopCurrentTrack();
     setLeftDeck((prev) => ({ ...prev, isPlaying: false, positionMs: prev.cuePointMs }));
     setRightDeck((prev) => ({ ...prev, isPlaying: false, positionMs: prev.cuePointMs }));
@@ -565,6 +608,7 @@ export function DJMixingBoardScreen() {
       return;
     }
 
+    flashButton("play");
     if (playbackState === "paused" || currentTrackName) {
       await resumeCurrentTrack();
       return;
@@ -601,8 +645,8 @@ export function DJMixingBoardScreen() {
 
   const leftDeckLevel = leftDeck.volume * (1 - crossfader);
   const rightDeckLevel = rightDeck.volume * crossfader;
-  const leftRotation = (leftDeck.positionMs / leftDeck.durationMs) * 1440;
-  const rightRotation = (rightDeck.positionMs / rightDeck.durationMs) * 1440;
+  const leftRotation = ((leftDeck.positionMs / 1000) * 198) % 360;
+  const rightRotation = ((rightDeck.positionMs / 1000) * 198) % 360;
   const leftWaveActive = Math.round((leftDeck.positionMs / leftDeck.durationMs) * (waveformHeights.length / 2));
   const rightWaveActive = Math.round((rightDeck.positionMs / rightDeck.durationMs) * (waveformHeights.length / 2));
 
@@ -672,6 +716,7 @@ export function DJMixingBoardScreen() {
                   rotation={leftRotation}
                   playbackScale={leftDeckLevel}
                   active={leftDeck.isPlaying || leftDeck.isScratching}
+                  glowStrength={1.3}
                   compact={isPortraitMobile}
                   onScratchStart={(event) => handleScratchStart("left", event)}
                   onScratchMove={(event) => handleScratchMove("left", event)}
@@ -753,6 +798,7 @@ export function DJMixingBoardScreen() {
                   rotation={rightRotation}
                   playbackScale={rightDeckLevel}
                   active={rightDeck.isPlaying || rightDeck.isScratching}
+                  glowStrength={1}
                   compact={isPortraitMobile}
                   onScratchStart={(event) => handleScratchStart("right", event)}
                   onScratchMove={(event) => handleScratchMove("right", event)}
@@ -762,7 +808,7 @@ export function DJMixingBoardScreen() {
             </View>
 
             <View style={[styles.crossfaderRow, { gap: rowGap, paddingHorizontal: horizontalInset }]}>
-              <MixerButton label="CUE" onPress={() => handleCue("left")} tone="dark" />
+              <MixerButton label="CUE" onPress={() => handleCue("left")} tone="dark" active={buttonFlashState.cueLeft} />
 
               <View style={styles.crossfaderWrap}>
                 <View
@@ -787,7 +833,7 @@ export function DJMixingBoardScreen() {
                 </View>
               </View>
 
-              <MixerButton label="CUE" onPress={() => handleCue("right")} tone="dark" />
+              <MixerButton label="CUE" onPress={() => handleCue("right")} tone="dark" active={buttonFlashState.cueRight} />
             </View>
 
             <View style={[styles.knobRow, { gap: isPortraitMobile ? 8 : 12, paddingHorizontal: horizontalInset }]}>
@@ -814,10 +860,10 @@ export function DJMixingBoardScreen() {
             </View>
 
             <View style={[styles.transportRow, { gap: isPortraitMobile ? 10 : 14, paddingHorizontal: horizontalInset }]}>
-              <MixerButton label="SYNC" onPress={() => handleSyncDeck("left")} tone="blue" />
-              <MixerButton label="STOP" onPress={handleStop} tone="white" />
-              <MixerButton label="PLAY" onPress={handleGlobalPlay} tone="red" />
-              <MixerButton label="SYNC" onPress={() => handleSyncDeck("right")} tone="blue" />
+              <MixerButton label="SYNC" onPress={() => handleSyncDeck("left")} tone="blue" active={buttonFlashState.syncLeft} />
+              <MixerButton label="STOP" onPress={handleStop} tone="white" active={buttonFlashState.stop} />
+              <MixerButton label="PLAY" onPress={handleGlobalPlay} tone="red" active={playbackState === "playing" || buttonFlashState.play} />
+              <MixerButton label="SYNC" onPress={() => handleSyncDeck("right")} tone="blue" active={buttonFlashState.syncRight} />
             </View>
 
             <View style={[styles.bottomDetailBlock, { paddingHorizontal: horizontalInset }]}>
@@ -892,10 +938,10 @@ const styles = StyleSheet.create({
   deckUtilityShort: { width: 7 },
   platterGlow: { flex: 1, shadowOffset: { width: 0, height: 0 } },
   platterGlowIdle: { shadowOpacity: 0.34, shadowRadius: 18 },
-  platterGlowActive: { shadowOpacity: 0.9, shadowRadius: 34 },
+  platterGlowActive: { shadowOpacity: 0.98, shadowRadius: 40 },
   platterRing: { aspectRatio: 1, borderRadius: 999, borderWidth: 3, backgroundColor: "#080A12", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   platterRingIdle: { borderWidth: 3 },
-  platterRingActive: { borderWidth: 4 },
+  platterRingActive: { borderWidth: 4.5 },
   platterHalo: { ...StyleSheet.absoluteFillObject, borderRadius: 999 },
   platterInnerRing: { width: "84%", height: "84%", borderRadius: 999, borderWidth: 2, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center", backgroundColor: "#090B13" },
   vinylFace: { width: "82%", height: "82%", borderRadius: 999, backgroundColor: "#05070E", borderWidth: 1, borderColor: "rgba(255,255,255,0.04)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
@@ -937,13 +983,19 @@ const styles = StyleSheet.create({
   mixerButton: { flex: 1, minHeight: 58, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   pressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
   buttonDark: { backgroundColor: "rgba(20,22,33,0.98)", borderColor: "rgba(255,255,255,0.09)" },
+  buttonDarkActive: { backgroundColor: "rgba(38,45,64,0.98)", borderColor: "rgba(110,225,212,0.5)" },
   buttonBlue: { backgroundColor: "rgba(18,23,40,0.98)", borderColor: "rgba(56,133,255,0.26)" },
+  buttonBlueActive: { backgroundColor: "rgba(12,42,84,0.98)", borderColor: "rgba(53,214,255,0.78)" },
   buttonWhite: { backgroundColor: "rgba(239,241,255,0.98)", borderColor: "rgba(255,255,255,0.75)" },
+  buttonWhiteActive: { backgroundColor: "rgba(210,222,255,0.98)", borderColor: "rgba(99,165,255,0.92)" },
   buttonPurple: { backgroundColor: "rgba(113,53,202,0.98)", borderColor: "rgba(213,93,255,0.36)" },
+  buttonPurpleActive: { backgroundColor: "rgba(131,62,224,0.98)", borderColor: "rgba(231,134,255,0.82)" },
   buttonRed: { backgroundColor: "rgba(21,22,33,0.98)", borderColor: "rgba(255,255,255,0.08)" },
+  buttonRedActive: { backgroundColor: "rgba(64,22,36,0.98)", borderColor: "rgba(255,95,149,0.82)" },
   mixerButtonLabel: { color: "#F7F6FF", fontSize: 16, fontWeight: "800", letterSpacing: 0.5 },
   mixerButtonLabelDark: { color: "#151622" },
   mixerButtonGlow: { position: "absolute", left: 0, right: 0, bottom: 0, height: 5 },
+  mixerButtonGlowActive: { height: 8, opacity: 1 },
   buttonGlowDark: { backgroundColor: "#6EE1D4" },
   buttonGlowBlue: { backgroundColor: "#177BFF" },
   buttonGlowWhite: { backgroundColor: "#63A5FF" },
