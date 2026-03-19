@@ -60,7 +60,7 @@ export function WelcomeScreen() {
 
         <GlowCard style={styles.demoCard}>
           <Text style={styles.demoEyebrow}>Demo Event</Text>
-          <Text style={styles.demoTitle}>Jordan & Avery Wedding</Text>
+          <Text style={styles.demoTitle}>Joe & Avery Wedding</Text>
           <Text style={styles.demoBody}>
             Preloaded with a complete timeline, music assignments, announcements, and live controls so you can run Event Autopilot immediately.
           </Text>

@@ -11,6 +11,7 @@ type EventPreviewCardProps = {
   status: string;
   accent: string;
   onPress?: () => void;
+  onDelete?: () => void;
 };
 
 export function EventPreviewCard({
@@ -21,6 +22,7 @@ export function EventPreviewCard({
   status,
   accent,
   onPress,
+  onDelete,
 }: EventPreviewCardProps) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}>
@@ -41,6 +43,17 @@ export function EventPreviewCard({
         <View style={styles.footer}>
           <Text style={styles.footerPill}>Timeline armed</Text>
           <Text style={styles.footerPill}>Local audio</Text>
+          {onDelete ? (
+            <Pressable
+              onPress={(event: any) => {
+                event?.stopPropagation?.();
+                onDelete();
+              }}
+              style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.deleteButtonText}>Delete Event</Text>
+            </Pressable>
+          ) : null}
         </View>
       </LinearGradient>
     </Pressable>
@@ -118,5 +131,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     overflow: "hidden",
+  },
+  deleteButton: {
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,95,149,0.34)",
+    backgroundColor: "rgba(255,95,149,0.1)",
+  },
+  deleteButtonText: {
+    color: "#FFD9E8",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
 });

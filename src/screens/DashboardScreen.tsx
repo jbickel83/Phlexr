@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ActionChip } from "../components/ActionChip";
 import { EmptyStateCard } from "../components/EmptyStateCard";
@@ -26,7 +26,26 @@ export function DashboardScreen() {
     isHydrating,
     beginNewEventDraft,
     selectSavedEvent,
+    deleteSavedEvent,
   } = useAppState();
+
+  const confirmDeleteEvent = (eventId: string, eventName: string) => {
+    const removeEvent = () => {
+      deleteSavedEvent(eventId);
+    };
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      if (window.confirm(`Delete ${eventName || "this event"}?`)) {
+        removeEvent();
+      }
+      return;
+    }
+
+    Alert.alert("Delete event?", `Remove ${eventName || "this event"} from this device?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: removeEvent },
+    ]);
+  };
 
   return (
     <LinearGradient
@@ -146,6 +165,7 @@ export function DashboardScreen() {
                     selectSavedEvent(record.id);
                     navigation.navigate("Events", { screen: "EventOverview" });
                   }}
+                  onDelete={() => confirmDeleteEvent(record.id, record.event.name || "this event")}
                 />
               ))}
             </ScrollView>

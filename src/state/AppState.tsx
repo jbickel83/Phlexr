@@ -136,6 +136,7 @@ type AppStateValue = {
   beginNewEventDraft: () => void;
   startDemoEvent: () => void;
   selectSavedEvent: (id: string) => void;
+  deleteSavedEvent: (id: string) => void;
   saveCurrentEventSnapshot: (eventOverrides?: Partial<EventDetails>) => string | null;
   updateEvent: (payload: Partial<EventDetails>) => void;
   setSelectedOutputLabel: (label: string | null) => void;
@@ -200,7 +201,7 @@ const draftEvent: EventDetails = {
 const demoEventRecord: SavedEventRecord = {
   id: "demo-event",
   event: {
-    name: "Jordan & Avery Wedding",
+    name: "Joe & Avery Wedding",
     type: "Wedding",
     date: "Saturday, June 14",
     startTime: "4:30 PM",
@@ -230,7 +231,7 @@ const demoEventRecord: SavedEventRecord = {
       id: "demo-a1",
       title: "Grand Entrance",
       timelineMoment: "Grand Entrance",
-      previewText: "Please welcome Jordan, Avery, and their wedding party to the ballroom.",
+      previewText: "Please welcome Joe, Avery, and their wedding party to the ballroom.",
     },
     {
       id: "demo-a2",
@@ -242,7 +243,7 @@ const demoEventRecord: SavedEventRecord = {
       id: "demo-a3",
       title: "First Dance",
       timelineMoment: "First Dance",
-      previewText: "Please gather around the dance floor for Jordan and Avery's first dance.",
+      previewText: "Please gather around the dance floor for Joe and Avery's first dance.",
     },
   ],
   updatedAt: "2026-03-18T12:00:00.000Z",
@@ -1326,6 +1327,18 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         setSelectedEventId(selected?.id ?? null);
         applySnapshot(selected);
         unloadCurrentSound().catch(() => undefined);
+      },
+      deleteSavedEvent: (id) => {
+        const nextSavedEvents = savedEvents.filter((item) => item.id !== id);
+        setSavedEvents(nextSavedEvents);
+        setPersistenceMessage(null);
+
+        if (selectedEventId === id) {
+          const nextSelected = nextSavedEvents[0] ?? null;
+          setSelectedEventId(nextSelected?.id ?? null);
+          applySnapshot(nextSelected);
+          unloadCurrentSound().catch(() => undefined);
+        }
       },
       saveCurrentEventSnapshot: (eventOverrides) => {
         const nextEvent = { ...currentEvent, ...eventOverrides };
