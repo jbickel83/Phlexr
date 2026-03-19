@@ -88,7 +88,7 @@ export type ValidationEntry = {
 };
 
 export type AnnouncementVoiceOption = {
-  label: "US Male" | "US Female" | "Spanish Male" | "Spanish Female";
+  label: "House Voice" | "US Female" | "Spanish Male" | "Spanish Female";
   voiceName: string;
 };
 
@@ -384,7 +384,7 @@ function buildAnnouncementVoiceOptions(voices: SpeechSynthesisVoice[]): Announce
   if (spanishFemale) used.add(spanishFemale.name);
 
   return [
-    usMale ? { label: "US Male", voiceName: usMale.name } : null,
+    usMale ? { label: "House Voice", voiceName: usMale.name } : null,
     usFemale ? { label: "US Female", voiceName: usFemale.name } : null,
     spanishMale ? { label: "Spanish Male", voiceName: spanishMale.name } : null,
     spanishFemale ? { label: "Spanish Female", voiceName: spanishFemale.name } : null,
@@ -982,7 +982,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       const voiceOptions = buildAnnouncementVoiceOptions(prioritizedVoices);
       const visibleVoiceNames = voiceOptions.map((option) => option.voiceName);
       const bestVoiceName =
-        voiceOptions.find((option) => option.label === "US Male")?.voiceName ??
+        voiceOptions.find((option) => option.label === "House Voice")?.voiceName ??
         voiceOptions[0]?.voiceName ??
         pickBestVoiceName(prioritizedVoices);
 
