@@ -879,7 +879,7 @@ export function DJMixingBoardScreen() {
 
             <View style={styles.transportRow}>
               <MixerButton label="SYNC" onPress={() => handleSyncDeck("left")} tone="blue" />
-              <MixerButton icon="stop" onPress={handleStop} tone="white" />
+              <MixerButton label="STOP" onPress={handleStop} tone="white" />
               <MixerButton label="PLAY" onPress={handleGlobalPlay} tone="red" />
               <MixerButton label="SYNC" onPress={() => handleSyncDeck("right")} tone="blue" />
             </View>
