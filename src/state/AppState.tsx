@@ -262,6 +262,38 @@ function createPlaylistDetail(songCount: number) {
   return `${songCount} songs ready in this playlist.`;
 }
 
+function getVoicePriority(voice: SpeechSynthesisVoice) {
+  const name = voice.name.toLowerCase();
+  if (name.includes("google us english")) {
+    return 0;
+  }
+  if (name.includes("google")) {
+    return 1;
+  }
+  if (voice.default) {
+    return 2;
+  }
+  return 3;
+}
+
+function sortVoicesByPriority(voices: SpeechSynthesisVoice[]) {
+  return [...voices].sort((a, b) => {
+    const priorityDelta = getVoicePriority(a) - getVoicePriority(b);
+    if (priorityDelta !== 0) {
+      return priorityDelta;
+    }
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function pickBestVoiceName(voices: SpeechSynthesisVoice[]) {
+  if (voices.length === 0) {
+    return null;
+  }
+  const sortedVoices = sortVoicesByPriority(voices);
+  return sortedVoices[0]?.name ?? null;
+}
+
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -636,7 +668,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    const voices = window.speechSynthesis.getVoices();
+    const voices = sortVoicesByPriority(window.speechSynthesis.getVoices());
     if (voices.length === 0) {
       setSpeechMessage("No speech voice is currently available. You can still run the event manually.");
       return;
@@ -645,7 +677,8 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     stopAnnouncementSpeechInternal();
 
     const utterance = new SpeechSynthesisUtterance(text.trim());
-    const selectedVoice = selectedVoiceName ? voices.find((voice) => voice.name === selectedVoiceName) : null;
+    const selectedVoice =
+      (selectedVoiceName ? voices.find((voice) => voice.name === selectedVoiceName) : null) ?? voices[0] ?? null;
     if (selectedVoice) {
       utterance.voice = selectedVoice;
     }
@@ -830,12 +863,16 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     }
 
     const syncVoices = () => {
-      const voiceNames = window.speechSynthesis
-        .getVoices()
-        .map((voice) => voice.name)
-        .filter(Boolean);
+      const prioritizedVoices = sortVoicesByPriority(
+        window.speechSynthesis
+          .getVoices()
+          .filter((voice) => Boolean(voice.name)),
+      );
+      const voiceNames = prioritizedVoices.map((voice) => voice.name);
+      const bestVoiceName = pickBestVoiceName(prioritizedVoices);
+
       setAvailableVoiceNames(voiceNames);
-      setSelectedVoiceNameState((prev) => (prev && voiceNames.includes(prev) ? prev : voiceNames[0] ?? null));
+      setSelectedVoiceNameState((prev) => (prev && voiceNames.includes(prev) ? prev : bestVoiceName));
     };
 
     syncVoices();

@@ -117,8 +117,9 @@ export function AnnouncementsScreen() {
             <>
               <View style={styles.assignmentBlock}>
                 <Text style={styles.assignmentLabel}>Voice</Text>
+                <Text style={styles.voiceHint}>Google voices are prioritized first, then default system voices, then other available voices.</Text>
                 <View style={styles.pillWrap}>
-                  {availableVoiceNames.slice(0, 6).map((voiceName) => (
+                  {availableVoiceNames.map((voiceName) => (
                     <SelectionPill
                       key={voiceName}
                       label={voiceName}
@@ -219,6 +220,7 @@ const styles = StyleSheet.create({
   buttonStack: { gap: spacing.sm },
   voiceBody: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
   voiceNote: { color: colors.accentStrong, fontSize: 13, lineHeight: 18 },
+  voiceHint: { color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
   list: { gap: spacing.md },
   footer: { gap: spacing.sm },
 });
