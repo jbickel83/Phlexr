@@ -61,6 +61,7 @@ export function AnnouncementsScreen() {
 
   const previewAnnouncementText = messageText.trim() || announcements[0]?.previewText || "";
   const previewAnnouncementTitle = title.trim() || announcements[0]?.title || "Announcement Preview";
+  const getVisibleVoiceLabel = (label: string) => (label === "US Male" ? "House Voice" : label);
 
   return (
     <LinearGradient colors={["#04070F", "#071120", "#0A1730"]} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.screen}>
@@ -125,7 +126,7 @@ export function AnnouncementsScreen() {
                   {availableVoiceOptions.map((voiceOption) => (
                     <SelectionPill
                       key={voiceOption.label}
-                      label={voiceOption.label}
+                      label={getVisibleVoiceLabel(voiceOption.label)}
                       active={selectedVoiceName === voiceOption.voiceName}
                       onPress={() => setSelectedVoiceName(voiceOption.voiceName)}
                     />
