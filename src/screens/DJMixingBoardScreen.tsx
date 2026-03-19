@@ -94,21 +94,6 @@ function AccentMeters({ side }: { side: DeckId }) {
   );
 }
 
-function TrackPanel({ side, title, artist }: { side: DeckId; title: string; artist: string }) {
-  const deckLabel = side === "left" ? "Track A" : "Track B";
-  return (
-    <View style={styles.trackPanel}>
-      {side === "left" ? <AccentMeters side="left" /> : null}
-      <View style={[styles.trackCopy, side === "right" && styles.trackCopyRight]}>
-        <Text style={styles.deckLabel}>{deckLabel}</Text>
-        <Text style={styles.trackTitle}>{title}</Text>
-        <Text style={styles.trackArtist}>{artist}</Text>
-      </View>
-      {side === "right" ? <AccentMeters side="right" /> : null}
-    </View>
-  );
-}
-
 function MixerButton({
   label,
   onPress,
@@ -271,11 +256,13 @@ function Turntable({
   onScratchMove: (event: GestureResponderEvent) => void;
   onScratchEnd: () => void;
 }) {
+  const deckLabel = side === "left" ? "TRACK A" : "TRACK B";
   return (
     <View style={[styles.turntableWrap, compact && styles.turntableWrapCompact]}>
       <View style={[styles.turntableHeader, compact && styles.turntableHeaderCompact]}>
         {side === "left" ? <AccentMeters side="left" /> : null}
         <View style={[styles.trackCopy, side === "right" && styles.trackCopyRight]}>
+          <Text style={styles.deckLabel}>{deckLabel}</Text>
           <Text numberOfLines={1} style={[styles.trackTitle, compact && styles.trackTitleCompact]}>
             {title}
           </Text>
@@ -638,12 +625,6 @@ export function DJMixingBoardScreen() {
               <Ionicons name="headset-outline" size={25} color="#F4F3FF" />
             </View>
 
-            <View style={styles.trackRow}>
-              <TrackPanel side="left" title={leftDeck.title} artist={leftDeck.artist} />
-              <View style={styles.trackDivider} />
-              <TrackPanel side="right" title={rightDeck.title} artist={rightDeck.artist} />
-            </View>
-
             <View style={[styles.waveStrip, { gap: rowGap, paddingHorizontal: horizontalInset }]}>
               <View style={[styles.waveMetaLeft, { width: waveMetaWidth }]}>
                 <Text style={styles.waveTime}>{formatMillis(leftDeck.positionMs, "01:23")}</Text>
@@ -876,9 +857,6 @@ const styles = StyleSheet.create({
   brandMark: { flexDirection: "row", alignItems: "center", gap: 3 },
   brandBar: { width: 4, borderRadius: 999 },
   logoText: { color: "#F4F3FF", fontSize: 24, fontWeight: "800", letterSpacing: -0.4 },
-  trackRow: { flexDirection: "row", alignItems: "stretch", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, backgroundColor: "rgba(14,16,28,0.8)" },
-  trackDivider: { width: 1, marginHorizontal: 18, backgroundColor: "rgba(255,255,255,0.08)" },
-  trackPanel: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   accentMeters: { gap: 4 },
   accentMeter: { width: 16, height: 4, borderRadius: 3 },
   trackCopy: { flex: 1, gap: 4 },
