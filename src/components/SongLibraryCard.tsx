@@ -6,20 +6,37 @@ import { colors, radii, spacing } from "../constants/theme";
 type SongLibraryCardProps = {
   id: string;
   songName: string;
+  artist?: string;
   duration: string;
   fileType: string;
   onDelete?: (id: string) => void;
   onAdd?: () => void;
   onReorder?: () => void;
+  onAssignTrackA?: (id: string) => void;
+  onAssignTrackB?: (id: string) => void;
 };
 
-export function SongLibraryCard({ id, songName, duration, fileType, onDelete, onAdd, onReorder }: SongLibraryCardProps) {
+export function SongLibraryCard({
+  id,
+  songName,
+  artist,
+  duration,
+  fileType,
+  onDelete,
+  onAdd,
+  onReorder,
+  onAssignTrackA,
+  onAssignTrackB,
+}: SongLibraryCardProps) {
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
         <View style={styles.copy}>
           <Text style={styles.songName}>{songName}</Text>
-          <Text style={styles.meta}>{duration} | {fileType}</Text>
+          <Text style={styles.meta}>
+            {artist?.trim() ? `${artist} | ` : ""}
+            {duration} | {fileType}
+          </Text>
         </View>
         <View style={styles.reorderBadge}>
           <Text style={styles.reorderText}>Reorder</Text>
@@ -27,6 +44,8 @@ export function SongLibraryCard({ id, songName, duration, fileType, onDelete, on
       </View>
       <View style={styles.actions}>
         <ActionChip label="Add song" onPress={onAdd} />
+        <ActionChip label="Add to Track A" onPress={() => onAssignTrackA?.(id)} />
+        <ActionChip label="Add to Track B" onPress={() => onAssignTrackB?.(id)} />
         <ActionChip label="Delete song" onPress={() => onDelete?.(id)} />
         <ActionChip label="Reorder songs" onPress={onReorder} />
       </View>

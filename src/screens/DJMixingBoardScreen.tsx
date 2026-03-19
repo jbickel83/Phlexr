@@ -95,10 +95,12 @@ function AccentMeters({ side }: { side: DeckId }) {
 }
 
 function TrackPanel({ side, title, artist }: { side: DeckId; title: string; artist: string }) {
+  const deckLabel = side === "left" ? "Track A" : "Track B";
   return (
     <View style={styles.trackPanel}>
       {side === "left" ? <AccentMeters side="left" /> : null}
       <View style={[styles.trackCopy, side === "right" && styles.trackCopyRight]}>
+        <Text style={styles.deckLabel}>{deckLabel}</Text>
         <Text style={styles.trackTitle}>{title}</Text>
         <Text style={styles.trackArtist}>{artist}</Text>
       </View>
@@ -336,6 +338,7 @@ export function DJMixingBoardScreen() {
   const {
     timelineItems,
     songs,
+    deckAssignments,
     currentTrackName,
     playbackState,
     playbackPositionMillis,
@@ -407,6 +410,9 @@ export function DJMixingBoardScreen() {
     right: { angle: 0, positionMs: 0 },
   });
 
+  const assignedTrackA = songs.find((song) => song.id === deckAssignments.trackA) ?? null;
+  const assignedTrackB = songs.find((song) => song.id === deckAssignments.trackB) ?? null;
+
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -428,18 +434,50 @@ export function DJMixingBoardScreen() {
   }, []);
 
   useEffect(() => {
-    const matchedSong =
-      songs.find((song) => (song.title || song.songName) === currentTrackName) ?? null;
+    const matchedPlayingSong = songs.find((song) => (song.title || song.songName) === currentTrackName) ?? null;
 
-    setLeftDeck((prev) => ({
-      ...prev,
-      title: currentTrackName || prev.title,
-      artist: matchedSong?.artist || prev.artist,
-      durationMs: playbackDurationMillis || matchedSong?.durationMillis || prev.durationMs,
-      positionMs: prev.isScratching ? prev.positionMs : playbackPositionMillis,
-      isPlaying: playbackState === "playing",
-    }));
-  }, [currentTrackName, playbackDurationMillis, playbackPositionMillis, playbackState, songs]);
+    setLeftDeck((prev) => {
+      const assignedTitle = assignedTrackA?.title || assignedTrackA?.songName || prev.title;
+      const assignedArtist = assignedTrackA?.artist || prev.artist;
+      const assignedDuration = assignedTrackA?.durationMillis || prev.durationMs;
+      const isCurrentlyPlayingAssigned =
+        playbackState === "playing" &&
+        Boolean(currentTrackName) &&
+        currentTrackName === (assignedTrackA?.title || assignedTrackA?.songName || currentTrackName);
+
+      return {
+        ...prev,
+        title: assignedTitle,
+        artist: assignedArtist,
+        durationMs: isCurrentlyPlayingAssigned
+          ? playbackDurationMillis || matchedPlayingSong?.durationMillis || assignedDuration
+          : assignedDuration,
+        positionMs: prev.isScratching ? prev.positionMs : isCurrentlyPlayingAssigned ? playbackPositionMillis : 0,
+        isPlaying: isCurrentlyPlayingAssigned,
+      };
+    });
+
+    setRightDeck((prev) => {
+      const assignedTitle = assignedTrackB?.title || assignedTrackB?.songName || prev.title;
+      const assignedArtist = assignedTrackB?.artist || prev.artist;
+      const assignedDuration = assignedTrackB?.durationMillis || prev.durationMs;
+      const isCurrentlyPlayingAssigned =
+        playbackState === "playing" &&
+        Boolean(currentTrackName) &&
+        currentTrackName === (assignedTrackB?.title || assignedTrackB?.songName || currentTrackName);
+
+      return {
+        ...prev,
+        title: assignedTitle,
+        artist: assignedArtist,
+        durationMs: isCurrentlyPlayingAssigned
+          ? playbackDurationMillis || matchedPlayingSong?.durationMillis || assignedDuration
+          : assignedDuration,
+        positionMs: prev.isScratching ? prev.positionMs : isCurrentlyPlayingAssigned ? playbackPositionMillis : 0,
+        isPlaying: isCurrentlyPlayingAssigned,
+      };
+    });
+  }, [assignedTrackA, assignedTrackB, currentTrackName, playbackDurationMillis, playbackPositionMillis, playbackState, songs]);
 
   const handleScratchStart = (deck: DeckId, event: GestureResponderEvent) => {
     const size = deck === "left" ? leftPlatterSize : rightPlatterSize;
@@ -826,6 +864,7 @@ const styles = StyleSheet.create({
   accentMeter: { width: 16, height: 4, borderRadius: 3 },
   trackCopy: { flex: 1, gap: 4 },
   trackCopyRight: { alignItems: "flex-end" },
+  deckLabel: { color: "#31D5FF", fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.1, marginBottom: 2 },
   trackTitle: { color: "#F3F2FF", fontSize: 18, fontWeight: "700" },
   trackTitleCompact: { fontSize: 15 },
   trackArtist: { color: "#8793FF", fontSize: 13, fontWeight: "700" },

@@ -45,6 +45,11 @@ export type Playlist = {
   songIds: string[];
 };
 
+export type DeckAssignments = {
+  trackA: string | null;
+  trackB: string | null;
+};
+
 export type Announcement = {
   id: string;
   title: string;
@@ -59,6 +64,7 @@ export type SavedEventRecord = {
   songs: Song[];
   playlists: Playlist[];
   announcements: Announcement[];
+  deckAssignments: DeckAssignments;
   updatedAt: string;
 };
 
@@ -106,6 +112,7 @@ type AppStateValue = {
   songs: Song[];
   playlists: Playlist[];
   announcements: Announcement[];
+  deckAssignments: DeckAssignments;
   persistenceMessage: string | null;
   isHydrating: boolean;
   isOnline: boolean;
@@ -150,6 +157,7 @@ type AppStateValue = {
   reorderSongs: () => void;
   createPlaylist: (name?: string) => void;
   assignSongsToPlaylist: () => void;
+  assignSongToDeck: (deck: "trackA" | "trackB", songId: string) => void;
   addSongToPlaylist: (playlistId: string, payload: { title: string; artist?: string; duration?: string }) => void;
   deleteSongFromPlaylist: (playlistId: string, songId: string) => void;
   moveSongInPlaylist: (playlistId: string, songId: string, direction: "up" | "down") => void;
@@ -246,6 +254,10 @@ const demoEventRecord: SavedEventRecord = {
       previewText: "Please gather around the dance floor for Joe and Avery's first dance.",
     },
   ],
+  deckAssignments: {
+    trackA: "demo-s1",
+    trackB: "demo-s2",
+  },
   updatedAt: "2026-03-18T12:00:00.000Z",
 };
 
@@ -402,6 +414,15 @@ function cloneSnapshot(record: SavedEventRecord) {
     songs: record.songs.map((song) => ({ ...song })),
     playlists: record.playlists.map((playlist) => ({ ...playlist, songIds: [...playlist.songIds] })),
     announcements: record.announcements.map((announcement) => ({ ...announcement })),
+    deckAssignments: { ...record.deckAssignments },
+  };
+}
+
+function normalizeDeckAssignments(value: unknown): DeckAssignments {
+  const record = typeof value === "object" && value ? (value as Partial<DeckAssignments>) : {};
+  return {
+    trackA: typeof record.trackA === "string" ? record.trackA : null,
+    trackB: typeof record.trackB === "string" ? record.trackB : null,
   };
 }
 
@@ -530,6 +551,7 @@ function normalizeSavedEvents(value: unknown): SavedEventRecord[] {
         songs: normalizeSongs(record.songs),
         playlists: normalizePlaylists(record.playlists),
         announcements: normalizeAnnouncements(record.announcements),
+        deckAssignments: normalizeDeckAssignments(record.deckAssignments),
         updatedAt: typeof record.updatedAt === "string" ? record.updatedAt : new Date().toISOString(),
       },
     ];
@@ -589,6 +611,7 @@ function loadRecordIntoState(record: SavedEventRecord | null) {
       songs: [] as Song[],
       playlists: [] as Playlist[],
       announcements: [] as Announcement[],
+      deckAssignments: { trackA: null, trackB: null } as DeckAssignments,
     };
   }
   return cloneSnapshot(record);
@@ -612,6 +635,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [deckAssignments, setDeckAssignments] = useState<DeckAssignments>({ trackA: null, trackB: null });
   const [persistenceMessage, setPersistenceMessage] = useState<string | null>(null);
   const [isHydrating, setIsHydrating] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
@@ -669,6 +693,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     setSongs(snapshot.songs);
     setPlaylists(snapshot.playlists);
     setAnnouncements(snapshot.announcements);
+    setDeckAssignments(snapshot.deckAssignments);
     resetLiveRuntime();
   };
 
@@ -680,6 +705,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       songs: songs.map((song) => ({ ...song })),
       playlists: playlists.map((playlist) => ({ ...playlist, songIds: [...playlist.songIds] })),
       announcements: announcements.map((announcement) => ({ ...announcement })),
+      deckAssignments: { ...deckAssignments },
       updatedAt: new Date().toISOString(),
     };
 
@@ -1052,12 +1078,13 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         songs: songs.map((song) => ({ ...song })),
         playlists: playlists.map((playlist) => ({ ...playlist, songIds: [...playlist.songIds] })),
         announcements: announcements.map((announcement) => ({ ...announcement })),
+        deckAssignments: { ...deckAssignments },
         updatedAt,
       };
       const remaining = prev.filter((item) => item.id !== selectedEventId);
       return [synced, ...remaining];
     });
-  }, [announcements, currentEvent, playlists, selectedEventId, songs, timelineItems]);
+  }, [announcements, currentEvent, deckAssignments, playlists, selectedEventId, songs, timelineItems]);
 
   useEffect(() => {
     if (!hasHydratedRef.current) {
@@ -1265,6 +1292,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       songs,
       playlists,
       announcements,
+      deckAssignments,
       persistenceMessage,
       isHydrating,
       isOnline,
@@ -1301,6 +1329,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         setSongs([]);
         setPlaylists([]);
         setAnnouncements([]);
+        setDeckAssignments({ trackA: null, trackB: null });
         resetLiveRuntime();
         unloadCurrentSound().catch(() => undefined);
       },
@@ -1319,6 +1348,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         setSongs(demoSnapshot.songs);
         setPlaylists(demoSnapshot.playlists);
         setAnnouncements(demoSnapshot.announcements);
+        setDeckAssignments(demoSnapshot.deckAssignments);
         resetLiveRuntime();
         unloadCurrentSound().catch(() => undefined);
       },
@@ -1455,6 +1485,10 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       },
       deleteSong: (id) => {
         setSongs((prev) => prev.filter((song) => song.id !== id));
+        setDeckAssignments((prev) => ({
+          trackA: prev.trackA === id ? null : prev.trackA,
+          trackB: prev.trackB === id ? null : prev.trackB,
+        }));
         setPlaylists((prev) =>
           prev.map((playlist) => ({
             ...playlist,
@@ -1489,6 +1523,9 @@ export function AppStateProvider({ children }: PropsWithChildren) {
               : playlist,
           ),
         );
+      },
+      assignSongToDeck: (deck, songId) => {
+        setDeckAssignments((prev) => ({ ...prev, [deck]: songId }));
       },
       addSongToPlaylist: (playlistId, payload) => {
         const title = payload.title.trim();
@@ -1761,6 +1798,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     isHydrating,
     liveIndex,
     manualOverride,
+    deckAssignments,
     persistenceMessage,
     pauseCurrentTrack,
     playbackDurationMillis,

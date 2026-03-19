@@ -25,6 +25,7 @@ export function MusicUploadScreen() {
     reorderSongs,
     createPlaylist,
     assignSongsToPlaylist,
+    assignSongToDeck,
     addSongToPlaylist,
     deleteSongFromPlaylist,
     moveSongInPlaylist,
@@ -124,9 +125,12 @@ export function MusicUploadScreen() {
                   key={song.id}
                   id={song.id}
                   songName={song.title || song.songName || "Track"}
+                  artist={song.artist}
                   duration={song.duration}
                   fileType={song.fileType}
                   onAdd={() => addSong()}
+                  onAssignTrackA={(songId) => assignSongToDeck("trackA", songId)}
+                  onAssignTrackB={(songId) => assignSongToDeck("trackB", songId)}
                   onDelete={deleteSong}
                   onReorder={reorderSongs}
                 />
@@ -171,6 +175,8 @@ export function MusicUploadScreen() {
                     )
                   }
                   onMoveSong={moveSongInPlaylist}
+                  onAssignTrackA={(songId) => assignSongToDeck("trackA", songId)}
+                  onAssignTrackB={(songId) => assignSongToDeck("trackB", songId)}
                 />
               ))
             )}
