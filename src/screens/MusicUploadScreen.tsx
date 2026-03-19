@@ -127,7 +127,7 @@ export function MusicUploadScreen() {
                   duration={song.duration}
                   fileType={song.fileType}
                   onAdd={() => addSong()}
-                  onDelete={(id) => confirmAction("Delete song?", "This removes the song entry from the local music library.", () => deleteSong(id))}
+                  onDelete={deleteSong}
                   onReorder={reorderSongs}
                 />
               ))
