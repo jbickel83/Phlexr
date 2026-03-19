@@ -22,6 +22,7 @@ type DeckState = {
   artist: string;
   durationMs: number;
   positionMs: number;
+  cuePointMs: number;
   isPlaying: boolean;
   isScratching: boolean;
   wasPlayingBeforeScratch: boolean;
@@ -354,6 +355,7 @@ export function DJMixingBoardScreen() {
     artist: "Frank Sinatra",
     durationMs: 225000,
     positionMs: 83000,
+    cuePointMs: 0,
     isPlaying: true,
     isScratching: false,
     wasPlayingBeforeScratch: false,
@@ -367,6 +369,7 @@ export function DJMixingBoardScreen() {
     artist: "Bruno Mars",
     durationMs: 225000,
     positionMs: 45000,
+    cuePointMs: 0,
     isPlaying: false,
     isScratching: false,
     wasPlayingBeforeScratch: false,
@@ -586,17 +589,39 @@ export function DJMixingBoardScreen() {
     }));
   };
 
-  const handleSync = () => {
+  const handleCue = (deck: DeckId) => {
+    ensureAudioGraph();
+    const setter = deck === "left" ? setLeftDeck : setRightDeck;
+    setter((prev) => ({
+      ...prev,
+      positionMs: prev.cuePointMs,
+      isPlaying: false,
+    }));
+  };
+
+  const handleSyncDeck = (deck: DeckId) => {
+    ensureAudioGraph();
+    if (deck === "left") {
+      setLeftDeck((prev) => ({
+        ...prev,
+        bpm: rightDeck.bpm,
+        positionMs: (rightDeck.positionMs / Math.max(rightDeck.durationMs, 1)) * prev.durationMs,
+        isPlaying: rightDeck.isPlaying,
+      }));
+      return;
+    }
+
     setRightDeck((prev) => ({
       ...prev,
       bpm: leftDeck.bpm,
-      positionMs: (leftDeck.positionMs / leftDeck.durationMs) * prev.durationMs,
+      positionMs: (leftDeck.positionMs / Math.max(leftDeck.durationMs, 1)) * prev.durationMs,
+      isPlaying: leftDeck.isPlaying,
     }));
   };
 
   const handleStop = () => {
-    setLeftDeck((prev) => ({ ...prev, isPlaying: false, positionMs: 0 }));
-    setRightDeck((prev) => ({ ...prev, isPlaying: false, positionMs: 0 }));
+    setLeftDeck((prev) => ({ ...prev, isPlaying: false, positionMs: prev.cuePointMs }));
+    setRightDeck((prev) => ({ ...prev, isPlaying: false, positionMs: prev.cuePointMs }));
   };
 
   const handlePlayPause = (deck: DeckId) => {
@@ -622,6 +647,7 @@ export function DJMixingBoardScreen() {
       title: "Can’t Stop the Feeling",
       artist: "Justin Timberlake",
       positionMs: 0,
+      cuePointMs: 0,
       durationMs: 236000,
       isPlaying: true,
     }));
@@ -800,7 +826,7 @@ export function DJMixingBoardScreen() {
             </View>
 
             <View style={styles.crossfaderRow}>
-              <MixerButton label="SYNC" onPress={handleSync} tone="dark" />
+              <MixerButton label="CUE" onPress={() => handleCue("left")} tone="dark" />
 
               <View style={styles.crossfaderWrap}>
                 <View
@@ -825,11 +851,7 @@ export function DJMixingBoardScreen() {
                 </View>
               </View>
 
-              <MixerButton
-                label={leftDeck.isPlaying || rightDeck.isPlaying ? "PAUSE" : "PLAY"}
-                onPress={handleGlobalPlay}
-                tone="dark"
-              />
+              <MixerButton label="CUE" onPress={() => handleCue("right")} tone="dark" />
             </View>
 
             <View style={styles.knobRow}>
@@ -856,10 +878,10 @@ export function DJMixingBoardScreen() {
             </View>
 
             <View style={styles.transportRow}>
-              <MixerButton label="SYNC" onPress={() => handlePlayPause("left")} tone="blue" />
+              <MixerButton label="SYNC" onPress={() => handleSyncDeck("left")} tone="blue" />
               <MixerButton icon="stop" onPress={handleStop} tone="white" />
-              <MixerButton icon="play" onPress={() => handlePlayPause("right")} tone="purple" />
-              <MixerButton label="PLAY" onPress={handleSkip} tone="red" />
+              <MixerButton label="PLAY" onPress={handleGlobalPlay} tone="red" />
+              <MixerButton label="SYNC" onPress={() => handleSyncDeck("right")} tone="blue" />
             </View>
 
             <View style={styles.bottomDetailBlock}>
