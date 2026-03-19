@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
 
 import { BackLink } from "../components/BackLink";
@@ -49,6 +49,20 @@ export function MusicUploadScreen() {
       });
       return acc;
     }, []);
+
+  const confirmAction = (title: string, message: string, onConfirm: () => void) => {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      if (window.confirm(`${title}\n\n${message}`)) {
+        onConfirm();
+      }
+      return;
+    }
+
+    Alert.alert(title, message, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Confirm", style: "destructive", onPress: onConfirm },
+    ]);
+  };
 
   const handlePickAudio = async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -113,12 +127,7 @@ export function MusicUploadScreen() {
                   duration={song.duration}
                   fileType={song.fileType}
                   onAdd={() => addSong()}
-                  onDelete={(id) =>
-                    Alert.alert("Delete song?", "This removes the song entry from the local music library.", [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Delete", style: "destructive", onPress: () => deleteSong(id) },
-                    ])
-                  }
+                  onDelete={(id) => confirmAction("Delete song?", "This removes the song entry from the local music library.", () => deleteSong(id))}
                   onReorder={reorderSongs}
                 />
               ))
@@ -157,10 +166,9 @@ export function MusicUploadScreen() {
                   songs={resolvePlaylistSongs(playlist.songIds)}
                   onAddSong={addSongToPlaylist}
                   onDeleteSong={(playlistId, songId) =>
-                    Alert.alert("Remove song from playlist?", "This will remove the song from this playlist right away.", [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Remove", style: "destructive", onPress: () => deleteSongFromPlaylist(playlistId, songId) },
-                    ])
+                    confirmAction("Remove song from playlist?", "This will remove the song from this playlist right away.", () =>
+                      deleteSongFromPlaylist(playlistId, songId),
+                    )
                   }
                   onMoveSong={moveSongInPlaylist}
                 />
