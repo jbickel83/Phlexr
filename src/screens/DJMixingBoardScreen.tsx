@@ -252,6 +252,7 @@ function Turntable({
   centerColor,
   rotation,
   playbackScale,
+  active = false,
   compact = false,
   onScratchStart,
   onScratchMove,
@@ -264,6 +265,7 @@ function Turntable({
   centerColor: string;
   rotation: number;
   playbackScale: number;
+  active?: boolean;
   compact?: boolean;
   onScratchStart: (event: GestureResponderEvent) => void;
   onScratchMove: (event: GestureResponderEvent) => void;
@@ -293,7 +295,16 @@ function Turntable({
           </View>
         </View>
 
-        <View style={[styles.platterGlow, { shadowColor: ringColor, opacity: 0.72 + playbackScale * 0.28 }]}>
+        <View
+          style={[
+            styles.platterGlow,
+            active ? styles.platterGlowActive : styles.platterGlowIdle,
+            {
+              shadowColor: ringColor,
+              opacity: active ? 0.96 : 0.68 + playbackScale * 0.18,
+            },
+          ]}
+        >
           <View
             onStartShouldSetResponder={() => true}
             onMoveShouldSetResponder={() => true}
@@ -301,17 +312,23 @@ function Turntable({
             onResponderMove={onScratchMove}
             onResponderRelease={onScratchEnd}
             onResponderTerminate={onScratchEnd}
-            style={[styles.platterRing, { borderColor: `${ringColor}CC` }]}
+            style={[
+              styles.platterRing,
+              active ? styles.platterRingActive : styles.platterRingIdle,
+              { borderColor: active ? ringColor : `${ringColor}CC` },
+            ]}
           >
+            <View style={[styles.platterHalo, { backgroundColor: ringColor, opacity: active ? 0.26 : 0.08 }]} />
             <View style={[styles.platterInnerRing, { transform: [{ rotate: `${rotation}deg` }] }]}>
               <View style={styles.vinylFace}>
                 <View style={styles.vinylGrooveLarge} />
                 <View style={styles.vinylGrooveSmall} />
-                <View style={[styles.rotationMarker, { backgroundColor: ringColor }]} />
+                <View style={[styles.rotationMarker, active && styles.rotationMarkerActive, { backgroundColor: ringColor }]} />
                 <View
                   style={[
                     styles.accentSweep,
                     side === "left" ? styles.accentSweepLeft : styles.accentSweepRight,
+                    active ? styles.accentSweepActive : styles.accentSweepIdle,
                     { backgroundColor: ringColor },
                   ]}
                 />
@@ -673,6 +690,7 @@ export function DJMixingBoardScreen() {
                   centerColor="#5B6AA4"
                   rotation={leftRotation}
                   playbackScale={leftDeckLevel}
+                  active={leftDeck.isPlaying || leftDeck.isScratching}
                   compact={isPortraitMobile}
                   onScratchStart={(event) => handleScratchStart("left", event)}
                   onScratchMove={(event) => handleScratchMove("left", event)}
@@ -753,6 +771,7 @@ export function DJMixingBoardScreen() {
                   centerColor="#C63A45"
                   rotation={rightRotation}
                   playbackScale={rightDeckLevel}
+                  active={rightDeck.isPlaying || rightDeck.isScratching}
                   compact={isPortraitMobile}
                   onScratchStart={(event) => handleScratchStart("right", event)}
                   onScratchMove={(event) => handleScratchMove("right", event)}
@@ -893,14 +912,22 @@ const styles = StyleSheet.create({
   deckUtilityLine: { width: 14, height: 4, borderRadius: 999, backgroundColor: "#A2A6C7" },
   deckUtilityMedium: { width: 10 },
   deckUtilityShort: { width: 7 },
-  platterGlow: { flex: 1, shadowOpacity: 0.42, shadowRadius: 22, shadowOffset: { width: 0, height: 0 } },
-  platterRing: { aspectRatio: 1, borderRadius: 999, borderWidth: 3, backgroundColor: "#080A12", alignItems: "center", justifyContent: "center" },
+  platterGlow: { flex: 1, shadowOffset: { width: 0, height: 0 } },
+  platterGlowIdle: { shadowOpacity: 0.34, shadowRadius: 18 },
+  platterGlowActive: { shadowOpacity: 0.9, shadowRadius: 34 },
+  platterRing: { aspectRatio: 1, borderRadius: 999, borderWidth: 3, backgroundColor: "#080A12", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  platterRingIdle: { borderWidth: 3 },
+  platterRingActive: { borderWidth: 4 },
+  platterHalo: { ...StyleSheet.absoluteFillObject, borderRadius: 999 },
   platterInnerRing: { width: "84%", height: "84%", borderRadius: 999, borderWidth: 2, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center", backgroundColor: "#090B13" },
   vinylFace: { width: "82%", height: "82%", borderRadius: 999, backgroundColor: "#05070E", borderWidth: 1, borderColor: "rgba(255,255,255,0.04)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   vinylGrooveLarge: { position: "absolute", width: "82%", height: "82%", borderRadius: 999, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
   vinylGrooveSmall: { position: "absolute", width: "64%", height: "64%", borderRadius: 999, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
-  rotationMarker: { position: "absolute", top: 16, width: 5, height: "24%", borderRadius: 999, opacity: 0.94 },
+  rotationMarker: { position: "absolute", top: 16, width: 5, height: "24%", borderRadius: 999, opacity: 0.8 },
+  rotationMarkerActive: { opacity: 1 },
   accentSweep: { position: "absolute", width: "38%", height: 5, borderRadius: 999 },
+  accentSweepIdle: { opacity: 0.7 },
+  accentSweepActive: { opacity: 1 },
   accentSweepLeft: { left: 10, bottom: 28, transform: [{ rotate: "68deg" }] },
   accentSweepRight: { right: 10, bottom: 28, transform: [{ rotate: "-68deg" }] },
   vinylCenter: { width: "30%", height: "30%", borderRadius: 999, alignItems: "center", justifyContent: "center" },
