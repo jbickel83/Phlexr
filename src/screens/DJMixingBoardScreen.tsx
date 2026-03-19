@@ -31,6 +31,23 @@ type DeckState = {
   treble: number;
 };
 
+type KnobKey = "effects" | "mid" | "treble" | "bass";
+
+type MixerKnobValues = Record<KnobKey, number>;
+
+type WebAudioDeckNodes = {
+  input: GainNode;
+  master: GainNode;
+  lowShelf: BiquadFilterNode;
+  mid: BiquadFilterNode;
+  highShelf: BiquadFilterNode;
+  delay: DelayNode;
+  feedback: GainNode;
+  wet: GainNode;
+  oscA: OscillatorNode;
+  oscB: OscillatorNode;
+};
+
 type ScratchMeta = {
   angle: number;
   positionMs: number;
@@ -59,6 +76,10 @@ function normalizeAngleDelta(delta: number) {
   if (delta > 180) return delta - 360;
   if (delta < -180) return delta + 360;
   return delta;
+}
+
+function isWebAudioSupported() {
+  return typeof window !== "undefined" && Boolean(window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
 }
 
 function BrandMark() {
@@ -173,6 +194,45 @@ function MixerKnob({
         <Text style={styles.knobLabel}>{label}</Text>
       )}
     </Pressable>
+  );
+}
+
+function InteractiveMixerKnob({
+  label,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  value: number;
+  onValueChange: (value: number) => void;
+}) {
+  const dragRef = useRef({ startY: 0, startValue: value });
+  const rotation = `${-135 + value * 270}deg`;
+
+  return (
+    <View
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderGrant={(event) => {
+        dragRef.current = {
+          startY: event.nativeEvent.pageY,
+          startValue: value,
+        };
+      }}
+      onResponderMove={(event) => {
+        const delta = (dragRef.current.startY - event.nativeEvent.pageY) / 140;
+        onValueChange(clamp(dragRef.current.startValue + delta, 0, 1));
+      }}
+      style={styles.knobBlock}
+    >
+      <Text style={styles.knobTick}>⌃</Text>
+      <View style={styles.knobOuter}>
+        <View style={[styles.knobInner, { transform: [{ rotate: rotation }] }]}>
+          <View style={styles.knobNeedle} />
+        </View>
+      </View>
+      <Text style={styles.knobLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -316,7 +376,12 @@ export function DJMixingBoardScreen() {
     treble: 6,
   });
   const [crossfader, setCrossfader] = useState(0.5);
-  const [knobValues, setKnobValues] = useState([6, 5, 7, 4, 8]);
+  const [knobValues, setKnobValues] = useState<MixerKnobValues>({
+    effects: 0.55,
+    mid: 0.52,
+    treble: 0.64,
+    bass: 0.58,
+  });
   const [leftSlider, setLeftSlider] = useState(0.2);
   const [rightSlider, setRightSlider] = useState(0.35);
   const [crossTrackWidth, setCrossTrackWidth] = useState(0);
@@ -326,6 +391,11 @@ export function DJMixingBoardScreen() {
   const [rightPlatterSize, setRightPlatterSize] = useState(0);
 
   const lastTickRef = useRef(Date.now());
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const deckAudioNodesRef = useRef<Record<DeckId, WebAudioDeckNodes | null>>({
+    left: null,
+    right: null,
+  });
   const scratchRef = useRef<Record<DeckId, ScratchMeta>>({
     left: { angle: 0, positionMs: 0 },
     right: { angle: 0, positionMs: 0 },
@@ -351,7 +421,130 @@ export function DJMixingBoardScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  const ensureAudioGraph = () => {
+    if (!isWebAudioSupported()) {
+      return null;
+    }
+
+    if (!audioContextRef.current) {
+      const WebAudioContext =
+        window.AudioContext ||
+        (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+      if (!WebAudioContext) {
+        return null;
+      }
+
+      const context = new WebAudioContext();
+      const createDeckNodes = (primaryFrequency: number, secondaryFrequency: number): WebAudioDeckNodes => {
+        const input = context.createGain();
+        const lowShelf = context.createBiquadFilter();
+        lowShelf.type = "lowshelf";
+        lowShelf.frequency.value = 180;
+
+        const mid = context.createBiquadFilter();
+        mid.type = "peaking";
+        mid.frequency.value = 1100;
+        mid.Q.value = 1.2;
+
+        const highShelf = context.createBiquadFilter();
+        highShelf.type = "highshelf";
+        highShelf.frequency.value = 3600;
+
+        const delay = context.createDelay(0.5);
+        const feedback = context.createGain();
+        const wet = context.createGain();
+        const master = context.createGain();
+
+        const oscA = context.createOscillator();
+        oscA.type = "sawtooth";
+        oscA.frequency.value = primaryFrequency;
+
+        const oscB = context.createOscillator();
+        oscB.type = "triangle";
+        oscB.frequency.value = secondaryFrequency;
+
+        const oscBGain = context.createGain();
+        oscBGain.gain.value = 0.42;
+
+        oscA.connect(input);
+        oscB.connect(oscBGain);
+        oscBGain.connect(input);
+        input.connect(lowShelf);
+        lowShelf.connect(mid);
+        mid.connect(highShelf);
+        highShelf.connect(master);
+        highShelf.connect(delay);
+        delay.connect(feedback);
+        feedback.connect(delay);
+        delay.connect(wet);
+        wet.connect(master);
+        master.connect(context.destination);
+
+        oscA.start();
+        oscB.start();
+
+        return { input, lowShelf, mid, highShelf, delay, feedback, wet, master, oscA, oscB };
+      };
+
+      audioContextRef.current = context;
+      deckAudioNodesRef.current = {
+        left: createDeckNodes(196, 392),
+        right: createDeckNodes(294, 147),
+      };
+    }
+
+    if (audioContextRef.current.state === "suspended") {
+      audioContextRef.current.resume().catch(() => undefined);
+    }
+
+    return deckAudioNodesRef.current;
+  };
+
+  useEffect(() => {
+    const deckNodes = ensureAudioGraph();
+    if (!deckNodes || !audioContextRef.current) {
+      return;
+    }
+
+    const applyDeckMix = (deck: DeckId, deckState: DeckState, mixLevel: number) => {
+      const nodes = deckNodes[deck];
+      if (!nodes) {
+        return;
+      }
+
+      const playingLevel = deckState.isPlaying || deckState.isScratching ? 1 : 0;
+      nodes.master.gain.value = mixLevel * playingLevel;
+      nodes.lowShelf.gain.value = -14 + knobValues.bass * 28;
+      nodes.mid.gain.value = -12 + knobValues.mid * 24;
+      nodes.highShelf.gain.value = -14 + knobValues.treble * 28;
+      nodes.delay.delayTime.value = 0.04 + knobValues.effects * 0.26;
+      nodes.feedback.gain.value = 0.08 + knobValues.effects * 0.46;
+      nodes.wet.gain.value = knobValues.effects * 0.42;
+
+      const detuneBase = deckState.isScratching ? (deckState.positionMs % 2000) - 1000 : 0;
+      nodes.oscA.detune.value = detuneBase * 0.45;
+      nodes.oscB.detune.value = -detuneBase * 0.3;
+    };
+
+    applyDeckMix("left", leftDeck, leftDeck.volume * (1 - crossfader));
+    applyDeckMix("right", rightDeck, rightDeck.volume * crossfader);
+  }, [crossfader, knobValues, leftDeck, rightDeck]);
+
+  useEffect(
+    () => () => {
+      if (!audioContextRef.current) {
+        return;
+      }
+      audioContextRef.current.close().catch(() => undefined);
+      audioContextRef.current = null;
+      deckAudioNodesRef.current = { left: null, right: null };
+    },
+    [],
+  );
+
   const handleScratchStart = (deck: DeckId, event: GestureResponderEvent) => {
+    ensureAudioGraph();
     const size = deck === "left" ? leftPlatterSize : rightPlatterSize;
     if (!size) return;
     const angle = getAngleFromPoint(event.nativeEvent.locationX, event.nativeEvent.locationY, size);
@@ -407,11 +600,13 @@ export function DJMixingBoardScreen() {
   };
 
   const handlePlayPause = (deck: DeckId) => {
+    ensureAudioGraph();
     const setter = deck === "left" ? setLeftDeck : setRightDeck;
     setter((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
   };
 
   const handleGlobalPlay = () => {
+    ensureAudioGraph();
     if (leftDeck.isPlaying || rightDeck.isPlaying) {
       setLeftDeck((prev) => ({ ...prev, isPlaying: false }));
       setRightDeck((prev) => ({ ...prev, isPlaying: false }));
@@ -421,6 +616,7 @@ export function DJMixingBoardScreen() {
   };
 
   const handleSkip = () => {
+    ensureAudioGraph();
     setRightDeck((prev) => ({
       ...prev,
       title: "Can’t Stop the Feeling",
@@ -429,10 +625,6 @@ export function DJMixingBoardScreen() {
       durationMs: 236000,
       isPlaying: true,
     }));
-  };
-
-  const handleKnobPress = (index: number) => {
-    setKnobValues((prev) => prev.map((value, currentIndex) => (currentIndex === index ? (value + 1) % 11 : value)));
   };
 
   const onCrossTrackLayout = (event: LayoutChangeEvent) => setCrossTrackWidth(event.nativeEvent.layout.width);
@@ -641,11 +833,26 @@ export function DJMixingBoardScreen() {
             </View>
 
             <View style={styles.knobRow}>
-              <MixerKnob label="SYNC" value={knobValues[0]} onPress={() => handleKnobPress(0)} />
-              <MixerKnob label="MIC" value={knobValues[1]} onPress={() => handleKnobPress(1)} />
-              <MixerKnob label="TREBLE" value={knobValues[2]} onPress={() => handleKnobPress(2)} />
-              <MixerKnob label="" value={knobValues[3]} onPress={() => handleKnobPress(3)} centerIcon />
-              <MixerKnob label="EFFECTS" value={knobValues[4]} onPress={() => handleKnobPress(4)} />
+              <InteractiveMixerKnob
+                label="EFFECTS"
+                value={knobValues.effects}
+                onValueChange={(value) => setKnobValues((prev) => ({ ...prev, effects: value }))}
+              />
+              <InteractiveMixerKnob
+                label="MID"
+                value={knobValues.mid}
+                onValueChange={(value) => setKnobValues((prev) => ({ ...prev, mid: value }))}
+              />
+              <InteractiveMixerKnob
+                label="TREBLE"
+                value={knobValues.treble}
+                onValueChange={(value) => setKnobValues((prev) => ({ ...prev, treble: value }))}
+              />
+              <InteractiveMixerKnob
+                label="BASS"
+                value={knobValues.bass}
+                onValueChange={(value) => setKnobValues((prev) => ({ ...prev, bass: value }))}
+              />
             </View>
 
             <View style={styles.transportRow}>
