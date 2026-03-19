@@ -15,7 +15,25 @@ import { useAppState } from "../state/AppState";
 
 export function AnnouncementsScreen() {
   const navigation = useNavigation<any>();
-  const { announcements, timelineItems, addAnnouncement, updateAnnouncement, deleteAnnouncement, saveCurrentEventSnapshot, isHydrating } = useAppState();
+  const {
+    announcements,
+    timelineItems,
+    addAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
+    saveCurrentEventSnapshot,
+    isHydrating,
+    availableVoiceNames,
+    selectedVoiceName,
+    speechRate,
+    speechSupported,
+    speechSpeaking,
+    speechMessage,
+    speakAnnouncement,
+    stopAnnouncementSpeech,
+    setSelectedVoiceName,
+    setSpeechRate,
+  } = useAppState();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [messageText, setMessageText] = useState("");
@@ -87,6 +105,54 @@ export function AnnouncementsScreen() {
           </View>
         </GlowCard>
 
+        <GlowCard style={styles.editorCard}>
+          <Text style={styles.sectionTitle}>Voice Playback</Text>
+          <Text style={styles.voiceBody}>
+            {speechSupported
+              ? "Use the device voice engine for announcement playback in preview and live mode."
+              : "Voice playback is not available on this device or browser."}
+          </Text>
+          {speechMessage ? <Text style={styles.voiceNote}>{speechMessage}</Text> : null}
+          {speechSupported ? (
+            <>
+              <View style={styles.assignmentBlock}>
+                <Text style={styles.assignmentLabel}>Voice</Text>
+                <View style={styles.pillWrap}>
+                  {availableVoiceNames.slice(0, 6).map((voiceName) => (
+                    <SelectionPill
+                      key={voiceName}
+                      label={voiceName}
+                      active={selectedVoiceName === voiceName}
+                      onPress={() => setSelectedVoiceName(voiceName)}
+                    />
+                  ))}
+                </View>
+              </View>
+              <View style={styles.assignmentBlock}>
+                <Text style={styles.assignmentLabel}>Speech rate</Text>
+                <View style={styles.pillWrap}>
+                  {[0.85, 1, 1.15].map((rate) => (
+                    <SelectionPill
+                      key={rate}
+                      label={`${rate.toFixed(2)}x`}
+                      active={Math.abs(speechRate - rate) < 0.01}
+                      onPress={() => setSpeechRate(rate)}
+                    />
+                  ))}
+                </View>
+              </View>
+              <View style={styles.buttonStack}>
+                <NeonButton
+                  label="Play Announcement"
+                  variant="secondary"
+                  onPress={() => speakAnnouncement({ title: editingId ? title : "Announcement Preview", text: messageText })}
+                />
+                <NeonButton label={speechSpeaking ? "Stop Announcement" : "Stop"} variant="secondary" onPress={stopAnnouncementSpeech} />
+              </View>
+            </>
+          ) : null}
+        </GlowCard>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Announcement library</Text>
           <View style={styles.list}>
@@ -102,6 +168,13 @@ export function AnnouncementsScreen() {
                   title={item.title}
                   timelineMoment={item.timelineMoment}
                   previewText={item.previewText}
+                  onPlay={(id) => {
+                    const announcement = announcements.find((entry) => entry.id === id);
+                    if (!announcement) {
+                      return;
+                    }
+                    speakAnnouncement({ title: announcement.title, text: announcement.previewText });
+                  }}
                   onDelete={(id) =>
                     Alert.alert("Delete announcement?", "This removes the announcement from the event.", [
                       { text: "Cancel", style: "cancel" },
@@ -144,6 +217,8 @@ const styles = StyleSheet.create({
   assignmentLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
   pillWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   buttonStack: { gap: spacing.sm },
+  voiceBody: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
+  voiceNote: { color: colors.accentStrong, fontSize: 13, lineHeight: 18 },
   list: { gap: spacing.md },
   footer: { gap: spacing.sm },
 });

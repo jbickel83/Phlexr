@@ -41,6 +41,9 @@ export function LiveEventModeScreen() {
     currentAnnouncementText,
     nextAnnouncementTitle,
     nextAnnouncementText,
+    speechSupported,
+    speechSpeaking,
+    speechMessage,
     currentTrackName,
     playbackState,
     playbackPositionMillis,
@@ -56,6 +59,7 @@ export function LiveEventModeScreen() {
     toggleManualOverride,
     triggerManualAnnouncement,
     dismissAnnouncement,
+    stopAnnouncementSpeech,
     resetLiveProgress,
     submitValidationResponse,
   } = useAppState();
@@ -251,9 +255,17 @@ export function LiveEventModeScreen() {
                 {currentAnnouncementText ??
                   (nextAnnouncementText ?? (nextAnnouncementTitle ? `${nextAnnouncementTitle} is queued for an upcoming timeline item.` : "No linked announcement is ready right now."))}
               </Text>
+              <Text style={styles.announcementMeta}>
+                {speechSupported
+                  ? speechSpeaking
+                    ? "Voice announcement is playing now."
+                    : speechMessage ?? "Voice announcement is ready."
+                  : "Voice playback is unavailable on this device. Manual control is still available."}
+              </Text>
             </View>
             <View style={styles.secondaryControls}>
               <ActionChip label="Trigger Announcement" onPress={triggerManualAnnouncement} />
+              <ActionChip label="Stop Announcement" onPress={stopAnnouncementSpeech} />
               <ActionChip label="Dismiss Announcement" onPress={dismissAnnouncement} />
             </View>
           </GlowCard>
@@ -398,6 +410,7 @@ const styles = StyleSheet.create({
   announcementPanel: { borderRadius: radii.lg, backgroundColor: "rgba(255,92,138,0.08)", padding: spacing.lg, gap: spacing.sm },
   announcementTextTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: "800" },
   announcementText: { color: colors.textPrimary, fontSize: 15, lineHeight: 22 },
+  announcementMeta: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
   playbackHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.md },
   playbackTrack: { flex: 1, color: colors.textPrimary, fontSize: 17, fontWeight: "800" },
   playbackState: { color: colors.accentStrong, fontSize: 12, fontWeight: "800" },

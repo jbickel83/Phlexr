@@ -7,6 +7,7 @@ import { Platform } from "react-native";
 const STORAGE_KEY = "crowdkue.mpp.local-state.v1";
 const AUTOPILOT_COUNTDOWN_SECONDS = 8;
 const canUseNativeAudio = Platform.OS !== "web";
+const canUseSpeechSynthesis = typeof window !== "undefined" && "speechSynthesis" in window;
 
 export type EventDetails = {
   name: string;
@@ -119,6 +120,12 @@ type AppStateValue = {
   playbackDurationMillis: number;
   audioWarning: string | null;
   currentTrackFallback: string | null;
+  availableVoiceNames: string[];
+  selectedVoiceName: string | null;
+  speechRate: number;
+  speechSupported: boolean;
+  speechSpeaking: boolean;
+  speechMessage: string | null;
   feedbackEntries: FeedbackEntry[];
   validationEntries: ValidationEntry[];
   beginNewEventDraft: () => void;
@@ -152,6 +159,10 @@ type AppStateValue = {
   toggleManualOverride: () => void;
   triggerManualAnnouncement: () => void;
   dismissAnnouncement: () => void;
+  speakAnnouncement: (payload: { title?: string; text: string }) => void;
+  stopAnnouncementSpeech: () => void;
+  setSelectedVoiceName: (voiceName: string | null) => void;
+  setSpeechRate: (rate: number) => void;
   resetLiveProgress: () => void;
   submitFeedback: (payload: { name?: string; email?: string; message: string }) => void;
   submitValidationResponse: (payload: { response: ValidationResponse; comment?: string }) => void;
@@ -162,6 +173,8 @@ type PersistedPayload = {
   savedEvents: SavedEventRecord[];
   selectedEventId: string | null;
   selectedOutputLabel?: string | null;
+  selectedVoiceName?: string | null;
+  speechRate?: number;
   feedbackEntries?: FeedbackEntry[];
   validationEntries?: ValidationEntry[];
 };
@@ -500,14 +513,21 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   const [playbackDurationMillis, setPlaybackDurationMillis] = useState(0);
   const [audioWarning, setAudioWarning] = useState<string | null>(null);
   const [currentTrackFallback, setCurrentTrackFallback] = useState<string | null>(null);
+  const [availableVoiceNames, setAvailableVoiceNames] = useState<string[]>([]);
+  const [selectedVoiceName, setSelectedVoiceNameState] = useState<string | null>(null);
+  const [speechRate, setSpeechRateState] = useState(1);
+  const [speechSpeaking, setSpeechSpeaking] = useState(false);
+  const [speechMessage, setSpeechMessage] = useState<string | null>(null);
   const [feedbackEntries, setFeedbackEntries] = useState<FeedbackEntry[]>([]);
   const [validationEntries, setValidationEntries] = useState<ValidationEntry[]>([]);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const currentSongIdRef = useRef<string | null>(null);
   const hasHydratedRef = useRef(false);
   const skipNextSavedSyncRef = useRef(false);
 
   const resetLiveRuntime = () => {
+    stopAnnouncementSpeechInternal();
     setLiveIndex(0);
     setAutopilotRunning(false);
     setManualOverride(false);
@@ -571,16 +591,23 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     setActiveAnnouncementTitle(matchingAnnouncement.title);
     setCurrentAnnouncementText(matchingAnnouncement.previewText);
     setAnnouncementState("active");
+    speakAnnouncementInternal({
+      title: matchingAnnouncement.title,
+      text: matchingAnnouncement.previewText,
+      markCompleted: true,
+    });
   };
 
   const dismissCurrentAnnouncement = () => {
     const matchingAnnouncement = findAnnouncementForIndex(liveIndex);
     if (!matchingAnnouncement) {
+      stopAnnouncementSpeechInternal();
       setActiveAnnouncementTitle(null);
       setCurrentAnnouncementText(null);
       setAnnouncementState("idle");
       return;
     }
+    stopAnnouncementSpeechInternal();
     setCompletedAnnouncementIds((prev) =>
       prev.includes(matchingAnnouncement.id) ? prev : [...prev, matchingAnnouncement.id],
     );
@@ -588,6 +615,64 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     setCurrentAnnouncementText(matchingAnnouncement.previewText);
     setAnnouncementState("completed");
   };
+
+  function stopAnnouncementSpeechInternal() {
+    if (!canUseSpeechSynthesis) {
+      return;
+    }
+    window.speechSynthesis.cancel();
+    speechUtteranceRef.current = null;
+    setSpeechSpeaking(false);
+    setSpeechMessage(null);
+  }
+
+  function speakAnnouncementInternal({ title, text, markCompleted = false }: { title?: string; text: string; markCompleted?: boolean }) {
+    if (!text.trim()) {
+      return;
+    }
+
+    if (!canUseSpeechSynthesis) {
+      setSpeechMessage("Voice playback is not available on this device or browser.");
+      return;
+    }
+
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) {
+      setSpeechMessage("No speech voice is currently available. You can still run the event manually.");
+      return;
+    }
+
+    stopAnnouncementSpeechInternal();
+
+    const utterance = new SpeechSynthesisUtterance(text.trim());
+    const selectedVoice = selectedVoiceName ? voices.find((voice) => voice.name === selectedVoiceName) : null;
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+    utterance.rate = speechRate;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    utterance.onstart = () => {
+      setSpeechSpeaking(true);
+      setSpeechMessage(title ? `Speaking ${title}.` : "Speaking announcement.");
+    };
+    utterance.onend = () => {
+      speechUtteranceRef.current = null;
+      setSpeechSpeaking(false);
+      setSpeechMessage(null);
+      if (markCompleted) {
+        dismissCurrentAnnouncement();
+      }
+    };
+    utterance.onerror = () => {
+      speechUtteranceRef.current = null;
+      setSpeechSpeaking(false);
+      setSpeechMessage("Announcement voice playback could not start on this device.");
+    };
+
+    speechUtteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  }
 
   const resolveSongForTimelineItem = (timelineItem?: TimelineItem | null) => {
     if (!timelineItem?.music) {
@@ -740,6 +825,28 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
+    if (!canUseSpeechSynthesis) {
+      return;
+    }
+
+    const syncVoices = () => {
+      const voiceNames = window.speechSynthesis
+        .getVoices()
+        .map((voice) => voice.name)
+        .filter(Boolean);
+      setAvailableVoiceNames(voiceNames);
+      setSelectedVoiceNameState((prev) => (prev && voiceNames.includes(prev) ? prev : voiceNames[0] ?? null));
+    };
+
+    syncVoices();
+    window.speechSynthesis.onvoiceschanged = syncVoices;
+
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     const hydrateState = async () => {
@@ -769,6 +876,8 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         setSelectedOutputLabelState(
           typeof parsed.selectedOutputLabel === "string" ? parsed.selectedOutputLabel : null,
         );
+        setSelectedVoiceNameState(typeof parsed.selectedVoiceName === "string" ? parsed.selectedVoiceName : null);
+        setSpeechRateState(typeof parsed.speechRate === "number" ? parsed.speechRate : 1);
         setFeedbackEntries(normalizeFeedbackEntries(parsed.feedbackEntries));
         setValidationEntries(normalizeValidationEntries(parsed.validationEntries));
         applySnapshot(selectedRecord);
@@ -834,6 +943,8 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       savedEvents,
       selectedEventId,
       selectedOutputLabel,
+      selectedVoiceName,
+      speechRate,
       feedbackEntries,
       validationEntries,
     };
@@ -841,10 +952,10 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => {
       setPersistenceMessage("CrowdKue could not save changes locally on this device.");
     });
-  }, [feedbackEntries, savedEvents, selectedEventId, selectedOutputLabel, validationEntries]);
+  }, [feedbackEntries, savedEvents, selectedEventId, selectedOutputLabel, selectedVoiceName, speechRate, validationEntries]);
 
   useEffect(() => {
-    if (!autopilotRunning || manualOverride || timelineItems.length === 0) {
+    if (!autopilotRunning || manualOverride || timelineItems.length === 0 || speechSpeaking) {
       return;
     }
 
@@ -867,7 +978,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [autopilotRunning, manualOverride, timelineItems.length]);
+  }, [autopilotRunning, manualOverride, speechSpeaking, timelineItems.length]);
 
   useEffect(() => {
     const currentTimelineItem = timelineItems[liveIndex] ?? null;
@@ -893,6 +1004,21 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   }, [autopilotRunning, completedAnnouncementIds, liveIndex, manualOverride]);
 
   useEffect(() => {
+    if (speechSpeaking) {
+      if (soundRef.current) {
+        soundRef.current.pauseAsync().catch(() => undefined);
+      }
+      setPlaybackState((prev) => (prev === "warning" ? prev : "paused"));
+      return;
+    }
+
+    if (autopilotRunning && !manualOverride) {
+      const currentTimelineItem = timelineItems[liveIndex] ?? null;
+      playResolvedSong(currentTimelineItem).catch(() => undefined);
+    }
+  }, [autopilotRunning, liveIndex, manualOverride, speechSpeaking, timelineItems]);
+
+  useEffect(() => {
     if (manualOverride) {
       if (soundRef.current) {
         soundRef.current.pauseAsync().catch(() => undefined);
@@ -913,15 +1039,15 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
     const currentTimelineItem = timelineItems[liveIndex] ?? null;
     playResolvedSong(currentTimelineItem).catch(() => undefined);
-  }, [autopilotRunning, currentTrackName, liveIndex, manualOverride, timelineItems]);
+  }, [autopilotRunning, currentTrackName, liveIndex, manualOverride, speechSpeaking, timelineItems]);
 
   useEffect(() => {
-    if (!autopilotRunning || manualOverride) {
+    if (!autopilotRunning || manualOverride || speechSpeaking) {
       return;
     }
     const currentTimelineItem = timelineItems[liveIndex] ?? null;
     playResolvedSong(currentTimelineItem).catch(() => undefined);
-  }, [autopilotRunning, liveIndex, manualOverride, playlists, songs, timelineItems]);
+  }, [autopilotRunning, liveIndex, manualOverride, playlists, songs, speechSpeaking, timelineItems]);
 
   useEffect(() => {
     if (soundRef.current || playbackState !== "playing" || playbackDurationMillis <= 0) {
@@ -967,6 +1093,12 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       playbackDurationMillis,
       audioWarning,
       currentTrackFallback,
+      availableVoiceNames,
+      selectedVoiceName,
+      speechRate,
+      speechSupported: canUseSpeechSynthesis,
+      speechSpeaking,
+      speechMessage,
       feedbackEntries,
       validationEntries,
       beginNewEventDraft: () => {
@@ -1353,9 +1485,26 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         setActiveAnnouncementTitle(matchingAnnouncement.title);
         setCurrentAnnouncementText(matchingAnnouncement.previewText);
         setAnnouncementState("active");
+        speakAnnouncementInternal({
+          title: matchingAnnouncement.title,
+          text: matchingAnnouncement.previewText,
+          markCompleted: true,
+        });
       },
       dismissAnnouncement: () => {
         dismissCurrentAnnouncement();
+      },
+      speakAnnouncement: ({ title, text }) => {
+        speakAnnouncementInternal({ title, text, markCompleted: false });
+      },
+      stopAnnouncementSpeech: () => {
+        stopAnnouncementSpeechInternal();
+      },
+      setSelectedVoiceName: (voiceName) => {
+        setSelectedVoiceNameState(voiceName);
+      },
+      setSpeechRate: (rate) => {
+        setSpeechRateState(Math.max(0.7, Math.min(rate, 1.3)));
       },
       resetLiveProgress: () => {
         resetLiveRuntime();
@@ -1393,6 +1542,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     activeAnnouncementTitle,
     announcementState,
     announcements,
+    availableVoiceNames,
     audioWarning,
     autopilotRunning,
     countdownSeconds,
@@ -1411,9 +1561,13 @@ export function AppStateProvider({ children }: PropsWithChildren) {
     playbackState,
     playlists,
     savedEvents,
+    selectedVoiceName,
     selectedOutputLabel,
     selectedEventId,
     songs,
+    speechMessage,
+    speechRate,
+    speechSpeaking,
     timelineItems,
     validationEntries,
   ]);

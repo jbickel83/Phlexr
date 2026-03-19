@@ -10,6 +10,7 @@ type AnnouncementCardProps = {
   previewText: string;
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
+  onPlay?: (id: string) => void;
 };
 
 export function AnnouncementCard({
@@ -19,6 +20,7 @@ export function AnnouncementCard({
   previewText,
   onDelete,
   onEdit,
+  onPlay,
 }: AnnouncementCardProps) {
   return (
     <View style={styles.card}>
@@ -30,6 +32,7 @@ export function AnnouncementCard({
       </View>
       <Text style={styles.preview}>{previewText}</Text>
       <View style={styles.actions}>
+        <ActionChip label="Play announcement" onPress={() => onPlay?.(id)} />
         <ActionChip label="Edit announcement" onPress={() => onEdit?.(id)} />
         <ActionChip label="Delete announcement" onPress={() => onDelete?.(id)} />
       </View>
