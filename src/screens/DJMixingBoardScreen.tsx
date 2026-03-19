@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -266,6 +267,7 @@ function Turntable({
   centerColor,
   rotation,
   playbackScale,
+  compact = false,
   onScratchStart,
   onScratchMove,
   onScratchEnd,
@@ -277,23 +279,28 @@ function Turntable({
   centerColor: string;
   rotation: number;
   playbackScale: number;
+  compact?: boolean;
   onScratchStart: (event: GestureResponderEvent) => void;
   onScratchMove: (event: GestureResponderEvent) => void;
   onScratchEnd: () => void;
 }) {
   return (
-    <View style={styles.turntableWrap}>
-      <View style={styles.turntableHeader}>
+    <View style={[styles.turntableWrap, compact && styles.turntableWrapCompact]}>
+      <View style={[styles.turntableHeader, compact && styles.turntableHeaderCompact]}>
         {side === "left" ? <AccentMeters side="left" /> : null}
         <View style={[styles.trackCopy, side === "right" && styles.trackCopyRight]}>
-          <Text style={styles.trackTitle}>{title}</Text>
-          <Text style={styles.trackArtist}>{artist}</Text>
+          <Text numberOfLines={1} style={[styles.trackTitle, compact && styles.trackTitleCompact]}>
+            {title}
+          </Text>
+          <Text numberOfLines={1} style={[styles.trackArtist, compact && styles.trackArtistCompact]}>
+            {artist}
+          </Text>
         </View>
         {side === "right" ? <AccentMeters side="right" /> : null}
       </View>
 
-      <View style={styles.platterZone}>
-        <View style={[styles.deckUtility, side === "right" && styles.deckUtilityRight]}>
+      <View style={[styles.platterZone, compact && styles.platterZoneCompact]}>
+        <View style={[styles.deckUtility, compact && styles.deckUtilityCompact, side === "right" && styles.deckUtilityRight]}>
           <View style={styles.deckUtilityStack}>
             <View style={styles.deckUtilityLine} />
             <View style={[styles.deckUtilityLine, styles.deckUtilityMedium]} />
@@ -331,7 +338,7 @@ function Turntable({
           </View>
         </View>
 
-        <View style={[styles.deckPitchRail, side === "right" && styles.deckPitchRailRight]}>
+        <View style={[styles.deckPitchRail, compact && styles.deckPitchRailCompact, side === "right" && styles.deckPitchRailRight]}>
           <View style={styles.pitchLineLong} />
           <View style={styles.pitchLineShort} />
           <View style={styles.pitchDot} />
@@ -344,6 +351,14 @@ function Turntable({
 export function DJMixingBoardScreen() {
   const navigation = useNavigation<any>();
   const { timelineItems } = useAppState();
+  const { width, height } = useWindowDimensions();
+  const isPortraitMobile = width <= 480 && height >= width;
+  const isCompactPortrait = width <= 390 && height >= width;
+  const horizontalInset = isPortraitMobile ? 12 : 20;
+  const rowGap = isCompactPortrait ? 8 : isPortraitMobile ? 10 : 18;
+  const waveMetaWidth = isCompactPortrait ? 54 : isPortraitMobile ? 60 : 74;
+  const centerMixerWidth = isCompactPortrait ? 64 : isPortraitMobile ? 72 : width < 768 ? 80 : 86;
+  const platterInset = isCompactPortrait ? 24 : isPortraitMobile ? 28 : 40;
 
   const waveformHeights = useMemo(
     () => [8, 12, 16, 18, 20, 22, 24, 26, 24, 20, 18, 16, 14, 18, 22, 24, 26, 24, 20, 16, 12, 10, 12, 15, 18, 20, 18, 16, 12, 10],
@@ -699,8 +714,8 @@ export function DJMixingBoardScreen() {
               <TrackPanel side="right" title={rightDeck.title} artist={rightDeck.artist} />
             </View>
 
-            <View style={styles.waveStrip}>
-              <View style={styles.waveMetaLeft}>
+            <View style={[styles.waveStrip, { gap: rowGap, paddingHorizontal: horizontalInset }]}>
+              <View style={[styles.waveMetaLeft, { width: waveMetaWidth }]}>
                 <Text style={styles.waveTime}>{formatMillis(leftDeck.positionMs, "01:23")}</Text>
                 <Text style={styles.waveSubMeta}>{leftDeck.bpm.toFixed(1)} BPM</Text>
               </View>
@@ -726,14 +741,17 @@ export function DJMixingBoardScreen() {
                 })}
               </View>
 
-              <View style={styles.waveMetaRight}>
+              <View style={[styles.waveMetaRight, { width: waveMetaWidth }]}>
                 <Text style={styles.waveTime}>{formatMillis(rightDeck.positionMs, "00:45")}</Text>
                 <Text style={styles.waveSubMeta}>{rightDeck.bpm.toFixed(1)} BPM</Text>
               </View>
             </View>
 
-            <View style={styles.mixerStage}>
-              <View onLayout={(event) => setLeftPlatterSize(event.nativeEvent.layout.width - 40)} style={styles.turntableLayout}>
+            <View style={[styles.mixerStage, { gap: rowGap, paddingHorizontal: horizontalInset }]}>
+              <View
+                onLayout={(event) => setLeftPlatterSize(Math.max(event.nativeEvent.layout.width - platterInset, 0))}
+                style={[styles.turntableLayout, isPortraitMobile && styles.turntableLayoutCompact]}
+              >
                 <Turntable
                   side="left"
                   title={leftDeck.title}
@@ -742,13 +760,14 @@ export function DJMixingBoardScreen() {
                   centerColor="#5B6AA4"
                   rotation={leftRotation}
                   playbackScale={leftDeckLevel}
+                  compact={isPortraitMobile}
                   onScratchStart={(event) => handleScratchStart("left", event)}
                   onScratchMove={(event) => handleScratchMove("left", event)}
                   onScratchEnd={() => handleScratchEnd("left")}
                 />
               </View>
 
-              <View style={styles.centerMixer}>
+              <View style={[styles.centerMixer, isPortraitMobile && styles.centerMixerCompact, { width: centerMixerWidth }]}>
                 <View style={styles.channelSliders}>
                   <View
                     onLayout={onLeftSliderLayout}
@@ -809,7 +828,10 @@ export function DJMixingBoardScreen() {
                 </View>
               </View>
 
-              <View onLayout={(event) => setRightPlatterSize(event.nativeEvent.layout.width - 40)} style={styles.turntableLayout}>
+              <View
+                onLayout={(event) => setRightPlatterSize(Math.max(event.nativeEvent.layout.width - platterInset, 0))}
+                style={[styles.turntableLayout, isPortraitMobile && styles.turntableLayoutCompact]}
+              >
                 <Turntable
                   side="right"
                   title={rightDeck.title}
@@ -818,6 +840,7 @@ export function DJMixingBoardScreen() {
                   centerColor="#C63A45"
                   rotation={rightRotation}
                   playbackScale={rightDeckLevel}
+                  compact={isPortraitMobile}
                   onScratchStart={(event) => handleScratchStart("right", event)}
                   onScratchMove={(event) => handleScratchMove("right", event)}
                   onScratchEnd={() => handleScratchEnd("right")}
@@ -825,7 +848,7 @@ export function DJMixingBoardScreen() {
               </View>
             </View>
 
-            <View style={styles.crossfaderRow}>
+            <View style={[styles.crossfaderRow, { gap: rowGap, paddingHorizontal: horizontalInset }]}>
               <MixerButton label="CUE" onPress={() => handleCue("left")} tone="dark" />
 
               <View style={styles.crossfaderWrap}>
@@ -854,7 +877,7 @@ export function DJMixingBoardScreen() {
               <MixerButton label="CUE" onPress={() => handleCue("right")} tone="dark" />
             </View>
 
-            <View style={styles.knobRow}>
+            <View style={[styles.knobRow, { gap: isPortraitMobile ? 8 : 12, paddingHorizontal: horizontalInset }]}>
               <InteractiveMixerKnob
                 label="EFFECTS"
                 value={knobValues.effects}
@@ -877,14 +900,14 @@ export function DJMixingBoardScreen() {
               />
             </View>
 
-            <View style={styles.transportRow}>
+            <View style={[styles.transportRow, { gap: isPortraitMobile ? 10 : 14, paddingHorizontal: horizontalInset }]}>
               <MixerButton label="SYNC" onPress={() => handleSyncDeck("left")} tone="blue" />
               <MixerButton label="STOP" onPress={handleStop} tone="white" />
               <MixerButton label="PLAY" onPress={handleGlobalPlay} tone="red" />
               <MixerButton label="SYNC" onPress={() => handleSyncDeck("right")} tone="blue" />
             </View>
 
-            <View style={styles.bottomDetailBlock}>
+            <View style={[styles.bottomDetailBlock, { paddingHorizontal: horizontalInset }]}>
               <View style={styles.detailLineLong} />
               <View style={styles.detailLineShort} />
               <View style={styles.detailDotRow}>
@@ -929,7 +952,9 @@ const styles = StyleSheet.create({
   trackCopy: { flex: 1, gap: 4 },
   trackCopyRight: { alignItems: "flex-end" },
   trackTitle: { color: "#F3F2FF", fontSize: 18, fontWeight: "700" },
+  trackTitleCompact: { fontSize: 15 },
   trackArtist: { color: "#8793FF", fontSize: 13, fontWeight: "700" },
+  trackArtistCompact: { fontSize: 11 },
   waveStrip: { flexDirection: "row", alignItems: "center", gap: 18, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: "rgba(7,8,14,0.95)", borderTopWidth: 1, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
   waveMetaLeft: { width: 74, alignItems: "flex-start" },
   waveMetaRight: { width: 74, alignItems: "flex-end" },
@@ -939,11 +964,16 @@ const styles = StyleSheet.create({
   waveCenterMarker: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 4, marginLeft: -2, borderRadius: 999, backgroundColor: "#7B6890", zIndex: 3 },
   waveBar: { width: 4, borderRadius: 999 },
   mixerStage: { flexDirection: "row", alignItems: "center", gap: 18, paddingHorizontal: 20, paddingTop: 16 },
-  turntableLayout: { flex: 1 },
+  turntableLayout: { flex: 1, minWidth: 0 },
+  turntableLayoutCompact: { flexBasis: 0 },
   turntableWrap: { flex: 1, minHeight: 320 },
+  turntableWrapCompact: { minHeight: 250 },
   turntableHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  turntableHeaderCompact: { minHeight: 44, marginBottom: 12 },
   platterZone: { flexDirection: "row", alignItems: "center", gap: 12 },
+  platterZoneCompact: { gap: 8 },
   deckUtility: { width: 16, alignItems: "flex-start" },
+  deckUtilityCompact: { width: 12 },
   deckUtilityRight: { alignItems: "flex-end" },
   deckUtilityStack: { gap: 5 },
   deckUtilityLine: { width: 14, height: 4, borderRadius: 999, backgroundColor: "#A2A6C7" },
@@ -962,11 +992,13 @@ const styles = StyleSheet.create({
   vinylCenter: { width: "30%", height: "30%", borderRadius: 999, alignItems: "center", justifyContent: "center" },
   vinylCenterDot: { width: 9, height: 9, borderRadius: 999, backgroundColor: "#F4F4FF" },
   deckPitchRail: { width: 14, gap: 7, alignItems: "flex-start" },
+  deckPitchRailCompact: { width: 10, gap: 5 },
   deckPitchRailRight: { alignItems: "flex-end" },
   pitchLineLong: { width: 12, height: 3, borderRadius: 999, backgroundColor: "#3DABFF" },
   pitchLineShort: { width: 8, height: 3, borderRadius: 999, backgroundColor: "#3DABFF" },
   pitchDot: { width: 8, height: 8, borderRadius: 999, backgroundColor: "#4A5B9A" },
   centerMixer: { width: 86, height: 256, borderRadius: 18, backgroundColor: "rgba(19,22,34,0.98)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "space-between", paddingVertical: 18 },
+  centerMixerCompact: { height: 232, borderRadius: 16, paddingVertical: 14 },
   channelSliders: { flexDirection: "row", gap: 10 },
   channelSlider: { width: 12, height: 80, borderRadius: 8, backgroundColor: "#2D3144", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", position: "relative", overflow: "hidden", justifyContent: "flex-end" },
   channelFill: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: "rgba(92,127,255,0.32)" },
