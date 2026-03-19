@@ -55,43 +55,6 @@ export function DashboardScreen() {
       style={styles.screen}
     >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <View style={styles.heroHeader}>
-            <View style={styles.brandLockup}>
-              <Text style={styles.eyebrow}>CrowdKue Dashboard</Text>
-              <Text style={styles.title}>Run the room without a DJ booth.</Text>
-              <Text style={styles.subtitle}>
-                Cue music, announcements, and transitions from your own audio files with event-day confidence.
-              </Text>
-            </View>
-            <View style={styles.statusOrb} />
-          </View>
-
-          <GlowCard style={styles.heroCard}>
-            <View style={styles.heroCardTop}>
-              <View>
-                <Text style={styles.heroLabel}>System Readiness</Text>
-                <Text style={styles.heroValue}>94%</Text>
-              </View>
-              <Text style={styles.heroMeta}>{currentEvent.status}</Text>
-            </View>
-            <View style={styles.metricsRow}>
-              <View style={styles.metric}>
-                <Text style={styles.metricNumber}>{savedEvents.length}</Text>
-                <Text style={styles.metricText}>saved events</Text>
-              </View>
-              <View style={styles.metric}>
-                <Text style={styles.metricNumber}>{timelineItems.length}</Text>
-                <Text style={styles.metricText}>timeline items</Text>
-              </View>
-              <View style={styles.metric}>
-                <Text style={styles.metricNumber}>{songs.length + announcements.length}</Text>
-                <Text style={styles.metricText}>music + cues</Text>
-              </View>
-            </View>
-          </GlowCard>
-        </View>
-
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Create new event</Text>
@@ -118,6 +81,42 @@ export function DashboardScreen() {
                   })
                 }
               />
+            </View>
+          </GlowCard>
+        </View>
+
+        <View style={styles.hero}>
+          <View style={styles.heroHeader}>
+            <View style={styles.brandLockup}>
+              <Text style={styles.eyebrow}>CrowdKue Dashboard</Text>
+              <Text style={styles.title}>Run the room without a DJ booth.</Text>
+              <Text style={styles.subtitle}>
+                Cue music, announcements, and transitions from your own audio files with event-day confidence.
+              </Text>
+            </View>
+            <View style={styles.statusOrb} />
+          </View>
+          <GlowCard style={styles.heroCard}>
+            <View style={styles.heroCardTop}>
+              <View>
+                <Text style={styles.heroLabel}>System Readiness</Text>
+                <Text style={styles.heroValue}>94%</Text>
+              </View>
+              <Text style={styles.heroMeta}>{currentEvent.status}</Text>
+            </View>
+            <View style={styles.metricsRow}>
+              <View style={styles.metric}>
+                <Text style={styles.metricNumber}>{savedEvents.length}</Text>
+                <Text style={styles.metricText}>saved events</Text>
+              </View>
+              <View style={styles.metric}>
+                <Text style={styles.metricNumber}>{timelineItems.length}</Text>
+                <Text style={styles.metricText}>timeline items</Text>
+              </View>
+              <View style={styles.metric}>
+                <Text style={styles.metricNumber}>{songs.length + announcements.length}</Text>
+                <Text style={styles.metricText}>music + cues</Text>
+              </View>
             </View>
           </GlowCard>
         </View>
