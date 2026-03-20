@@ -71,7 +71,10 @@ export function DashboardScreen() {
             Cue music, announcements, and transitions from your own audio files with event-day confidence.
           </Text>
         </View>
-        <View style={styles.statusOrb} />
+        <View style={styles.heroActions}>
+          <ActionChip label="Help" onPress={() => navigation.navigate("Settings", { scrollTo: "how-to-use" })} />
+          <View style={styles.statusOrb} />
+        </View>
       </View>
     </View>
   );
@@ -286,6 +289,7 @@ const styles = StyleSheet.create({
   hero: { paddingHorizontal: spacing.lg, gap: spacing.lg },
   heroHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: spacing.md },
   brandLockup: { flex: 1, gap: spacing.sm },
+  heroActions: { alignItems: "flex-end", gap: spacing.sm },
   eyebrow: { color: colors.accent, textTransform: "uppercase", letterSpacing: 1.1, fontSize: 12, fontWeight: "800" },
   title: { color: colors.textPrimary, fontSize: 34, lineHeight: 38, fontWeight: "800" },
   subtitle: { color: colors.textSecondary, fontSize: 15, lineHeight: 22, maxWidth: 310 },

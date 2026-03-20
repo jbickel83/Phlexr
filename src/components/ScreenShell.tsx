@@ -1,4 +1,4 @@
-import { PropsWithChildren, ReactNode } from "react";
+import { PropsWithChildren, ReactNode, RefObject } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -9,9 +9,11 @@ type ScreenShellProps = PropsWithChildren<{
   title: string;
   description: string;
   footer?: ReactNode;
+  scrollRef?: RefObject<ScrollView | null>;
+  onContentSizeChange?: () => void;
 }>;
 
-export function ScreenShell({ eyebrow, title, description, footer, children }: ScreenShellProps) {
+export function ScreenShell({ eyebrow, title, description, footer, scrollRef, onContentSizeChange, children }: ScreenShellProps) {
   return (
     <LinearGradient
       colors={["#050811", "#091121", "#0B1630"]}
@@ -19,7 +21,7 @@ export function ScreenShell({ eyebrow, title, description, footer, children }: S
       end={{ x: 1, y: 1 }}
       style={styles.bg}
     >
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} onContentSizeChange={onContentSizeChange}>
         <View style={styles.hero}>
           <Text style={styles.eyebrow}>{eyebrow}</Text>
           <Text style={styles.title}>{title}</Text>
