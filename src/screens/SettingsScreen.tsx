@@ -1,6 +1,7 @@
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { InteractionManager } from "react-native";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ActionChip } from "../components/ActionChip";
@@ -19,8 +20,11 @@ export function SettingsScreen() {
   const scrollRef = useRef<ScrollView | null>(null);
   const [howToUseY, setHowToUseY] = useState(0);
 
-  const scrollToHowToUse = () => {
+  const scrollToHowToUse = useCallback(() => {
     if (route.params?.scrollTo !== "how-to-use") {
+      return;
+    }
+    if (howToUseY <= 0) {
       return;
     }
 
@@ -28,15 +32,21 @@ export function SettingsScreen() {
       y: Math.max(0, howToUseY - spacing.lg),
       animated: true,
     });
-  };
-
-  useEffect(() => {
-    if (!howToUseY) {
-      return;
-    }
-    const timeout = setTimeout(scrollToHowToUse, 80);
-    return () => clearTimeout(timeout);
   }, [howToUseY, route.params?.scrollTo]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.scrollTo !== "how-to-use") {
+        return undefined;
+      }
+
+      const task = InteractionManager.runAfterInteractions(() => {
+        setTimeout(scrollToHowToUse, 100);
+      });
+
+      return () => task.cancel();
+    }, [route.params?.scrollTo, scrollToHowToUse]),
+  );
 
   return (
     <ScreenShell

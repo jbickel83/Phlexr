@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ActionChip } from "../components/ActionChip";
 import { EmptyStateCard } from "../components/EmptyStateCard";
@@ -72,7 +72,9 @@ export function DashboardScreen() {
           </Text>
         </View>
         <View style={styles.heroActions}>
-          <ActionChip label="Help" onPress={() => navigation.navigate("Settings", { scrollTo: "how-to-use" })} />
+          <Pressable style={styles.helpButton} onPress={() => navigation.navigate("Settings", { scrollTo: "how-to-use", nonce: Date.now() })}>
+            <Text style={styles.helpButtonText}>Help</Text>
+          </Pressable>
           <View style={styles.statusOrb} />
         </View>
       </View>
@@ -290,6 +292,24 @@ const styles = StyleSheet.create({
   heroHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: spacing.md },
   brandLockup: { flex: 1, gap: spacing.sm },
   heroActions: { alignItems: "flex-end", gap: spacing.sm },
+  helpButton: {
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: "rgba(37,224,255,0.24)",
+    backgroundColor: "rgba(12,18,35,0.92)",
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    shadowColor: colors.accentStrong,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  helpButtonText: {
+    color: colors.accentStrong,
+    fontSize: 12,
+    fontWeight: "800",
+  },
   eyebrow: { color: colors.accent, textTransform: "uppercase", letterSpacing: 1.1, fontSize: 12, fontWeight: "800" },
   title: { color: colors.textPrimary, fontSize: 34, lineHeight: 38, fontWeight: "800" },
   subtitle: { color: colors.textSecondary, fontSize: 15, lineHeight: 22, maxWidth: 310 },
