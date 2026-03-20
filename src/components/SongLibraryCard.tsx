@@ -9,6 +9,7 @@ type SongLibraryCardProps = {
   artist?: string;
   duration: string;
   fileType: string;
+  activeTrack?: "trackA" | "trackB" | null;
   onDelete?: (id: string) => void;
   onAdd?: () => void;
   onReorder?: () => void;
@@ -22,6 +23,7 @@ export function SongLibraryCard({
   artist,
   duration,
   fileType,
+  activeTrack = null,
   onDelete,
   onAdd,
   onReorder,
@@ -44,8 +46,8 @@ export function SongLibraryCard({
       </View>
       <View style={styles.actions}>
         <ActionChip label="Add song" onPress={onAdd} />
-        <ActionChip label="Add to Track A" onPress={() => onAssignTrackA?.(id)} />
-        <ActionChip label="Add to Track B" onPress={() => onAssignTrackB?.(id)} />
+        <ActionChip label="Add to Track A" active={activeTrack === "trackA"} onPress={() => onAssignTrackA?.(id)} />
+        <ActionChip label="Add to Track B" active={activeTrack === "trackB"} onPress={() => onAssignTrackB?.(id)} />
         <ActionChip label="Delete song" onPress={() => onDelete?.(id)} />
         <ActionChip label="Reorder songs" onPress={onReorder} />
       </View>

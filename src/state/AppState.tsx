@@ -1669,7 +1669,17 @@ export function AppStateProvider({ children }: PropsWithChildren) {
         );
       },
       assignSongToDeck: (deck, songId) => {
-        setDeckAssignments((prev) => ({ ...prev, [deck]: songId }));
+        setDeckAssignments((prev) => {
+          const nextAssignments = {
+            ...prev,
+            [deck]: songId,
+          };
+          const oppositeDeck = deck === "trackA" ? "trackB" : "trackA";
+          if (nextAssignments[oppositeDeck] === songId) {
+            nextAssignments[oppositeDeck] = null;
+          }
+          return nextAssignments;
+        });
         const resolvedSong = songs.find((song) => song.id === songId) ?? null;
         enterManualDeckMode();
         setCurrentPlaybackDeck(deck);

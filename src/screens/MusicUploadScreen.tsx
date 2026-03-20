@@ -18,6 +18,7 @@ export function MusicUploadScreen() {
   const {
     songs,
     playlists,
+    deckAssignments,
     addSong,
     deleteSong,
     reorderSongs,
@@ -127,6 +128,9 @@ export function MusicUploadScreen() {
                   artist={song.artist}
                   duration={song.duration}
                   fileType={song.fileType}
+                  activeTrack={
+                    deckAssignments.trackA === song.id ? "trackA" : deckAssignments.trackB === song.id ? "trackB" : null
+                  }
                   onAdd={() => addSong()}
                   onAssignTrackA={(songId) => assignSongToDeck("trackA", songId)}
                   onAssignTrackB={(songId) => assignSongToDeck("trackB", songId)}
