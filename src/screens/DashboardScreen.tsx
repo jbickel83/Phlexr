@@ -66,7 +66,7 @@ export function DashboardScreen() {
       <View style={styles.heroHeader}>
         <View style={styles.brandLockup}>
           <Text style={styles.eyebrow}>CrowdKue Dashboard</Text>
-          <Text style={styles.title}>Run the room without a DJ booth.</Text>
+          <Text style={styles.title}>Run the room without a DJ.</Text>
           <Text style={styles.subtitle}>
             Cue music, announcements, and transitions from your own audio files with event-day confidence.
           </Text>
