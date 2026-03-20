@@ -1,5 +1,4 @@
 import { useNavigation } from "@react-navigation/native";
-import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
@@ -19,11 +18,9 @@ export function MusicUploadScreen() {
   const {
     songs,
     playlists,
-    importLocalSong,
     addSong,
     deleteSong,
     reorderSongs,
-    createPlaylist,
     assignSongsToPlaylist,
     assignSongToDeck,
     addSongToPlaylist,
@@ -65,23 +62,15 @@ export function MusicUploadScreen() {
     ]);
   };
 
-  const handlePickAudio = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ["audio/*"],
-      multiple: false,
-      copyToCacheDirectory: true,
-    });
+  const showPaidVersionMessage = () => {
+    const message = "Song load will be available in paid version";
 
-    if (result.canceled) {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.alert(message);
       return;
     }
 
-    const file = result.assets[0];
-    await importLocalSong({
-      uri: file.uri,
-      name: file.name,
-      mimeType: file.mimeType,
-    });
+    Alert.alert(message);
   };
 
   return (
@@ -101,11 +90,8 @@ export function MusicUploadScreen() {
           <Text style={styles.sectionBody}>
             Music must be uploaded or stored locally on the device. Streaming playback is not supported for event control.
           </Text>
-          <Text style={styles.noteText}>
-            Local song metadata is saved on this device for MVP. If a stored file path becomes unavailable later, simply re-upload that track.
-          </Text>
           <View style={styles.buttonStack}>
-            <NeonButton label="Pick local audio file" variant="secondary" onPress={handlePickAudio} />
+            <NeonButton label="Add Music" variant="secondary" onPress={showPaidVersionMessage} />
             <NeonButton label="Add empty song entry" variant="secondary" onPress={() => addSong()} />
           </View>
           {audioWarning ? <Text style={styles.warning}>{audioWarning}</Text> : null}
@@ -146,10 +132,7 @@ export function MusicUploadScreen() {
             <NeonButton
               label="Create playlist"
               variant="secondary"
-              onPress={() => {
-                createPlaylist(playlistName);
-                setPlaylistName("");
-              }}
+              onPress={showPaidVersionMessage}
             />
             <NeonButton label="Assign songs to playlists" variant="secondary" onPress={assignSongsToPlaylist} />
           </View>
