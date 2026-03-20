@@ -1,7 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { useEffect, useState } from "react";
 
 import { ActionChip } from "../components/ActionChip";
 import { EmptyStateCard } from "../components/EmptyStateCard";
@@ -11,8 +10,6 @@ import { NeonButton } from "../components/NeonButton";
 import { TimelineProgressIndicator } from "../components/TimelineProgressIndicator";
 import { colors, radii, spacing } from "../constants/theme";
 import { useAppState } from "../state/AppState";
-import { SelectionPill } from "../components/SelectionPill";
-import { TextFieldInput } from "../components/TextFieldInput";
 
 function formatMillis(value: number) {
   if (!value || value <= 0) {
@@ -61,11 +58,7 @@ export function LiveEventModeScreen() {
     dismissAnnouncement,
     stopAnnouncementSpeech,
     resetLiveProgress,
-    submitValidationResponse,
   } = useAppState();
-  const [interestResponse, setInterestResponse] = useState<"Yes" | "Maybe" | "No" | null>(null);
-  const [interestComment, setInterestComment] = useState("");
-  const [validationSubmitted, setValidationSubmitted] = useState(false);
 
   const currentItem = timelineItems[liveIndex] ?? null;
   const nextItem = currentItem ? timelineItems[liveIndex + 1] ?? null : null;
@@ -106,15 +99,6 @@ export function LiveEventModeScreen() {
 
   const liveStateLabel = manualOverride ? "Manual Override" : autopilotRunning ? "Autopilot Live" : "Autopilot Paused";
   const autoplayState = autopilotRunning && !manualOverride ? "ON" : "OFF";
-  const shouldShowValidationPrompt = timelineItems.length > 0 && !autopilotRunning && liveIndex >= timelineItems.length - 1;
-
-  useEffect(() => {
-    if (!shouldShowValidationPrompt) {
-      setValidationSubmitted(false);
-      setInterestResponse(null);
-      setInterestComment("");
-    }
-  }, [shouldShowValidationPrompt, currentEvent.name]);
 
   return (
     <LinearGradient colors={["#04070F", "#071120", "#0A1730"]} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={styles.screen}>
@@ -306,45 +290,6 @@ export function LiveEventModeScreen() {
           </View>
         </View>
 
-        {shouldShowValidationPrompt ? (
-          <GlowCard title="Would you use CrowdKue for your event?" subtitle="A quick answer helps validate the product direction.">
-            {validationSubmitted ? (
-              <Text style={styles.successText}>Thanks. Your response was saved locally for this demo build.</Text>
-            ) : (
-              <>
-                <View style={styles.responseRow}>
-                  {(["Yes", "Maybe", "No"] as const).map((option) => (
-                    <SelectionPill
-                      key={option}
-                      label={option}
-                      active={interestResponse === option}
-                      onPress={() => setInterestResponse(option)}
-                    />
-                  ))}
-                </View>
-                <TextFieldInput
-                  label="Optional comment"
-                  value={interestComment}
-                  onChangeText={setInterestComment}
-                  placeholder="What would make CrowdKue a fit for your event?"
-                  multiline
-                />
-                <NeonButton
-                  label="Submit Response"
-                  onPress={() => {
-                    if (!interestResponse) {
-                      return;
-                    }
-                    submitValidationResponse({ response: interestResponse, comment: interestComment });
-                    setValidationSubmitted(true);
-                    setInterestComment("");
-                  }}
-                />
-              </>
-            )}
-          </GlowCard>
-        ) : null}
-
         {timelineItems.length === 0 ? (
           <EmptyStateCard title="Add your first timeline moment" description="Build the event timeline before running Live Event Mode." />
         ) : (
@@ -423,6 +368,4 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.textPrimary, fontSize: 21, fontWeight: "800" },
   primaryControls: { gap: spacing.sm },
   secondaryControls: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  responseRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.md },
-  successText: { color: colors.success, fontSize: 14, lineHeight: 21 },
 });

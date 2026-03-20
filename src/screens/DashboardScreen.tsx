@@ -1,5 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ActionChip } from "../components/ActionChip";
@@ -8,9 +9,12 @@ import { EventPreviewCard } from "../components/EventPreviewCard";
 import { GlowCard } from "../components/GlowCard";
 import { NeonButton } from "../components/NeonButton";
 import { QuickStartCard } from "../components/QuickStartCard";
+import { SelectionPill } from "../components/SelectionPill";
 import { TemplateCard } from "../components/TemplateCard";
+import { TextFieldInput } from "../components/TextFieldInput";
 import { colors, radii, spacing } from "../constants/theme";
 import { quickStartItems, recentTemplates } from "../data/mockData";
+import type { ValidationResponse } from "../state/AppState";
 import { useAppState } from "../state/AppState";
 
 export function DashboardScreen() {
@@ -27,7 +31,17 @@ export function DashboardScreen() {
     beginNewEventDraft,
     selectSavedEvent,
     deleteSavedEvent,
+    submitValidationResponse,
   } = useAppState();
+  const [interestResponse, setInterestResponse] = useState<ValidationResponse | null>(null);
+  const [interestComment, setInterestComment] = useState("");
+  const [validationSubmitted, setValidationSubmitted] = useState(false);
+
+  useEffect(() => {
+    setValidationSubmitted(false);
+    setInterestResponse(null);
+    setInterestComment("");
+  }, [selectedEventId]);
 
   const confirmDeleteEvent = (eventId: string, eventName: string) => {
     const removeEvent = () => {
@@ -55,6 +69,19 @@ export function DashboardScreen() {
       style={styles.screen}
     >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.hero}>
+          <View style={styles.heroHeader}>
+            <View style={styles.brandLockup}>
+              <Text style={styles.eyebrow}>CrowdKue Dashboard</Text>
+              <Text style={styles.title}>Run the room without a DJ booth.</Text>
+              <Text style={styles.subtitle}>
+                Cue music, announcements, and transitions from your own audio files with event-day confidence.
+              </Text>
+            </View>
+            <View style={styles.statusOrb} />
+          </View>
+        </View>
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Create new event</Text>
@@ -86,16 +113,6 @@ export function DashboardScreen() {
         </View>
 
         <View style={styles.hero}>
-          <View style={styles.heroHeader}>
-            <View style={styles.brandLockup}>
-              <Text style={styles.eyebrow}>CrowdKue Dashboard</Text>
-              <Text style={styles.title}>Run the room without a DJ booth.</Text>
-              <Text style={styles.subtitle}>
-                Cue music, announcements, and transitions from your own audio files with event-day confidence.
-              </Text>
-            </View>
-            <View style={styles.statusOrb} />
-          </View>
           <GlowCard style={styles.heroCard}>
             <View style={styles.heroCardTop}>
               <View>
@@ -197,6 +214,53 @@ export function DashboardScreen() {
             ))}
           </View>
         </View>
+
+        <View style={styles.section}>
+          <View style={styles.stack}>
+            <GlowCard
+              title="Would you use CrowdKue for your event?"
+              subtitle="A quick answer helps validate the product direction."
+            >
+              <View style={styles.responseRow}>
+                {(["Yes", "Maybe", "No"] as ValidationResponse[]).map((option) => (
+                  <SelectionPill
+                    key={option}
+                    label={option}
+                    active={interestResponse === option}
+                    onPress={() => {
+                      setInterestResponse(option);
+                      setValidationSubmitted(false);
+                    }}
+                  />
+                ))}
+              </View>
+              <TextFieldInput
+                label="Optional comment"
+                value={interestComment}
+                onChangeText={(value) => {
+                  setInterestComment(value);
+                  setValidationSubmitted(false);
+                }}
+                placeholder="Tell us what would make CrowdKue a must-have."
+                multiline
+              />
+              {validationSubmitted ? (
+                <Text style={styles.successText}>Thanks. Your response was saved locally for this demo build.</Text>
+              ) : null}
+              <NeonButton
+                label="Submit Response"
+                onPress={() => {
+                  if (!interestResponse) {
+                    return;
+                  }
+                  submitValidationResponse({ response: interestResponse, comment: interestComment });
+                  setValidationSubmitted(true);
+                  setInterestComment("");
+                }}
+              />
+            </GlowCard>
+          </View>
+        </View>
       </ScrollView>
     </LinearGradient>
   );
@@ -245,4 +309,6 @@ const styles = StyleSheet.create({
   horizontalList: { paddingLeft: spacing.lg, paddingRight: spacing.sm },
   quickHeaderAction: { paddingHorizontal: spacing.lg },
   stack: { paddingHorizontal: spacing.lg, gap: spacing.md },
+  responseRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.md },
+  successText: { color: colors.success, fontSize: 14, lineHeight: 21 },
 });
