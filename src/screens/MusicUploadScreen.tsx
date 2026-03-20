@@ -98,6 +98,19 @@ export function MusicUploadScreen() {
           {persistenceMessage ? <Text style={styles.noteText}>{persistenceMessage}</Text> : null}
         </GlowCard>
 
+        <GlowCard style={styles.uploadCard}>
+          <Text style={styles.sectionTitle}>Create playlist</Text>
+          <TextFieldInput label="Playlist name" value={playlistName} onChangeText={setPlaylistName} placeholder="Reception" />
+          <View style={styles.buttonStack}>
+            <NeonButton
+              label="Create playlist"
+              variant="secondary"
+              onPress={showPaidVersionMessage}
+            />
+            <NeonButton label="Assign songs to playlists" variant="secondary" onPress={assignSongsToPlaylist} />
+          </View>
+        </GlowCard>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Uploaded songs</Text>
           <View style={styles.list}>
@@ -124,19 +137,6 @@ export function MusicUploadScreen() {
             )}
           </View>
         </View>
-
-        <GlowCard style={styles.uploadCard}>
-          <Text style={styles.sectionTitle}>Create playlist</Text>
-          <TextFieldInput label="Playlist name" value={playlistName} onChangeText={setPlaylistName} placeholder="Reception" />
-          <View style={styles.buttonStack}>
-            <NeonButton
-              label="Create playlist"
-              variant="secondary"
-              onPress={showPaidVersionMessage}
-            />
-            <NeonButton label="Assign songs to playlists" variant="secondary" onPress={assignSongsToPlaylist} />
-          </View>
-        </GlowCard>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Playlists</Text>
