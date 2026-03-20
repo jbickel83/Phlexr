@@ -17,6 +17,10 @@ type PlaylistCardProps = {
   name: string;
   detail: string;
   songs: PlaylistSongRow[];
+  deckAssignments: {
+    trackA: string | null;
+    trackB: string | null;
+  };
   onAddSong: (playlistId: string, payload: { title: string; artist?: string; duration?: string }) => void;
   onDeleteSong: (playlistId: string, songId: string) => void;
   onMoveSong: (playlistId: string, songId: string, direction: "up" | "down") => void;
@@ -24,7 +28,18 @@ type PlaylistCardProps = {
   onAssignTrackB: (songId: string) => void;
 };
 
-export function PlaylistCard({ id, name, detail, songs, onAddSong, onDeleteSong, onMoveSong, onAssignTrackA, onAssignTrackB }: PlaylistCardProps) {
+export function PlaylistCard({
+  id,
+  name,
+  detail,
+  songs,
+  deckAssignments,
+  onAddSong,
+  onDeleteSong,
+  onMoveSong,
+  onAssignTrackA,
+  onAssignTrackB,
+}: PlaylistCardProps) {
   const [composerOpen, setComposerOpen] = useState(false);
   const [songTitle, setSongTitle] = useState("");
   const [artist, setArtist] = useState("");
@@ -67,7 +82,7 @@ export function PlaylistCard({ id, name, detail, songs, onAddSong, onDeleteSong,
       </View>
 
       <View style={styles.actions}>
-        <ActionChip label={composerOpen ? "Close add song" : "Add song"} onPress={() => setComposerOpen((prev) => !prev)} />
+        <ActionChip label={composerOpen ? "Close add song" : "Add song"} active={composerOpen} onPress={() => setComposerOpen((prev) => !prev)} />
       </View>
 
       {composerOpen ? (
@@ -102,8 +117,8 @@ export function PlaylistCard({ id, name, detail, songs, onAddSong, onDeleteSong,
               <View style={styles.songActions}>
                 <ActionChip label="Up" onPress={() => onMoveSong(id, song.id, "up")} />
                 <ActionChip label="Down" onPress={() => onMoveSong(id, song.id, "down")} />
-                <ActionChip label="Track A" onPress={() => onAssignTrackA(song.id)} />
-                <ActionChip label="Track B" onPress={() => onAssignTrackB(song.id)} />
+                <ActionChip label="Track A" active={deckAssignments.trackA === song.id} onPress={() => onAssignTrackA(song.id)} />
+                <ActionChip label="Track B" active={deckAssignments.trackB === song.id} onPress={() => onAssignTrackB(song.id)} />
                 <ActionChip label="Delete" onPress={() => onDeleteSong(id, song.id)} />
               </View>
               {index < songs.length - 1 ? <View style={styles.divider} /> : null}

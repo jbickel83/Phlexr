@@ -155,6 +155,7 @@ export function MusicUploadScreen() {
                   name={playlist.name}
                   detail={playlist.detail}
                   songs={resolvePlaylistSongs(playlist.songIds)}
+                  deckAssignments={deckAssignments}
                   onAddSong={addSongToPlaylist}
                   onDeleteSong={(playlistId, songId) =>
                     confirmAction("Remove song from playlist?", "This will remove the song from this playlist right away.", () =>
