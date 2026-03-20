@@ -45,7 +45,7 @@ export function SongLibraryCard({
         </View>
       </View>
       <View style={styles.actions}>
-        <ActionChip label="Add song" onPress={onAdd} />
+        <ActionChip label="Add to Timeline" onPress={onAdd} />
         <ActionChip label="Add to Track A" active={activeTrack === "trackA"} onPress={() => onAssignTrackA?.(id)} />
         <ActionChip label="Add to Track B" active={activeTrack === "trackB"} onPress={() => onAssignTrackB?.(id)} />
         <ActionChip label="Delete song" onPress={() => onDelete?.(id)} />
