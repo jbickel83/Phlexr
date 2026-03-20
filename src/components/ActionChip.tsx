@@ -10,7 +10,7 @@ type ActionChipProps = {
 
 export function ActionChip({ label, active = false, onPress }: ActionChipProps) {
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.activeChip]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.chip, active && styles.activeChip, pressed && styles.pressedChip]}>
       <Text style={[styles.label, active && styles.activeLabel]}>{label}</Text>
     </Pressable>
   );
@@ -33,6 +33,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.45,
     shadowRadius: 12,
     elevation: 6,
+  },
+  pressedChip: {
+    borderColor: "rgba(37,224,255,0.32)",
+    backgroundColor: "rgba(37,224,255,0.18)",
+    shadowColor: colors.accentStrong,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 5,
+    transform: [{ scale: 0.98 }],
   },
   label: {
     color: colors.textPrimary,

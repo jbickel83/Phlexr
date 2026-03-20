@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMemo, useState } from "react";
 
 import { BackLink } from "../components/BackLink";
@@ -78,6 +78,22 @@ export function TimelineBuilderScreen() {
     setTime("");
     setMusic("");
     setAnnouncementAttached(false);
+  };
+
+  const confirmDeleteTimelineItem = (id: string) => {
+    const removeItem = () => deleteTimelineItem(id);
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      if (window.confirm("Delete timeline item?\n\nThis removes the moment from the event timeline.")) {
+        removeItem();
+      }
+      return;
+    }
+
+    Alert.alert("Delete timeline item?", "This removes the moment from the event timeline.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: removeItem },
+    ]);
   };
 
   return (
@@ -169,12 +185,7 @@ export function TimelineBuilderScreen() {
                 time={item.time}
                 music={item.music}
                 announcementAttached={item.announcementAttached}
-                onDelete={(id) =>
-                  Alert.alert("Delete timeline item?", "This removes the moment from the event timeline.", [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Delete", style: "destructive", onPress: () => deleteTimelineItem(id) },
-                  ])
-                }
+                onDelete={confirmDeleteTimelineItem}
                 onReorder={reorderTimelineItems}
                 onEdit={hydrateEditor}
               />
