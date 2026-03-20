@@ -61,6 +61,130 @@ export function DashboardScreen() {
     ]);
   };
 
+  const heroHeaderSection = (
+    <View style={styles.hero}>
+      <View style={styles.heroHeader}>
+        <View style={styles.brandLockup}>
+          <Text style={styles.eyebrow}>CrowdKue Dashboard</Text>
+          <Text style={styles.title}>Run the room without a DJ booth.</Text>
+          <Text style={styles.subtitle}>
+            Cue music, announcements, and transitions from your own audio files with event-day confidence.
+          </Text>
+        </View>
+        <View style={styles.statusOrb} />
+      </View>
+    </View>
+  );
+
+  const createEventSection = (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Create new event</Text>
+        <Text style={styles.sectionCaption}>Start from scratch or update the current event flow.</Text>
+      </View>
+      <GlowCard style={styles.ctaCard}>
+        <Text style={styles.ctaTitle}>Build a new event autopilot</Text>
+        <Text style={styles.ctaBody}>
+          Set timing, import local music, automate announcements, and prep your live run screen.
+        </Text>
+        <View style={styles.ctaActions}>
+          <NeonButton
+            label="Create New Event"
+            onPress={() => {
+              beginNewEventDraft();
+              navigation.navigate("Events", { screen: "CreateEvent" });
+            }}
+          />
+          <ActionChip
+            label="Open Event Hub"
+            onPress={() =>
+              navigation.navigate("Events", {
+                screen: selectedEventId ? "EventOverview" : "CreateEvent",
+              })
+            }
+          />
+        </View>
+      </GlowCard>
+    </View>
+  );
+
+  const systemReadinessSection = (
+    <View style={styles.hero}>
+      <GlowCard style={styles.heroCard}>
+        <View style={styles.heroCardTop}>
+          <View>
+            <Text style={styles.heroLabel}>System Readiness</Text>
+            <Text style={styles.heroValue}>94%</Text>
+          </View>
+          <Text style={styles.heroMeta}>{currentEvent.status}</Text>
+        </View>
+        <View style={styles.metricsRow}>
+          <View style={styles.metric}>
+            <Text style={styles.metricNumber}>{savedEvents.length}</Text>
+            <Text style={styles.metricText}>saved events</Text>
+          </View>
+          <View style={styles.metric}>
+            <Text style={styles.metricNumber}>{timelineItems.length}</Text>
+            <Text style={styles.metricText}>timeline items</Text>
+          </View>
+          <View style={styles.metric}>
+            <Text style={styles.metricNumber}>{songs.length + announcements.length}</Text>
+            <Text style={styles.metricText}>music + cues</Text>
+          </View>
+        </View>
+      </GlowCard>
+    </View>
+  );
+
+  const surveySection = (
+    <View style={styles.section}>
+      <View style={styles.stack}>
+        <GlowCard
+          title="Would you use CrowdKue for your event?"
+          subtitle="A quick answer helps validate the product direction."
+        >
+          <View style={styles.responseRow}>
+            {(["Yes", "Maybe", "No"] as ValidationResponse[]).map((option) => (
+              <SelectionPill
+                key={option}
+                label={option}
+                active={interestResponse === option}
+                onPress={() => {
+                  setInterestResponse(option);
+                  setValidationSubmitted(false);
+                }}
+              />
+            ))}
+          </View>
+          <TextFieldInput
+            label="Optional comment"
+            value={interestComment}
+            onChangeText={(value) => {
+              setInterestComment(value);
+              setValidationSubmitted(false);
+            }}
+            placeholder="Tell us what would make CrowdKue a must-have."
+            multiline
+          />
+          {validationSubmitted ? (
+            <Text style={styles.successText}>Thanks. Your response was saved locally for this demo build.</Text>
+          ) : null}
+          <NeonButton
+            label="Submit Response"
+            onPress={() => {
+              if (!interestResponse) {
+                return;
+              }
+              submitValidationResponse({ response: interestResponse, comment: interestComment });
+              setValidationSubmitted(true);
+              setInterestComment("");
+            }}
+          />
+        </GlowCard>
+      </View>
+    </View>
+  );
+
   return (
     <LinearGradient
       colors={["#04070F", "#071120", "#0A1730"]}
@@ -69,74 +193,9 @@ export function DashboardScreen() {
       style={styles.screen}
     >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <View style={styles.heroHeader}>
-            <View style={styles.brandLockup}>
-              <Text style={styles.eyebrow}>CrowdKue Dashboard</Text>
-              <Text style={styles.title}>Run the room without a DJ booth.</Text>
-              <Text style={styles.subtitle}>
-                Cue music, announcements, and transitions from your own audio files with event-day confidence.
-              </Text>
-            </View>
-            <View style={styles.statusOrb} />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Create new event</Text>
-            <Text style={styles.sectionCaption}>Start from scratch or update the current event flow.</Text>
-          </View>
-          <GlowCard style={styles.ctaCard}>
-            <Text style={styles.ctaTitle}>Build a new event autopilot</Text>
-            <Text style={styles.ctaBody}>
-              Set timing, import local music, automate announcements, and prep your live run screen.
-            </Text>
-            <View style={styles.ctaActions}>
-              <NeonButton
-                label="Create New Event"
-                onPress={() => {
-                  beginNewEventDraft();
-                  navigation.navigate("Events", { screen: "CreateEvent" });
-                }}
-              />
-              <ActionChip
-                label="Open Event Hub"
-                onPress={() =>
-                  navigation.navigate("Events", {
-                    screen: selectedEventId ? "EventOverview" : "CreateEvent",
-                  })
-                }
-              />
-            </View>
-          </GlowCard>
-        </View>
-
-        <View style={styles.hero}>
-          <GlowCard style={styles.heroCard}>
-            <View style={styles.heroCardTop}>
-              <View>
-                <Text style={styles.heroLabel}>System Readiness</Text>
-                <Text style={styles.heroValue}>94%</Text>
-              </View>
-              <Text style={styles.heroMeta}>{currentEvent.status}</Text>
-            </View>
-            <View style={styles.metricsRow}>
-              <View style={styles.metric}>
-                <Text style={styles.metricNumber}>{savedEvents.length}</Text>
-                <Text style={styles.metricText}>saved events</Text>
-              </View>
-              <View style={styles.metric}>
-                <Text style={styles.metricNumber}>{timelineItems.length}</Text>
-                <Text style={styles.metricText}>timeline items</Text>
-              </View>
-              <View style={styles.metric}>
-                <Text style={styles.metricNumber}>{songs.length + announcements.length}</Text>
-                <Text style={styles.metricText}>music + cues</Text>
-              </View>
-            </View>
-          </GlowCard>
-        </View>
+        {heroHeaderSection}
+        {createEventSection}
+        {systemReadinessSection}
 
         {persistenceMessage ? (
           <View style={styles.section}>
@@ -215,52 +274,7 @@ export function DashboardScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.stack}>
-            <GlowCard
-              title="Would you use CrowdKue for your event?"
-              subtitle="A quick answer helps validate the product direction."
-            >
-              <View style={styles.responseRow}>
-                {(["Yes", "Maybe", "No"] as ValidationResponse[]).map((option) => (
-                  <SelectionPill
-                    key={option}
-                    label={option}
-                    active={interestResponse === option}
-                    onPress={() => {
-                      setInterestResponse(option);
-                      setValidationSubmitted(false);
-                    }}
-                  />
-                ))}
-              </View>
-              <TextFieldInput
-                label="Optional comment"
-                value={interestComment}
-                onChangeText={(value) => {
-                  setInterestComment(value);
-                  setValidationSubmitted(false);
-                }}
-                placeholder="Tell us what would make CrowdKue a must-have."
-                multiline
-              />
-              {validationSubmitted ? (
-                <Text style={styles.successText}>Thanks. Your response was saved locally for this demo build.</Text>
-              ) : null}
-              <NeonButton
-                label="Submit Response"
-                onPress={() => {
-                  if (!interestResponse) {
-                    return;
-                  }
-                  submitValidationResponse({ response: interestResponse, comment: interestComment });
-                  setValidationSubmitted(true);
-                  setInterestComment("");
-                }}
-              />
-            </GlowCard>
-          </View>
-        </View>
+        {surveySection}
       </ScrollView>
     </LinearGradient>
   );
