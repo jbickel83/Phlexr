@@ -75,7 +75,6 @@ export function DashboardScreen() {
           <Pressable style={styles.helpButton} onPress={() => navigation.navigate("Settings", { scrollTo: "how-to-use", nonce: Date.now() })}>
             <Text style={styles.helpButtonText}>Help</Text>
           </Pressable>
-          <View style={styles.statusOrb} />
         </View>
       </View>
     </View>
@@ -313,18 +312,6 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.accent, textTransform: "uppercase", letterSpacing: 1.1, fontSize: 12, fontWeight: "800" },
   title: { color: colors.textPrimary, fontSize: 34, lineHeight: 38, fontWeight: "800" },
   subtitle: { color: colors.textSecondary, fontSize: 15, lineHeight: 22, maxWidth: 310 },
-  statusOrb: {
-    width: 18,
-    height: 18,
-    borderRadius: 999,
-    backgroundColor: colors.accentStrong,
-    shadowColor: colors.accentStrong,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.85,
-    shadowRadius: 18,
-    elevation: 10,
-    marginTop: 6,
-  },
   heroCard: { paddingBottom: spacing.lg },
   heroCardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: spacing.md, marginBottom: spacing.lg },
   heroLabel: { color: colors.textSecondary, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 },
