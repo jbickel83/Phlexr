@@ -202,6 +202,21 @@ export function LiveEventModeScreen() {
           </View>
         </GlowCard>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Live Controls</Text>
+          <View style={styles.primaryControls}>
+            <NeonButton label={primaryLabel} onPress={handlePrimaryAction} />
+            <NeonButton label={manualOverride ? "Exit Manual Override" : "Manual Override"} variant="secondary" onPress={toggleManualOverride} />
+          </View>
+          <View style={styles.secondaryControls}>
+            <ActionChip label="Open DJ Mixing Board" onPress={() => navigation.getParent()?.navigate("Mixer")} />
+            <ActionChip label="Go to previous item" onPress={goToPreviousTimelineItem} />
+            <ActionChip label="Restart current item" onPress={restartCurrentTimelineItem} />
+            <ActionChip label="Skip to next timeline item" onPress={skipToNextTimelineItem} />
+            <ActionChip label="Reset Event" onPress={resetLiveProgress} />
+          </View>
+        </View>
+
         {announcements.length === 0 ? (
           <EmptyStateCard
             title="Add announcements for key moments"
@@ -274,21 +289,6 @@ export function LiveEventModeScreen() {
             <Text style={styles.progressText}>{formatMillis(playbackDurationMillis)}</Text>
           </View>
         </GlowCard>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Live Controls</Text>
-          <View style={styles.primaryControls}>
-            <NeonButton label={primaryLabel} onPress={handlePrimaryAction} />
-            <NeonButton label={manualOverride ? "Exit Manual Override" : "Manual Override"} variant="secondary" onPress={toggleManualOverride} />
-          </View>
-          <View style={styles.secondaryControls}>
-            <ActionChip label="Open DJ Mixing Board" onPress={() => navigation.getParent()?.navigate("Mixer")} />
-            <ActionChip label="Go to previous item" onPress={goToPreviousTimelineItem} />
-            <ActionChip label="Restart current item" onPress={restartCurrentTimelineItem} />
-            <ActionChip label="Skip to next timeline item" onPress={skipToNextTimelineItem} />
-            <ActionChip label="Reset Event" onPress={resetLiveProgress} />
-          </View>
-        </View>
 
         {timelineItems.length === 0 ? (
           <EmptyStateCard title="Add your first timeline moment" description="Build the event timeline before running Live Event Mode." />
