@@ -18,7 +18,7 @@ const featureCards = [
 
 const metrics = [
   { label: "Rating", value: "9.1/10" },
-  { label: "Would-flex", value: "87%" },
+  { label: "Would-Flex %", value: "87%" },
   { label: "Fake / AI", value: "06%" },
 ];
 
@@ -133,11 +133,31 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="mt-5 grid h-56 place-items-center rounded-[1.25rem] border border-white/8 bg-[radial-gradient(circle_at_top,#3a2c06_0%,#161616_42%,#0b0b0b_100%)]">
-                  <div className="space-y-3 text-center">
-                    <div className="mx-auto h-20 w-20 rounded-full border border-gold/30 bg-black/35" />
-                    <p className="text-sm uppercase tracking-[0.3em] text-gold/70">Flex scan ready</p>
-                    <p className="text-3xl font-semibold text-white">Score incoming</p>
+                <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-white/8 bg-[radial-gradient(circle_at_top,#3a2c06_0%,#161616_42%,#0b0b0b_100%)]">
+                  <div className="grid h-56 place-items-center border-b border-white/6 px-6 text-center">
+                    <div className="space-y-3">
+                      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-gold/30 bg-black/35 shadow-[0_0_40px_rgba(230,179,58,0.18)]">
+                        <div className="h-9 w-9 rounded-full border border-gold/40 bg-gold/10" />
+                      </div>
+                      <p className="text-sm uppercase tracking-[0.3em] text-gold/70">Flex Scan Ready</p>
+                      <p className="text-3xl font-semibold text-white">Score incoming</p>
+                    </div>
+                  </div>
+
+                  <div className="relative h-24 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))]">
+                    <div className="absolute inset-x-8 bottom-4 h-px bg-gradient-to-r from-transparent via-gold/35 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-5 flex justify-center">
+                      <div className="relative h-12 w-44">
+                        <div className="absolute left-6 right-6 top-3 h-5 rounded-[999px] border border-gold/35 bg-[linear-gradient(180deg,#201806,#0a0a0a)]" />
+                        <div className="absolute left-10 right-10 top-0 h-5 rounded-t-[999px] border border-gold/30 border-b-0 bg-[linear-gradient(180deg,rgba(230,179,58,0.3),rgba(255,255,255,0.04))]" />
+                        <div className="absolute left-3 top-5 h-4 w-8 rounded-l-full border border-gold/25 bg-[#0d0d0d]" />
+                        <div className="absolute right-3 top-5 h-4 w-8 rounded-r-full border border-gold/25 bg-[#0d0d0d]" />
+                        <div className="absolute bottom-0 left-7 h-5 w-5 rounded-full border border-gold/35 bg-black" />
+                        <div className="absolute bottom-0 right-7 h-5 w-5 rounded-full border border-gold/35 bg-black" />
+                        <div className="absolute left-8 top-5 h-1.5 w-3 rounded-full bg-gold/60 blur-[1px]" />
+                        <div className="absolute right-8 top-5 h-1.5 w-3 rounded-full bg-gold/60 blur-[1px]" />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -166,8 +186,7 @@ export default function Page() {
 
       <section id="features" className="mx-auto max-w-7xl px-6 py-4 sm:px-8 lg:px-12">
         <div className="max-w-3xl">
-          <p className="text-xs uppercase tracking-[0.24em] text-gold/80">Feature cards</p>
-          <h2 className="mt-4 font-display text-4xl text-white sm:text-5xl">
+          <h2 className="font-display text-4xl text-white sm:text-5xl">
             Built to make the flex undeniable.
           </h2>
           <p className="mt-5 text-base leading-8 text-white/62 sm:text-lg">
@@ -177,13 +196,12 @@ export default function Page() {
         </div>
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          {featureCards.map((card, index) => (
+          {featureCards.map((card) => (
             <article
               key={card.title}
               className="rounded-[1.8rem] border border-white/10 bg-white/[0.035] p-7 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.9)]"
             >
-              <p className="text-sm uppercase tracking-[0.2em] text-gold/75">0{index + 1}</p>
-              <h3 className="mt-5 text-2xl font-semibold text-white">{card.title}</h3>
+              <h3 className="text-2xl font-semibold text-white">{card.title}</h3>
               <p className="mt-4 text-base leading-7 text-white/62">{card.copy}</p>
             </article>
           ))}
