@@ -420,6 +420,34 @@ export default function Page() {
           </div>
         </div>
       </section>
+
+      <footer className="border-t border-gold/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.015),rgba(0,0,0,0))]">
+        <div className="mx-auto max-w-7xl px-6 py-10 sm:px-8 lg:px-12">
+          <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="font-display text-2xl tracking-[0.22em] text-gold">PHLEXR</p>
+              <p className="mt-3 text-sm text-white/58">Post it. Prove it. Get rated.</p>
+            </div>
+
+            <div className="flex flex-wrap gap-3 md:justify-end">
+              {["Facebook", "X", "Instagram", "TikTok"].map((social) => (
+                <a
+                  key={social}
+                  href="#"
+                  aria-label={social}
+                  className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-medium text-white/78 transition hover:border-gold/30 hover:text-gold hover:shadow-[0_0_18px_rgba(230,179,58,0.15)]"
+                >
+                  {social}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-white/8 pt-6 text-center text-sm text-white/45">
+            © 2026 PHLEXR. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
