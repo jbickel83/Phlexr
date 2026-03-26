@@ -135,7 +135,7 @@ export default function Page() {
 
                 <div className="mt-5 relative overflow-hidden rounded-[1.25rem] border border-gold/30">
                   <img
-                    src="https://images.unsplash.com/photo-1619767886558-efdc259cde1a?q=80&w=1600&auto=format&fit=crop"
+                    src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1600&auto=format&fit=crop"
                     alt="Luxury black supercar"
                     className="w-full h-[320px] object-cover"
                   />
