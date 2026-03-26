@@ -16,6 +16,68 @@ const featureCards = [
   },
 ];
 
+const realFlexExamples = [
+  {
+    label: "PREMIUM",
+    labelClassName: "bg-[#3a2c12] text-gold border border-gold/35",
+    image:
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop",
+    imageAlt: "Black exotic supercar parked outside a luxury mansion at night",
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+    name: 'Marcus "Prime" T.',
+    location: "Miami, FL",
+    score: "9.8",
+    topFlexes: [
+      "2024 Lamborghini Revuelto $482K",
+      'Rolex Daytona "John Mayer" $155K',
+    ],
+    scanned: "Scanned 23 min ago",
+  },
+  {
+    label: "CERTIFIED",
+    labelClassName: "bg-[#16365c] text-white border border-[#5f8dc8]/35",
+    image:
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1600&auto=format&fit=crop",
+    imageAlt: "Luxury black designer handbag in warm lighting",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
+    name: "Layla R.",
+    location: "Los Angeles, CA",
+    score: "9.5",
+    topFlexes: ["Chanel Diamond Bag $32K"],
+    scanned: "Scanned 1 hour ago",
+  },
+  {
+    label: "ELITE",
+    labelClassName: "bg-[#3f2d14] text-gold border border-gold/35",
+    image:
+      "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1600&auto=format&fit=crop",
+    imageAlt: "Gold Rolex watch in a dark luxury setting",
+    avatar:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=300&auto=format&fit=crop",
+    name: "Zay K.",
+    location: "Dubai, UAE",
+    score: "9.7",
+    topFlexes: ["Rolex Daytona 18k Gold $75K"],
+    scanned: "Scanned 3 hours ago",
+  },
+  {
+    label: "OG",
+    labelClassName: "bg-[#103733] text-[#6af0d8] border border-[#2ad4b8]/35",
+    image:
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1600&auto=format&fit=crop",
+    imageAlt: "Black classic lowrider parked outside a mountain luxury home at night",
+    avatar:
+      "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?q=80&w=300&auto=format&fit=crop",
+    name: 'Dante "OG" W.',
+    location: "Aspen, CO",
+    score: "9.3",
+    topFlexes: ["Black 1964 Impala Lowrider $65K"],
+    scanned: "Scanned 5 hours ago",
+  },
+];
+
 const metrics = [
   { label: "Rating", value: "9.1/10" },
   { label: "Would-Flex %", value: "87%" },
@@ -196,6 +258,113 @@ export default function Page() {
               <p className="mt-4 text-base leading-7 text-white/62">{card.copy}</p>
             </article>
           ))}
+        </div>
+
+        <div className="mt-16 rounded-[2rem] border border-gold/18 bg-[radial-gradient(circle_at_top,rgba(230,179,58,0.09),rgba(255,255,255,0.015)_42%,rgba(0,0,0,0)_72%)] px-4 py-10 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h3 className="text-4xl font-semibold text-white sm:text-5xl">
+              🔥 Real Flex Examples
+            </h3>
+            <p className="mx-auto mt-4 max-w-4xl text-lg leading-8 text-white/62">
+              Verified profiles from the PHLEXR community — this is what getting scanned looks
+              like.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 xl:grid-cols-4">
+            {realFlexExamples.map((example) => (
+              <article
+                key={example.name}
+                className="overflow-hidden rounded-[1.85rem] border border-gold/28 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] shadow-[0_24px_80px_-40px_rgba(0,0,0,0.95)]"
+              >
+                <div className="relative">
+                  <img
+                    src={example.image}
+                    alt={example.imageAlt}
+                    className="h-52 w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/28 to-transparent" />
+                  <div className="absolute left-4 top-4">
+                    <span
+                      className={`inline-flex rounded-xl px-3 py-1.5 text-sm font-semibold tracking-[0.06em] ${example.labelClassName}`}
+                    >
+                      {example.label}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t border-gold/12 bg-[linear-gradient(180deg,#12100d,#0b0b0b)] p-5">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={example.avatar}
+                      alt={example.name}
+                      className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
+                    />
+                    <div>
+                      <p className="text-[2rem] font-semibold leading-none text-white">{example.name}</p>
+                      <p className="mt-3 text-lg text-[#ddb76b]">{example.location}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 inline-flex rounded-full border border-gold/25 bg-[#2c2010] px-5 py-2 text-lg text-[#efc467]">
+                    PHLEX Score: {example.score}
+                  </div>
+
+                  <div className="mt-5 border-t border-gold/12 pt-4">
+                    <p className="text-sm uppercase tracking-[0.12em] text-white/48">Top Flexes</p>
+                    <div className="mt-3 grid gap-3">
+                      {example.topFlexes.map((flex) => (
+                        <div
+                          key={flex}
+                          className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-xl text-white/92"
+                        >
+                          {flex}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between gap-3 text-base text-white/62">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-[#7ad267]" />
+                      <span>{example.scanned}</span>
+                    </div>
+                    <span className="rounded-full bg-[#0d3a1e] px-4 py-1.5 text-[#d8ffe3]">
+                      Verified
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-10 flex flex-col gap-6 rounded-[2rem] border border-gold/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] px-6 py-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+            <div className="flex items-center gap-5">
+              <div className="flex -space-x-4">
+                {[
+                  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
+                  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+                  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=300&auto=format&fit=crop",
+                  "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?q=80&w=300&auto=format&fit=crop",
+                ].map((avatar) => (
+                  <img
+                    key={avatar}
+                    src={avatar}
+                    alt="PHLEXR profile avatar"
+                    className="h-14 w-14 rounded-full border-2 border-[#d5ad58] object-cover"
+                  />
+                ))}
+              </div>
+              <div>
+                <p className="text-3xl font-semibold text-white">10,247+ profiles scanned today</p>
+              </div>
+            </div>
+
+            <div className="inline-flex items-center rounded-full border border-[#2b7b47] bg-[linear-gradient(180deg,#12341c,#0b2414)] px-6 py-3 text-xl font-medium text-[#d4ffe0]">
+              <span className="mr-3 text-[#7beb83]">⚡</span>
+              Live Feed Active
+            </div>
+          </div>
         </div>
       </section>
 
