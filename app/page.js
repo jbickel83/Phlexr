@@ -275,7 +275,7 @@ export default function Page() {
             {realFlexExamples.map((example) => (
               <article
                 key={example.name}
-                className="overflow-hidden rounded-[1.85rem] border border-gold/28 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] shadow-[0_24px_80px_-40px_rgba(0,0,0,0.95)]"
+                className="flex h-full min-h-[38rem] flex-col overflow-hidden rounded-[1.85rem] border border-gold/28 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] shadow-[0_24px_80px_-40px_rgba(0,0,0,0.95)]"
               >
                 <div className="relative">
                   <img
@@ -293,7 +293,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="border-t border-gold/12 bg-[linear-gradient(180deg,#12100d,#0b0b0b)] p-5">
+                <div className="flex flex-1 flex-col border-t border-gold/12 bg-[linear-gradient(180deg,#12100d,#0b0b0b)] p-5">
                   <div className="flex items-center gap-4">
                     <img
                       src={example.avatar}
@@ -310,7 +310,7 @@ export default function Page() {
                     PHLEX Score: {example.score}
                   </div>
 
-                  <div className="mt-5 border-t border-gold/12 pt-4">
+                  <div className="mt-5 flex min-h-[12rem] flex-col border-t border-gold/12 pt-4">
                     <p className="text-sm uppercase tracking-[0.12em] text-white/48">Top Flexes</p>
                     <div className="mt-3 grid gap-3">
                       {example.topFlexes.map((flex) => (
@@ -324,7 +324,7 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="mt-5 flex items-center justify-between gap-3 text-base text-white/62">
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-base text-white/62">
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full bg-[#7ad267]" />
                       <span>{example.scanned}</span>
