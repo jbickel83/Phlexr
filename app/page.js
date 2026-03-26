@@ -190,8 +190,8 @@ export default function Page() {
                     PX
                   </div>
                   <div>
-                    <p className="font-semibold text-white">@phlexrfounder</p>
-                    <p className="text-sm text-white/48">Rolex, jet stairs, midnight caption.</p>
+                    <p className="font-semibold text-white">@Alex Richards</p>
+                    <p className="text-sm text-white/48">Rolex, Jet, Hublot, Lambo.</p>
                   </div>
                 </div>
 
