@@ -294,24 +294,28 @@ export default function Page() {
                 </div>
 
                 <div className="flex flex-1 flex-col border-t border-gold/12 bg-[linear-gradient(180deg,#12100d,#0b0b0b)] p-5">
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-h-[7.5rem] items-center gap-4">
                     <img
                       src={example.avatar}
                       alt={example.name}
                       className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
                     />
-                    <div>
+                    <div className="flex min-h-[5.5rem] flex-col justify-center">
                       <p className="text-[2rem] font-semibold leading-none text-white">{example.name}</p>
                       <p className="mt-3 text-lg text-[#ddb76b]">{example.location}</p>
                     </div>
                   </div>
 
-                  <div className="mt-5 inline-flex rounded-full border border-gold/25 bg-[#2c2010] px-5 py-2 text-lg text-[#efc467]">
-                    PHLEX Score: {example.score}
+                  <div className="mt-5 flex min-h-[3.5rem] items-start">
+                    <div className="inline-flex rounded-full border border-gold/25 bg-[#2c2010] px-5 py-2 text-lg text-[#efc467]">
+                      PHLEX Score: {example.score}
+                    </div>
                   </div>
 
                   <div className="mt-5 flex min-h-[12rem] flex-col border-t border-gold/12 pt-4">
-                    <p className="text-sm uppercase tracking-[0.12em] text-white/48">Top Flexes</p>
+                    <div className="min-h-[1.75rem]">
+                      <p className="text-sm uppercase tracking-[0.12em] text-white/48">Top Flexes</p>
+                    </div>
                     <div className="mt-3 grid gap-3">
                       {example.topFlexes.map((flex) => (
                         <div
