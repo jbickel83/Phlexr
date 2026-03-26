@@ -133,32 +133,24 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-white/8 bg-[radial-gradient(circle_at_top,#3a2c06_0%,#161616_42%,#0b0b0b_100%)]">
-                  <div className="grid h-56 place-items-center border-b border-white/6 px-6 text-center">
-                    <div className="space-y-3">
-                      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-gold/30 bg-black/35 shadow-[0_0_40px_rgba(230,179,58,0.18)]">
-                        <div className="h-9 w-9 rounded-full border border-gold/40 bg-gold/10" />
-                      </div>
-                      <p className="text-sm uppercase tracking-[0.3em] text-gold/70">Flex Scan Ready</p>
-                      <p className="text-3xl font-semibold text-white">Score incoming</p>
-                    </div>
+                <div className="mt-5 relative overflow-hidden rounded-[1.25rem] border border-gold/30">
+
+                  <img
+                    src="https://images.unsplash.com/photo-1619767886558-efdc259cde1a?q=80&w=1600&auto=format&fit=crop"
+                    className="w-full h-[320px] object-cover"
+                  />
+
+                  <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
+
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <p className="text-sm uppercase tracking-[0.3em] text-gold/80">
+                      Flex Scan Ready
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold text-white">
+                      Score incoming
+                    </p>
                   </div>
 
-                  <div className="relative h-24 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))]">
-                    <div className="absolute inset-x-8 bottom-4 h-px bg-gradient-to-r from-transparent via-gold/35 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-5 flex justify-center">
-                      <div className="relative h-12 w-44">
-                        <div className="absolute left-6 right-6 top-3 h-5 rounded-[999px] border border-gold/35 bg-[linear-gradient(180deg,#201806,#0a0a0a)]" />
-                        <div className="absolute left-10 right-10 top-0 h-5 rounded-t-[999px] border border-gold/30 border-b-0 bg-[linear-gradient(180deg,rgba(230,179,58,0.3),rgba(255,255,255,0.04))]" />
-                        <div className="absolute left-3 top-5 h-4 w-8 rounded-l-full border border-gold/25 bg-[#0d0d0d]" />
-                        <div className="absolute right-3 top-5 h-4 w-8 rounded-r-full border border-gold/25 bg-[#0d0d0d]" />
-                        <div className="absolute bottom-0 left-7 h-5 w-5 rounded-full border border-gold/35 bg-black" />
-                        <div className="absolute bottom-0 right-7 h-5 w-5 rounded-full border border-gold/35 bg-black" />
-                        <div className="absolute left-8 top-5 h-1.5 w-3 rounded-full bg-gold/60 blur-[1px]" />
-                        <div className="absolute right-8 top-5 h-1.5 w-3 rounded-full bg-gold/60 blur-[1px]" />
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
