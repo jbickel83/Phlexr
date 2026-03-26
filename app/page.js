@@ -133,15 +133,27 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-white/8 bg-[radial-gradient(circle_at_top,#3a2c06_0%,#161616_42%,#0b0b0b_100%)]">
-                  <div className="grid h-56 place-items-center border-b border-white/6 px-6 text-center">
-                    <div className="space-y-3">
-                      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-gold/30 bg-black/35 shadow-[0_0_40px_rgba(230,179,58,0.18)]">
-                        <div className="h-9 w-9 rounded-full border border-gold/40 bg-gold/10" />
-                      </div>
-                      <p className="text-sm uppercase tracking-[0.3em] text-gold/70">Flex Scan Ready</p>
-                      <p className="text-3xl font-semibold text-white">Score incoming</p>
-                    </div>
+                <div className="mt-4 overflow-hidden rounded-[26px] border border-[#d8b25a]/30 relative">
+
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,215,100,0.25),transparent_40%)]" />
+
+  <img
+    src="https://images.unsplash.com/photo-1619767886558-efdc259cde1a?q=80&w=1600&auto=format&fit=crop"
+    className="w-full h-[320px] object-cover"
+  />
+
+  <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
+
+  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+    <div className="text-[#d8b25a] tracking-[0.4em] text-xs uppercase">
+      Flex Scan Ready
+    </div>
+    <p className="mt-3 text-3xl font-semibold text-white">
+      Score incoming
+    </p>
+  </div>
+
+</div>
                   </div>
 
                   <div className="relative h-24 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))]">
