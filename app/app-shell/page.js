@@ -490,7 +490,13 @@ export default function AppShellPage() {
                             </p>
                           </div>
                           <div className="flex flex-1 items-start">
-                            <p className="text-xl font-semibold leading-none text-gold sm:text-2xl">
+                            <p
+                              className={`min-w-0 font-semibold leading-tight text-gold ${
+                                label === "Category"
+                                  ? "text-lg sm:text-xl"
+                                  : "text-xl leading-none sm:text-2xl"
+                              }`}
+                            >
                               {value}
                             </p>
                           </div>
