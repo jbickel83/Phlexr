@@ -162,7 +162,7 @@ function SectionCard({ id, eyebrow, title, copy, children, hideHeader = false })
 
 function PremiumBadge({ children }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-gold/30 bg-[#2b200f] px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-gold">
+    <span className="inline-flex h-9 w-fit items-center justify-center whitespace-nowrap rounded-full border border-gold/30 bg-[#2b200f] px-3 py-0 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] text-gold sm:h-auto sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.16em]">
       {children}
     </span>
   );
