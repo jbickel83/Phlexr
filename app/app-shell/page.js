@@ -355,7 +355,7 @@ export default function AppShellPage() {
                 <PremiumBadge>Premium badge system</PremiumBadge>
                 <a
                   href="/"
-                  className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
                 >
                   Back to landing page
                 </a>
@@ -378,7 +378,7 @@ export default function AppShellPage() {
                       <input
                         type="text"
                         placeholder="@phlexrname"
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                        className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                       />
                     </label>
                     <label className="grid gap-2">
@@ -386,7 +386,7 @@ export default function AppShellPage() {
                       <input
                         type="email"
                         placeholder="you@example.com"
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                        className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                       />
                     </label>
                     <label className="grid gap-2">
@@ -394,7 +394,7 @@ export default function AppShellPage() {
                       <input
                         type="password"
                         placeholder="........"
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                        className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                       />
                     </label>
                   </div>
@@ -410,14 +410,14 @@ export default function AppShellPage() {
                     <button
                       type="button"
                       onClick={() => enterShell("feed")}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
+                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
                     >
                       Continue with Google
                     </button>
                     <button
                       type="button"
                       onClick={() => enterShell("feed")}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
+                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
                     >
                       Continue with Apple
                     </button>
@@ -531,7 +531,7 @@ export default function AppShellPage() {
                           className={`h-full rounded-full px-4 py-3 text-sm font-semibold ${
                             index === 0
                               ? "bg-gold text-obsidian"
-                              : "border border-white/10 bg-white/[0.03] text-white"
+                              : "border border-white/15 bg-white/[0.03] text-white"
                           }`}
                         >
                           {label}
@@ -568,7 +568,7 @@ export default function AppShellPage() {
                         }))
                       }
                       placeholder="https://..."
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                      className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
                     />
                   </label>
                   <div className="grid min-h-28 place-items-center rounded-[1.5rem] border border-dashed border-gold/28 bg-white/[0.02] text-center text-white/55">
@@ -586,7 +586,7 @@ export default function AppShellPage() {
                         }))
                       }
                       placeholder="What makes this flex undeniable?"
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                      className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
                     />
                   </label>
                   <label className="grid gap-2">
@@ -595,7 +595,7 @@ export default function AppShellPage() {
                       <button
                         type="button"
                         onClick={() => setIsCategoryOpen((currentValue) => !currentValue)}
-                        className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-gold outline-none transition"
+                        className="flex w-full items-center justify-between rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-gold outline-none transition"
                         aria-haspopup="listbox"
                         aria-expanded={isCategoryOpen}
                       >
@@ -649,7 +649,7 @@ export default function AppShellPage() {
                         }))
                       }
                       placeholder="Tell the story behind the flex."
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                      className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
                     />
                   </label>
                 </div>
@@ -791,7 +791,7 @@ export default function AppShellPage() {
             <a
               key={item.label}
               href={item.href}
-              className="flex-1 rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-center text-xs font-medium text-white/72"
+              className="flex-1 rounded-full border border-white/15 bg-white/[0.03] px-3 py-2 text-center text-xs font-medium text-white/72"
             >
               {item.label}
             </a>
