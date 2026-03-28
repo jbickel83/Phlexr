@@ -490,7 +490,7 @@ export default function AppShellPage() {
                             </p>
                           </div>
                           <div className="flex flex-1 items-start">
-                            <p className="text-2xl font-semibold leading-none text-gold">
+                            <p className="text-xl font-semibold leading-none text-gold sm:text-2xl">
                               {value}
                             </p>
                           </div>
