@@ -1168,9 +1168,9 @@ export default function AppShellPage() {
                     </div>
 
                     <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap gap-2">
-                        {post.owner ? (
-                          <>
+                      {post.owner ? (
+                        <>
+                          <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
                               onClick={() => startEditingPost(post)}
@@ -1185,22 +1185,22 @@ export default function AppShellPage() {
                             >
                               Delete
                             </button>
-                          </>
-                        ) : null}
-                      </div>
-                      <div className="ml-auto flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => toggleBoostMenu(post.id)}
-                          className="inline-flex h-8 items-center justify-center rounded-full border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#efc467] transition hover:border-gold/55 hover:bg-[linear-gradient(180deg,rgba(230,179,58,0.18),rgba(255,255,255,0.03))] sm:h-9 sm:px-4 sm:text-xs"
-                        >
-                          {post.boosted ? `Boosted ${post.boostLevel}` : "Boost"}
-                        </button>
-                      </div>
+                          </div>
+                          <div className="ml-auto flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleBoostMenu(post.id)}
+                              className="inline-flex h-8 items-center justify-center rounded-full border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#efc467] transition hover:border-gold/55 hover:bg-[linear-gradient(180deg,rgba(230,179,58,0.18),rgba(255,255,255,0.03))] sm:h-9 sm:px-4 sm:text-xs"
+                            >
+                              {post.boosted ? `Boosted ${post.boostLevel}` : "Boost"}
+                            </button>
+                          </div>
+                        </>
+                      ) : null}
                     </div>
 
                     <div className="flex min-h-0 items-start">
-                      {boostMenuPostId === post.id ? (
+                      {post.owner && boostMenuPostId === post.id ? (
                         <div className="w-full rounded-[1.2rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-3 sm:p-4">
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-xs uppercase tracking-[0.16em] text-gold/72">
