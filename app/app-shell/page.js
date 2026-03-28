@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const shellNav = [
   { label: "Auth", href: "#auth" },
@@ -165,6 +165,7 @@ export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [selectedProfileUsername, setSelectedProfileUsername] = useState("phlexrfounder");
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [draft, setDraft] = useState({
     image:
       "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200&auto=format&fit=crop",
@@ -172,6 +173,7 @@ export default function AppShellPage() {
     category: "Cars",
     story: "Tell the story behind the flex.",
   });
+  const categoryMenuRef = useRef(null);
 
   const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
@@ -221,6 +223,19 @@ export default function AppShellPage() {
 
   const selectedProfile =
     profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!categoryMenuRef.current?.contains(event.target)) {
+        setIsCategoryOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
 
   function enterShell(targetId = "feed") {
     setHasEnteredApp(true);
@@ -576,25 +591,51 @@ export default function AppShellPage() {
                   </label>
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-white/72">Category</span>
-                    <select
-                      value={draft.category}
-                      onChange={(event) =>
-                        setDraft((currentDraft) => ({
-                          ...currentDraft,
-                          category: event.target.value,
-                        }))
-                      }
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-gold outline-none transition hover:border-gold/35 focus:border-gold/35"
-                    >
-                      {categories.map((category) => (
-                        <option
-                          key={category}
-                          className="bg-obsidian text-gold"
+                    <div ref={categoryMenuRef} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsCategoryOpen((currentValue) => !currentValue)}
+                        className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-gold outline-none transition hover:border-gold/35 focus:border-gold/35"
+                        aria-haspopup="listbox"
+                        aria-expanded={isCategoryOpen}
+                      >
+                        <span>{draft.category}</span>
+                        <span className="text-sm text-gold/70">{isCategoryOpen ? "▲" : "▼"}</span>
+                      </button>
+
+                      {isCategoryOpen ? (
+                        <div
+                          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-[1.25rem] border border-gold/20 bg-obsidian shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)]"
+                          role="listbox"
+                          aria-label="Category"
                         >
-                          {category}
-                        </option>
-                      ))}
-                    </select>
+                          <div className="max-h-72 overflow-y-auto p-2">
+                            {categories.map((category) => (
+                              <button
+                                key={category}
+                                type="button"
+                                onClick={() => {
+                                  setDraft((currentDraft) => ({
+                                    ...currentDraft,
+                                    category,
+                                  }));
+                                  setIsCategoryOpen(false);
+                                }}
+                                className={`flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+                                  draft.category === category
+                                    ? "bg-gold text-obsidian"
+                                    : "text-gold hover:bg-gold hover:text-obsidian"
+                                }`}
+                                role="option"
+                                aria-selected={draft.category === category}
+                              >
+                                {category}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   </label>
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-white/72">Story</span>
