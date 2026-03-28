@@ -387,11 +387,19 @@ export default function Page() {
             </div>
 
             <div className="rounded-[1.6rem] border border-white/10 bg-black/45 p-5 sm:p-6">
-              <div className="grid gap-4">
+              <form
+                action="https://formsubmit.co/REPLACE_THIS_WITH_YOUR_EMAIL@gmail.com"
+                method="POST"
+                className="grid gap-4"
+              >
+                <input type="hidden" name="_subject" value="New PHLEXR Waitlist Signup" />
+                <input type="hidden" name="_captcha" value="false" />
+                <input type="hidden" name="_template" value="table" />
                 <label className="grid gap-2">
                   <span className="text-sm font-medium text-white/78">Desired username</span>
                   <input
                     type="text"
+                    name="username"
                     placeholder="@yourname"
                     className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/40"
                   />
@@ -400,17 +408,19 @@ export default function Page() {
                   <span className="text-sm font-medium text-white/78">Email</span>
                   <input
                     type="email"
+                    name="email"
+                    required
                     placeholder="you@example.com"
                     className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/40"
                   />
                 </label>
                 <button
-                  type="button"
+                  type="submit"
                   className="mt-2 inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian transition hover:bg-gold-soft"
                 >
                   Reserve my username
                 </button>
-              </div>
+              </form>
 
               <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 text-sm text-white/55">
                 No backend added here on purpose. This keeps the repo Vercel-ready and easy to hook
