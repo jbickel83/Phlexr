@@ -1084,7 +1084,7 @@ export default function AppShellPage() {
                     alt={post.displayName}
                     className="h-64 w-full object-cover sm:h-72"
                   />
-                    <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_auto_auto_auto] gap-y-5 p-4 sm:grid-rows-[6.5rem_5.5rem_minmax(0,7.75rem)_4.5rem_auto] sm:p-5">
+                    <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_2.5rem_auto_auto_auto] gap-y-5 p-4 sm:grid-rows-[6.5rem_5.5rem_2.75rem_minmax(0,7.75rem)_4.5rem_auto_auto] sm:p-5">
                     <div className="relative pr-32">
                       <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
@@ -1101,24 +1101,26 @@ export default function AppShellPage() {
                       <p className="text-base leading-7 text-white/68">{post.caption}</p>
                     </div>
 
-                    {post.owner ? (
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          onClick={() => startEditingPost(post)}
-                          className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:border-gold/30 hover:text-gold"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeletePost(post.id)}
-                          className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:border-gold/30 hover:text-gold"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ) : null}
+                    <div className="flex min-h-10 items-center">
+                      {post.owner ? (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEditingPost(post)}
+                            className="inline-flex h-8 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-white transition hover:border-gold/30 hover:text-gold sm:h-9 sm:px-4 sm:text-xs"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePost(post.id)}
+                            className="inline-flex h-8 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-white transition hover:border-gold/30 hover:text-gold sm:h-9 sm:px-4 sm:text-xs"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
 
                       <div className="grid grid-cols-1 gap-3 sm:h-full sm:grid-cols-3">
                       {[
@@ -1150,7 +1152,7 @@ export default function AppShellPage() {
                       ))}
                     </div>
 
-                      <div className="mt-2 grid grid-cols-1 gap-3 sm:mt-0 sm:h-full sm:grid-cols-3 sm:items-end">
+                      <div className="mt-3 grid grid-cols-1 gap-3 sm:mt-0 sm:h-full sm:grid-cols-3 sm:items-end">
                       {[
                         ["Flex", "flex"],
                         ["Not It", "notIt"],
