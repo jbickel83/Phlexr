@@ -26,6 +26,8 @@ const categories = [
 const POSTS_STORAGE_KEY = "phlexr-app-shell-posts";
 const VOTED_POSTS_STORAGE_KEY = "phlexr-app-shell-voted-posts";
 const PROFILE_STORAGE_KEY = "phlexr-app-shell-current-profile";
+const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
+const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -176,6 +178,70 @@ function formatScore(value) {
   return value.toFixed(1);
 }
 
+function deriveIsAdult(birthdate) {
+  if (!birthdate) {
+    return null;
+  }
+
+  const birth = new Date(birthdate);
+  if (Number.isNaN(birth.getTime())) {
+    return null;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthOffset = today.getMonth() - birth.getMonth();
+  if (monthOffset < 0 || (monthOffset === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 18;
+}
+
+function moderateComment(text, isAdult) {
+  const value = text.trim();
+  const normalized = value.toLowerCase();
+
+  const threatPattern =
+    /\b(kill you|shoot you|stab you|i[' ]?m going to kill|i will kill|beat your ass|find you and hurt|put you in the ground)\b/i;
+  const phonePattern = /\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?){2}\d{4}\b/;
+  const emailPattern = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
+  const addressPattern = /\b\d{2,5}\s+[a-z0-9.\- ]+\s(?:street|st|avenue|ave|road|rd|lane|ln|drive|dr|boulevard|blvd)\b/i;
+  const urlPattern = /(https?:\/\/|www\.)\S+/gi;
+  const spamPattern = /\b(free money|crypto giveaway|cashapp me|telegram me|whatsapp me|click this)\b/i;
+  const offPlatformPattern =
+    /\b(dm me|snap me|message me privately|hit me up privately|text me privately|add me on snap|take this off app)\b/i;
+  const explicitPattern =
+    /\b(send nudes|show me nudes|explicit pics|onlyfans|hook up tonight|sexual content for cash)\b/i;
+  const junkPattern = /(.)\1{7,}/;
+
+  const urlMatches = value.match(urlPattern) || [];
+  const repeatedUrlSpam = urlMatches.length > 1;
+
+  if (
+    threatPattern.test(normalized) ||
+    phonePattern.test(value) ||
+    emailPattern.test(value) ||
+    addressPattern.test(normalized) ||
+    spamPattern.test(normalized) ||
+    repeatedUrlSpam ||
+    junkPattern.test(normalized) ||
+    explicitPattern.test(normalized)
+  ) {
+    return false;
+  }
+
+  if (!isAdult && offPlatformPattern.test(normalized)) {
+    return false;
+  }
+
+  if (offPlatformPattern.test(normalized)) {
+    return false;
+  }
+
+  return true;
+}
+
 export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
@@ -186,16 +252,26 @@ export default function AppShellPage() {
   const [editingPostId, setEditingPostId] = useState(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [votedPosts, setVotedPosts] = useState({});
+  const [comments, setComments] = useState([]);
+  const [commentDrafts, setCommentDrafts] = useState({});
+  const [commentErrors, setCommentErrors] = useState({});
+  const [commentReportReasons, setCommentReportReasons] = useState({});
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
+  const [safetyProfile, setSafetyProfile] = useState({
+    birthdate: "",
+    isAdult: null,
+  });
   const [draft, setDraft] = useState({
     image: "",
     category: "Cars",
     caption: "",
     story: "",
+    confirmSafe: false,
   });
   const [draftImageName, setDraftImageName] = useState("");
   const [profileDraft, setProfileDraft] = useState(defaultCurrentUserProfile);
   const [profileImageName, setProfileImageName] = useState("");
+  const [postSafetyError, setPostSafetyError] = useState("");
   const categoryMenuRef = useRef(null);
   const fileInputRef = useRef(null);
   const profileImageInputRef = useRef(null);
@@ -335,6 +411,14 @@ export default function AppShellPage() {
         }
       }
 
+      const savedComments = window.localStorage.getItem(COMMENTS_STORAGE_KEY);
+      if (savedComments) {
+        const parsedComments = JSON.parse(savedComments);
+        if (Array.isArray(parsedComments)) {
+          setComments(parsedComments);
+        }
+      }
+
       const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
       if (savedProfile) {
         const parsedProfile = JSON.parse(savedProfile);
@@ -350,10 +434,24 @@ export default function AppShellPage() {
       } else {
         setProfileDraft(defaultCurrentUserProfile);
       }
+
+      const savedSafety = window.localStorage.getItem(SAFETY_STORAGE_KEY);
+      if (savedSafety) {
+        const parsedSafety = JSON.parse(savedSafety);
+        if (parsedSafety && typeof parsedSafety === "object") {
+          setSafetyProfile({
+            birthdate: parsedSafety.birthdate || "",
+            isAdult:
+              typeof parsedSafety.isAdult === "boolean" ? parsedSafety.isAdult : deriveIsAdult(parsedSafety.birthdate),
+          });
+        }
+      }
     } catch {
       window.localStorage.removeItem(POSTS_STORAGE_KEY);
       window.localStorage.removeItem(VOTED_POSTS_STORAGE_KEY);
+      window.localStorage.removeItem(COMMENTS_STORAGE_KEY);
       window.localStorage.removeItem(PROFILE_STORAGE_KEY);
+      window.localStorage.removeItem(SAFETY_STORAGE_KEY);
     }
   }, []);
 
@@ -378,9 +476,25 @@ export default function AppShellPage() {
       return;
     }
 
+    window.localStorage.setItem(COMMENTS_STORAGE_KEY, JSON.stringify(comments));
+  }, [comments]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(currentUserProfile));
     setProfileDraft(currentUserProfile);
   }, [currentUserProfile]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(SAFETY_STORAGE_KEY, JSON.stringify(safetyProfile));
+  }, [safetyProfile]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !hasEnteredApp) {
@@ -448,6 +562,80 @@ export default function AppShellPage() {
       ...currentVotes,
       [postId]: voteType,
     }));
+  }
+
+  function handleBirthdateChange(event) {
+    const birthdate = event.target.value;
+    setSafetyProfile({
+      birthdate,
+      isAdult: deriveIsAdult(birthdate),
+    });
+  }
+
+  function handleCommentDraftChange(postId, value) {
+    setCommentDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [postId]: value,
+    }));
+    setCommentErrors((currentErrors) => ({
+      ...currentErrors,
+      [postId]: "",
+    }));
+  }
+
+  function handleAddComment(postId) {
+    const nextText = (commentDrafts[postId] || "").trim();
+    if (!nextText) {
+      return;
+    }
+
+    if (!moderateComment(nextText, safetyProfile.isAdult)) {
+      setCommentErrors((currentErrors) => ({
+        ...currentErrors,
+        [postId]: "Comment not allowed.",
+      }));
+      return;
+    }
+
+    const newComment = {
+      id: `comment-${Date.now()}`,
+      postId,
+      username: currentUser.username,
+      displayName: currentUser.displayName,
+      text: nextText,
+      createdAt: "Just now",
+      isReported: false,
+      hidden: false,
+    };
+
+    setComments((currentComments) => [...currentComments, newComment]);
+    setCommentDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [postId]: "",
+    }));
+    setCommentErrors((currentErrors) => ({
+      ...currentErrors,
+      [postId]: "",
+    }));
+  }
+
+  function handleDeleteComment(commentId) {
+    setComments((currentComments) => currentComments.filter((comment) => comment.id !== commentId));
+  }
+
+  function handleReportComment(commentId) {
+    const reason = commentReportReasons[commentId] || "Other";
+    setComments((currentComments) =>
+      currentComments.map((comment) =>
+        comment.id === commentId
+          ? {
+              ...comment,
+              isReported: true,
+              reportReason: reason,
+            }
+          : comment
+      )
+    );
   }
 
   function handleImageUrlChange(event) {
@@ -538,6 +726,7 @@ export default function AppShellPage() {
       category: post.category,
       caption: post.caption,
       story: "",
+      confirmSafe: true,
     });
     setDraftImageName(post.image.startsWith("data:") ? "Current uploaded image" : "");
     if (fileInputRef.current) {
@@ -548,6 +737,7 @@ export default function AppShellPage() {
 
   function handleDeletePost(postId) {
     setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
+    setComments((currentComments) => currentComments.filter((comment) => comment.postId !== postId));
     setVotedPosts((currentVotes) => {
       const nextVotes = { ...currentVotes };
       delete nextVotes[postId];
@@ -560,6 +750,7 @@ export default function AppShellPage() {
         category: currentUser.posts[0]?.category || "Cars",
         caption: "",
         story: "",
+        confirmSafe: false,
       });
       setDraftImageName("");
       if (fileInputRef.current) {
@@ -573,6 +764,11 @@ export default function AppShellPage() {
     setHasEnteredApp(true);
 
     if (!draft.image) {
+      return;
+    }
+
+    if (!draft.confirmSafe) {
+      setPostSafetyError("Please confirm the image contains no nudity or explicit content.");
       return;
     }
 
@@ -607,12 +803,14 @@ export default function AppShellPage() {
 
       setPosts((currentPosts) => [newPost, ...currentPosts]);
     }
+    setPostSafetyError("");
     setSelectedProfileUsername(currentUser.username);
     setDraft({
       image: "",
       category: currentUser.posts[0]?.category || "Cars",
       caption: "",
       story: "",
+      confirmSafe: false,
     });
     setEditingPostId(null);
     setDraftImageName("");
@@ -754,6 +952,22 @@ export default function AppShellPage() {
                         className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                       />
                     </label>
+                    <label className="grid gap-2">
+                      <span className="text-sm font-medium text-white/72">Birthdate</span>
+                      <input
+                        type="date"
+                        value={safetyProfile.birthdate}
+                        onChange={handleBirthdateChange}
+                        className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition focus:border-gold/35"
+                      />
+                      <span className="text-xs text-white/45">
+                        {safetyProfile.isAdult === null
+                          ? "Stored locally for safety checks only."
+                          : safetyProfile.isAdult
+                            ? "Adult flag saved locally."
+                            : "Under-18 flag saved locally."}
+                      </span>
+                    </label>
                   </div>
 
                   <div className="mt-5 grid gap-3">
@@ -859,6 +1073,7 @@ export default function AppShellPage() {
             <div className="grid items-stretch gap-5 xl:grid-cols-2">
               {posts.map((post) => {
                 const lockedVote = votedPosts[post.id];
+                const postComments = comments.filter((comment) => comment.postId === post.id);
                 return (
                 <article
                   key={post.id}
@@ -969,6 +1184,107 @@ export default function AppShellPage() {
                         </p>
                       ) : null}
                     </div>
+                    <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.02] p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white">
+                          Comments ({postComments.length})
+                        </p>
+                        <p className="text-xs uppercase tracking-[0.16em] text-white/40">
+                          Public only
+                        </p>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        {postComments.length ? (
+                          postComments.map((comment) => (
+                            <div
+                              key={comment.id}
+                              className="rounded-[1.1rem] border border-white/8 bg-black/30 p-3"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-white">
+                                    {comment.displayName}
+                                  </p>
+                                  <p className="mt-1 text-xs uppercase tracking-[0.14em] text-gold/75">
+                                    @{comment.username} · {comment.createdAt}
+                                  </p>
+                                </div>
+                                {comment.isReported ? (
+                                  <span className="text-xs uppercase tracking-[0.14em] text-gold/70">
+                                    Reported
+                                  </span>
+                                ) : null}
+                              </div>
+                              <p className="mt-3 text-sm leading-6 text-white/68">{comment.text}</p>
+                              <div className="mt-3 flex flex-wrap items-center gap-2">
+                                {comment.username === currentUser.username ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteComment(comment.id)}
+                                    className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white transition hover:border-gold/30 hover:text-gold"
+                                  >
+                                    Delete
+                                  </button>
+                                ) : null}
+                                <select
+                                  value={commentReportReasons[comment.id] || "Other"}
+                                  onChange={(event) =>
+                                    setCommentReportReasons((currentReasons) => ({
+                                      ...currentReasons,
+                                      [comment.id]: event.target.value,
+                                    }))
+                                  }
+                                  className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white outline-none"
+                                >
+                                  {[
+                                    "Threat",
+                                    "Private info",
+                                    "Scam / spam",
+                                    "Predatory behavior",
+                                    "Nudity / explicit",
+                                    "Other",
+                                  ].map((reason) => (
+                                    <option key={reason} className="bg-obsidian text-white">
+                                      {reason}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReportComment(comment.id)}
+                                  className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white transition hover:border-gold/30 hover:text-gold"
+                                >
+                                  Report
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-white/45">No comments yet.</p>
+                        )}
+                      </div>
+
+                      <div className="mt-4 grid gap-3">
+                        <input
+                          type="text"
+                          value={commentDrafts[post.id] || ""}
+                          onChange={(event) => handleCommentDraftChange(post.id, event.target.value)}
+                          placeholder="Add a public comment"
+                          className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                        />
+                        {commentErrors[post.id] ? (
+                          <p className="text-sm text-gold">{commentErrors[post.id]}</p>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => handleAddComment(post.id)}
+                          className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                        >
+                          Post comment
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </article>
                 );
@@ -1009,6 +1325,7 @@ export default function AppShellPage() {
                           category: currentUser.posts[0]?.category || "Cars",
                           caption: "",
                           story: "",
+                          confirmSafe: false,
                         });
                         setDraftImageName("");
                         if (fileInputRef.current) {
@@ -1132,6 +1449,26 @@ export default function AppShellPage() {
                       className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
                     />
                   </label>
+                  <label className="flex items-start gap-3 rounded-[1.25rem] border border-white/10 bg-white/[0.02] px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={draft.confirmSafe}
+                      onChange={(event) => {
+                        setDraft((currentDraft) => ({
+                          ...currentDraft,
+                          confirmSafe: event.target.checked,
+                        }));
+                        setPostSafetyError("");
+                      }}
+                      className="mt-1 h-4 w-4 accent-[#e6b33a]"
+                    />
+                    <span className="text-sm leading-6 text-white/72">
+                      I confirm this image contains no nudity or explicit content.
+                    </span>
+                  </label>
+                  {postSafetyError ? (
+                    <p className="text-sm text-gold">{postSafetyError}</p>
+                  ) : null}
                 </div>
 
                 <button
