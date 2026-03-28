@@ -584,12 +584,12 @@ export default function AppShellPage() {
                           category: event.target.value,
                         }))
                       }
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none"
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-gold outline-none transition hover:border-gold/35 focus:border-gold/35"
                     >
                       {categories.map((category) => (
                         <option
                           key={category}
-                          className="bg-[#f4e8cb] text-black hover:bg-gold hover:text-obsidian"
+                          className="bg-obsidian text-gold"
                         >
                           {category}
                         </option>
