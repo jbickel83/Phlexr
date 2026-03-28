@@ -39,6 +39,10 @@ const defaultCurrentUserProfile = {
   bio: "Building the cleanest flex-rating platform on the internet.",
 };
 
+function minutesAgoIso(minutes) {
+  return new Date(Date.now() - minutes * 60 * 1000).toISOString();
+}
+
 const seededPosts = [
   {
     id: "post-1",
@@ -52,7 +56,7 @@ const seededPosts = [
     score: 9.8,
     wouldFlexPercent: 94,
     fakeAiPercent: 3,
-    timestamp: "23 min ago",
+    createdAt: minutesAgoIso(23),
     owner: false,
   },
   {
@@ -67,7 +71,7 @@ const seededPosts = [
     score: 9.4,
     wouldFlexPercent: 88,
     fakeAiPercent: 7,
-    timestamp: "1 hour ago",
+    createdAt: minutesAgoIso(60),
     owner: false,
   },
   {
@@ -82,7 +86,7 @@ const seededPosts = [
     score: 9.7,
     wouldFlexPercent: 91,
     fakeAiPercent: 4,
-    timestamp: "3 hours ago",
+    createdAt: minutesAgoIso(180),
     owner: false,
   },
   {
@@ -97,7 +101,7 @@ const seededPosts = [
     score: 9.3,
     wouldFlexPercent: 86,
     fakeAiPercent: 5,
-    timestamp: "5 hours ago",
+    createdAt: minutesAgoIso(300),
     owner: false,
   },
   {
@@ -112,7 +116,7 @@ const seededPosts = [
     score: 9.1,
     wouldFlexPercent: 85,
     fakeAiPercent: 5,
-    timestamp: "12 min ago",
+    createdAt: minutesAgoIso(12),
     owner: true,
   },
 ];
@@ -176,6 +180,35 @@ function formatPercent(value) {
 
 function formatScore(value) {
   return value.toFixed(1);
+}
+
+function formatRelativeTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) {
+    return String(value);
+  }
+
+  const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp.getTime()) / 1000));
+  if (diffSeconds < 60) {
+    return "just now";
+  }
+
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
 }
 
 function deriveIsAdult(birthdate) {
@@ -603,7 +636,7 @@ export default function AppShellPage() {
       username: currentUser.username,
       displayName: currentUser.displayName,
       text: nextText,
-      createdAt: "Just now",
+      createdAt: new Date().toISOString(),
       isReported: false,
       hidden: false,
     };
@@ -797,7 +830,7 @@ export default function AppShellPage() {
         score: 8.9,
         wouldFlexPercent: 82,
         fakeAiPercent: 6,
-        timestamp: "Just now",
+        createdAt: new Date().toISOString(),
         owner: true,
       };
 
@@ -1089,7 +1122,7 @@ export default function AppShellPage() {
                       <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
                         <p className="mt-2 text-sm text-gold">
-                          @{post.username} · {post.badge} · {post.timestamp}
+                          @{post.username} | {post.badge} | {formatRelativeTime(post.createdAt || post.timestamp)}
                         </p>
                       </div>
                       <div className="absolute right-0 top-0 flex h-12 items-start">
@@ -1209,7 +1242,7 @@ export default function AppShellPage() {
                                     {comment.displayName}
                                   </p>
                                   <p className="mt-1 text-xs uppercase tracking-[0.14em] text-gold/75">
-                                    @{comment.username} · {comment.createdAt}
+                                    @{comment.username} | {formatRelativeTime(comment.createdAt)}
                                   </p>
                                 </div>
                                 {comment.isReported ? (
@@ -1820,3 +1853,4 @@ export default function AppShellPage() {
     </main>
   );
 }
+
