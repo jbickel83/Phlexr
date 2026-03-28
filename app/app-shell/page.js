@@ -457,8 +457,8 @@ export default function AppShellPage() {
                     alt={post.displayName}
                     className="h-64 w-full object-cover sm:h-72"
                   />
-                  <div className="flex flex-1 flex-col p-4 sm:p-5">
-                    <div className="relative h-[6.5rem] pr-32">
+                  <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_minmax(0,7.75rem)_4.5rem] gap-y-5 p-4 sm:p-5">
+                    <div className="relative pr-32">
                       <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
                         <p className="mt-2 text-sm text-gold">
@@ -470,11 +470,11 @@ export default function AppShellPage() {
                       </div>
                     </div>
 
-                    <div className="mt-5 h-[5.5rem] overflow-hidden">
+                    <div className="overflow-hidden">
                       <p className="text-base leading-7 text-white/68">{post.caption}</p>
                     </div>
 
-                    <div className="mt-5 grid h-[12.25rem] grid-cols-1 gap-3 sm:h-[7.75rem] sm:grid-cols-3">
+                    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-3">
                       {[
                         ["Would-Flex", formatPercent(post.wouldFlexPercent)],
                         ["Fake / AI", formatPercent(post.fakeAiPercent)],
@@ -490,7 +490,7 @@ export default function AppShellPage() {
                       ))}
                     </div>
 
-                    <div className="mt-auto grid h-[11.5rem] grid-cols-1 items-end gap-3 pt-5 sm:h-[4.5rem] sm:grid-cols-3">
+                    <div className="grid h-full grid-cols-1 items-end gap-3 sm:grid-cols-3">
                       {[
                         ["Flex", "flex"],
                         ["Not It", "notIt"],
