@@ -39,6 +39,12 @@ const defaultCurrentUserProfile = {
   bio: "Building the cleanest flex-rating platform on the internet.",
 };
 
+const boostOptions = [
+  { value: "24h", label: "Boost 24h" },
+  { value: "3d", label: "Boost 3 days" },
+  { value: "7d", label: "Boost 7 days" },
+];
+
 function minutesAgoIso(minutes) {
   return new Date(Date.now() - minutes * 60 * 1000).toISOString();
 }
@@ -58,6 +64,8 @@ const seededPosts = [
     fakeAiPercent: 3,
     createdAt: minutesAgoIso(23),
     owner: false,
+    boosted: false,
+    boostLevel: null,
   },
   {
     id: "post-2",
@@ -73,6 +81,8 @@ const seededPosts = [
     fakeAiPercent: 7,
     createdAt: minutesAgoIso(60),
     owner: false,
+    boosted: false,
+    boostLevel: null,
   },
   {
     id: "post-3",
@@ -88,6 +98,8 @@ const seededPosts = [
     fakeAiPercent: 4,
     createdAt: minutesAgoIso(180),
     owner: false,
+    boosted: false,
+    boostLevel: null,
   },
   {
     id: "post-4",
@@ -103,6 +115,8 @@ const seededPosts = [
     fakeAiPercent: 5,
     createdAt: minutesAgoIso(300),
     owner: false,
+    boosted: false,
+    boostLevel: null,
   },
   {
     id: "post-5",
@@ -118,6 +132,8 @@ const seededPosts = [
     fakeAiPercent: 5,
     createdAt: minutesAgoIso(12),
     owner: true,
+    boosted: false,
+    boostLevel: null,
   },
 ];
 
@@ -289,6 +305,7 @@ export default function AppShellPage() {
   const [commentDrafts, setCommentDrafts] = useState({});
   const [commentErrors, setCommentErrors] = useState({});
   const [commentReportReasons, setCommentReportReasons] = useState({});
+  const [boostMenuPostId, setBoostMenuPostId] = useState(null);
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
   const [safetyProfile, setSafetyProfile] = useState({
     birthdate: "",
@@ -790,6 +807,28 @@ export default function AppShellPage() {
         fileInputRef.current.value = "";
       }
     }
+    if (boostMenuPostId === postId) {
+      setBoostMenuPostId(null);
+    }
+  }
+
+  function toggleBoostMenu(postId) {
+    setBoostMenuPostId((currentPostId) => (currentPostId === postId ? null : postId));
+  }
+
+  function handleBoostSelect(postId, boostLevel) {
+    setPosts((currentPosts) =>
+      currentPosts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              boosted: true,
+              boostLevel,
+            }
+          : post
+      )
+    );
+    setBoostMenuPostId(null);
   }
 
   function handlePostSubmit(event) {
@@ -832,6 +871,8 @@ export default function AppShellPage() {
         fakeAiPercent: 6,
         createdAt: new Date().toISOString(),
         owner: true,
+        boosted: false,
+        boostLevel: null,
       };
 
       setPosts((currentPosts) => [newPost, ...currentPosts]);
@@ -1104,13 +1145,18 @@ export default function AppShellPage() {
                     alt={post.displayName}
                     className="h-64 w-full object-cover sm:h-72"
                   />
-                    <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_2.5rem_auto_auto_auto] gap-y-5 p-4 sm:grid-rows-[6.5rem_5.5rem_2.75rem_minmax(0,7.75rem)_4.5rem_auto_auto] sm:p-5">
+                    <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_auto_auto_auto_auto_auto_auto] gap-y-5 p-4 sm:grid-rows-[6.5rem_5.5rem_auto_auto_minmax(0,7.75rem)_4.5rem_auto_auto] sm:p-5">
                     <div className="relative pr-32">
                       <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
                         <p className="mt-2 text-sm text-gold">
                           @{post.username} | {post.badge} | {formatRelativeTime(post.createdAt || post.timestamp)}
                         </p>
+                        {post.boosted ? (
+                          <p className="mt-2 text-xs uppercase tracking-[0.16em] text-gold/78">
+                            Boosted {post.boostLevel}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="absolute right-0 top-0 flex h-12 items-start">
                         <PremiumBadge>Score {formatScore(post.score)}</PremiumBadge>
@@ -1121,23 +1167,62 @@ export default function AppShellPage() {
                       <p className="text-base leading-7 text-white/68">{post.caption}</p>
                     </div>
 
-                    <div className="flex min-h-10 items-center">
-                      {post.owner ? (
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => startEditingPost(post)}
-                            className="inline-flex h-8 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-white transition hover:border-gold/30 hover:text-gold sm:h-9 sm:px-4 sm:text-xs"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeletePost(post.id)}
-                            className="inline-flex h-8 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-white transition hover:border-gold/30 hover:text-gold sm:h-9 sm:px-4 sm:text-xs"
-                          >
-                            Delete
-                          </button>
+                    <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        {post.owner ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => startEditingPost(post)}
+                              className="inline-flex h-8 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-white transition hover:border-gold/30 hover:text-gold sm:h-9 sm:px-4 sm:text-xs"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePost(post.id)}
+                              className="inline-flex h-8 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-white transition hover:border-gold/30 hover:text-gold sm:h-9 sm:px-4 sm:text-xs"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                      <div className="ml-auto flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleBoostMenu(post.id)}
+                          className="inline-flex h-8 items-center justify-center rounded-full border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] px-3 py-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#efc467] transition hover:border-gold/55 hover:bg-[linear-gradient(180deg,rgba(230,179,58,0.18),rgba(255,255,255,0.03))] sm:h-9 sm:px-4 sm:text-xs"
+                        >
+                          {post.boosted ? `Boosted ${post.boostLevel}` : "Boost"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex min-h-0 items-start">
+                      {boostMenuPostId === post.id ? (
+                        <div className="w-full rounded-[1.2rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-3 sm:p-4">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs uppercase tracking-[0.16em] text-gold/72">
+                              Choose a boost window
+                            </p>
+                            <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
+                              {boostOptions.map((option) => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => handleBoostSelect(post.id, option.value)}
+                                  className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                                    post.boostLevel === option.value && post.boosted
+                                      ? "bg-gold text-obsidian"
+                                      : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/35 hover:text-gold"
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       ) : null}
                     </div>
