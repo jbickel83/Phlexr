@@ -28,6 +28,7 @@ const VOTED_POSTS_STORAGE_KEY = "phlexr-app-shell-voted-posts";
 const PROFILE_STORAGE_KEY = "phlexr-app-shell-current-profile";
 const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
+const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -38,6 +39,46 @@ const defaultCurrentUserProfile = {
   location: "Miami, FL",
   bio: "Building the cleanest flex-rating platform on the internet.",
 };
+
+const membershipTiers = [
+  {
+    id: "free",
+    name: "FREE",
+    price: "Free",
+    cta: "Choose Free",
+    badge: "FREE",
+    features: ["2 posts", "pays full boost price"],
+    accent: "border-white/10 bg-black/30",
+  },
+  {
+    id: "basic",
+    name: "BASIC",
+    price: "$4.99/month",
+    cta: "Choose Basic",
+    badge: "BASIC",
+    features: ["paid membership tier", "pays full boost price"],
+    accent: "border-white/10 bg-black/30",
+  },
+  {
+    id: "premium",
+    name: "PREMIUM",
+    price: "$9.99/month",
+    cta: "Upgrade to Premium",
+    badge: "PREMIUM STATUS",
+    features: ["Premium status", "10% off boosts"],
+    accent: "border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))]",
+  },
+  {
+    id: "elite",
+    name: "ELITE",
+    price: "$14.99/month",
+    cta: "Upgrade to Elite",
+    badge: "ELITE STATUS",
+    features: ["Elite status", "25% off boosts"],
+    accent:
+      "border-[#d8b25a]/75 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.03))] shadow-[0_0_26px_rgba(216,178,90,0.14)]",
+  },
+];
 
 const boostOptions = [
   { value: "24h", label: "Boost 24h" },
@@ -306,6 +347,7 @@ export default function AppShellPage() {
   const [commentErrors, setCommentErrors] = useState({});
   const [commentReportReasons, setCommentReportReasons] = useState({});
   const [boostMenuPostId, setBoostMenuPostId] = useState(null);
+  const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
   const [safetyProfile, setSafetyProfile] = useState({
     birthdate: "",
@@ -377,6 +419,9 @@ export default function AppShellPage() {
       fakeAiAverage: 0,
       posts: [],
     };
+
+  const selectedMembership =
+    membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
 
   const selectedProfile =
     profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
@@ -496,12 +541,18 @@ export default function AppShellPage() {
           });
         }
       }
+
+      const savedMembership = window.localStorage.getItem(MEMBERSHIP_STORAGE_KEY);
+      if (savedMembership && membershipTiers.some((tier) => tier.id === savedMembership)) {
+        setSelectedMembershipId(savedMembership);
+      }
     } catch {
       window.localStorage.removeItem(POSTS_STORAGE_KEY);
       window.localStorage.removeItem(VOTED_POSTS_STORAGE_KEY);
       window.localStorage.removeItem(COMMENTS_STORAGE_KEY);
       window.localStorage.removeItem(PROFILE_STORAGE_KEY);
       window.localStorage.removeItem(SAFETY_STORAGE_KEY);
+      window.localStorage.removeItem(MEMBERSHIP_STORAGE_KEY);
     }
   }, []);
 
@@ -545,6 +596,21 @@ export default function AppShellPage() {
 
     window.localStorage.setItem(SAFETY_STORAGE_KEY, JSON.stringify(safetyProfile));
   }, [safetyProfile]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(MEMBERSHIP_STORAGE_KEY, selectedMembershipId);
+  }, [selectedMembershipId]);
+
+  useEffect(() => {
+    setCurrentUserProfile((currentProfile) => ({
+      ...currentProfile,
+      badge: selectedMembership.badge,
+    }));
+  }, [selectedMembership.badge]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !hasEnteredApp) {
@@ -949,7 +1015,7 @@ export default function AppShellPage() {
                     {item.label}
                   </button>
                 ))}
-                <PremiumBadge>Premium badge system</PremiumBadge>
+                <PremiumBadge>{selectedMembership.name} membership</PremiumBadge>
               </div>
             </>
           ) : (
@@ -967,7 +1033,7 @@ export default function AppShellPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <PremiumBadge>Premium badge system</PremiumBadge>
+                  <PremiumBadge>{selectedMembership.name} membership</PremiumBadge>
                   <a
                     href="/"
                     className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
@@ -984,7 +1050,7 @@ export default function AppShellPage() {
               id="auth"
               eyebrow="01. Auth"
               title="Login / Signup"
-              copy="A high-trust entry screen with direct account fields, platform buttons, and a clear premium badge preview."
+              copy="A high-trust entry screen with direct account fields, platform buttons, and the full PHLEXR membership structure."
             >
               <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5">
@@ -1057,14 +1123,60 @@ export default function AppShellPage() {
                 </div>
 
                 <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
-                  <PremiumBadge>PHLEXR elite preview</PremiumBadge>
-                  <h3 className="mt-5 text-2xl font-semibold text-white">
-                    Premium badge visibility
-                  </h3>
+                  <PremiumBadge>PHLEXR membership tiers</PremiumBadge>
+                  <h3 className="mt-5 text-2xl font-semibold text-white">Membership</h3>
                   <p className="mt-3 text-base leading-7 text-white/62">
-                    Paid and verified members get elevated profile polish, badge visibility on every
-                    screen, and higher trust at first glance.
+                    Choose the local shell plan that controls your visible PHLEXR status and boost pricing.
                   </p>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                    {membershipTiers.map((tier) => {
+                      const isSelected = selectedMembershipId === tier.id;
+                      const isElite = tier.id === "elite";
+                      const isStatusTier = tier.id === "premium" || tier.id === "elite";
+
+                      return (
+                        <div
+                          key={tier.id}
+                          className={`rounded-[1.45rem] border p-4 ${tier.accent}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.22em] text-gold/75">
+                                {tier.name}
+                              </p>
+                              <p className="mt-3 text-2xl font-semibold text-white">{tier.price}</p>
+                            </div>
+                            {isElite ? <PremiumBadge>Top tier</PremiumBadge> : null}
+                          </div>
+
+                          <div className="mt-4 space-y-2 text-sm leading-6 text-white/68">
+                            {tier.features.map((feature) => (
+                              <p key={feature}>{feature}</p>
+                            ))}
+                            {isStatusTier ? (
+                              <p className="text-gold/85">{tier.badge}</p>
+                            ) : null}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setSelectedMembershipId(tier.id)}
+                            className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
+                              isSelected
+                                ? "bg-gold text-obsidian"
+                                : isElite
+                                  ? "border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] text-[#efc467] hover:border-gold/55"
+                                  : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                            }`}
+                          >
+                            {isSelected ? `${tier.name} selected` : tier.cta}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
                   <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/40 p-4">
                     <div className="flex items-center gap-4">
                       <img
@@ -1077,7 +1189,10 @@ export default function AppShellPage() {
                           {currentUser.displayName}
                         </p>
                         <p className="mt-2 text-sm text-gold">
-                          Badge visible on auth, feed, profile, leaderboard
+                          Current plan: {selectedMembership.name} · {selectedMembership.badge}
+                        </p>
+                        <p className="mt-2 text-sm text-white/55">
+                          Shell mode only. Checkout coming soon.
                         </p>
                       </div>
                     </div>
@@ -1918,7 +2033,7 @@ export default function AppShellPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <PremiumBadge>Premium visible</PremiumBadge>
+                    <PremiumBadge>{selectedMembership.name} visible</PremiumBadge>
                     <div className="rounded-full border border-gold/25 bg-[#2c2010] px-4 py-2 text-lg text-[#efc467]">
                       {formatScore(entry.averageScore)}
                     </div>
