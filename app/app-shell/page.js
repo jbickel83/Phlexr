@@ -348,88 +348,97 @@ export default function AppShellPage() {
             </div>
           </header>
 
-          <SectionCard
-            id="auth"
-            eyebrow="01. Auth"
-            title="Login / Signup"
-            copy="A high-trust entry screen with direct account fields, platform buttons, and a clear premium badge preview."
-          >
-            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5">
-                <div className="grid gap-4">
-                  <label className="grid gap-2">
-                    <span className="text-sm font-medium text-white/72">Username</span>
-                    <input
-                      type="text"
-                      placeholder="@phlexrname"
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
-                    />
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-sm font-medium text-white/72">Email</span>
-                    <input
-                      type="email"
-                      placeholder="you@example.com"
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
-                    />
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-sm font-medium text-white/72">Password</span>
-                    <input
-                      type="password"
-                      placeholder="........"
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
-                    />
-                  </label>
+          {!hasEnteredApp ? (
+            <SectionCard
+              id="auth"
+              eyebrow="01. Auth"
+              title="Login / Signup"
+              copy="A high-trust entry screen with direct account fields, platform buttons, and a clear premium badge preview."
+            >
+              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5">
+                  <div className="grid gap-4">
+                    <label className="grid gap-2">
+                      <span className="text-sm font-medium text-white/72">Username</span>
+                      <input
+                        type="text"
+                        placeholder="@phlexrname"
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                      />
+                    </label>
+                    <label className="grid gap-2">
+                      <span className="text-sm font-medium text-white/72">Email</span>
+                      <input
+                        type="email"
+                        placeholder="you@example.com"
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                      />
+                    </label>
+                    <label className="grid gap-2">
+                      <span className="text-sm font-medium text-white/72">Password</span>
+                      <input
+                        type="password"
+                        placeholder="........"
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mt-5 grid gap-3">
+                    <button
+                      type="button"
+                      onClick={() => enterShell("feed")}
+                      className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
+                    >
+                      Create account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => enterShell("feed")}
+                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
+                    >
+                      Continue with Google
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => enterShell("feed")}
+                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
+                    >
+                      Continue with Apple
+                    </button>
+                  </div>
                 </div>
 
-                <div className="mt-5 grid gap-3">
-                  <button
-                    onClick={() => enterShell("feed")}
-                    className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
-                  >
-                    Create account
-                  </button>
-                  <button
-                    onClick={() => enterShell("feed")}
-                    className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
-                  >
-                    Continue with Google
-                  </button>
-                  <button
-                    onClick={() => enterShell("feed")}
-                    className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
-                  >
-                    Continue with Apple
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
-                <PremiumBadge>PHLEXR elite preview</PremiumBadge>
-                <h3 className="mt-5 text-2xl font-semibold text-white">Premium badge visibility</h3>
-                <p className="mt-3 text-base leading-7 text-white/62">
-                  Paid and verified members get elevated profile polish, badge visibility on every
-                  screen, and higher trust at first glance.
-                </p>
-                <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/40 p-4">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={currentUser.avatar}
-                      alt={currentUser.displayName}
-                      className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
-                    />
-                    <div>
-                      <p className="text-2xl font-semibold text-white">{currentUser.displayName}</p>
-                      <p className="mt-2 text-sm text-gold">
-                        Badge visible on auth, feed, profile, leaderboard
-                      </p>
+                <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
+                  <PremiumBadge>PHLEXR elite preview</PremiumBadge>
+                  <h3 className="mt-5 text-2xl font-semibold text-white">
+                    Premium badge visibility
+                  </h3>
+                  <p className="mt-3 text-base leading-7 text-white/62">
+                    Paid and verified members get elevated profile polish, badge visibility on every
+                    screen, and higher trust at first glance.
+                  </p>
+                  <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/40 p-4">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={currentUser.avatar}
+                        alt={currentUser.displayName}
+                        className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
+                      />
+                      <div>
+                        <p className="text-2xl font-semibold text-white">
+                          {currentUser.displayName}
+                        </p>
+                        <p className="mt-2 text-sm text-gold">
+                          Badge visible on auth, feed, profile, leaderboard
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </SectionCard>
+            </SectionCard>
+          ) : null}
 
           <SectionCard
             id="feed"
@@ -437,11 +446,11 @@ export default function AppShellPage() {
             title="Feed"
             copy="Seeded PHLEXR flex posts with local score data, trust signals, and working vote controls."
           >
-            <div className="grid gap-5 xl:grid-cols-2">
+            <div className="grid items-stretch gap-5 xl:grid-cols-2">
               {posts.map((post) => (
                 <article
                   key={post.id}
-                  className="flex min-h-[42rem] flex-col overflow-hidden rounded-[1.7rem] border border-white/8 bg-black/35"
+                  className="flex h-full min-h-[42rem] flex-col overflow-hidden rounded-[1.7rem] border border-white/8 bg-black/35"
                 >
                   <img
                     src={post.image}
@@ -449,23 +458,23 @@ export default function AppShellPage() {
                     className="h-64 w-full object-cover sm:h-72"
                   />
                   <div className="flex flex-1 flex-col p-4 sm:p-5">
-                    <div className="flex min-h-[5.75rem] items-start justify-between gap-3">
+                    <div className="relative h-[6.5rem] pr-32">
                       <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
                         <p className="mt-2 text-sm text-gold">
                           @{post.username} · {post.badge} · {post.timestamp}
                         </p>
                       </div>
-                      <div className="flex min-h-[3rem] items-start">
+                      <div className="absolute right-0 top-0 flex h-12 items-start">
                         <PremiumBadge>Score {formatScore(post.score)}</PremiumBadge>
                       </div>
                     </div>
 
-                    <div className="mt-5 min-h-[5.5rem]">
+                    <div className="mt-5 h-[5.5rem] overflow-hidden">
                       <p className="text-base leading-7 text-white/68">{post.caption}</p>
                     </div>
 
-                    <div className="mt-5 grid min-h-[7.75rem] grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="mt-5 grid h-[12.25rem] grid-cols-1 gap-3 sm:h-[7.75rem] sm:grid-cols-3">
                       {[
                         ["Would-Flex", formatPercent(post.wouldFlexPercent)],
                         ["Fake / AI", formatPercent(post.fakeAiPercent)],
@@ -473,7 +482,7 @@ export default function AppShellPage() {
                       ].map(([label, value]) => (
                         <div
                           key={label}
-                          className="rounded-2xl border border-white/8 bg-white/[0.03] p-4"
+                          className="flex h-full flex-col rounded-2xl border border-white/8 bg-white/[0.03] p-4"
                         >
                           <p className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</p>
                           <p className="mt-2 text-2xl font-semibold text-gold">{value}</p>
@@ -481,7 +490,7 @@ export default function AppShellPage() {
                       ))}
                     </div>
 
-                    <div className="mt-auto grid min-h-[4.5rem] grid-cols-1 gap-3 pt-5 sm:grid-cols-3">
+                    <div className="mt-auto grid h-[11.5rem] grid-cols-1 items-end gap-3 pt-5 sm:h-[4.5rem] sm:grid-cols-3">
                       {[
                         ["Flex", "flex"],
                         ["Not It", "notIt"],
@@ -490,7 +499,7 @@ export default function AppShellPage() {
                         <button
                           key={label}
                           onClick={() => handleVote(post.id, action)}
-                          className={`rounded-full px-4 py-3 text-sm font-semibold ${
+                          className={`h-full rounded-full px-4 py-3 text-sm font-semibold ${
                             index === 0
                               ? "bg-gold text-obsidian"
                               : "border border-white/10 bg-white/[0.03] text-white"
