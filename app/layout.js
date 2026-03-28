@@ -1,11 +1,32 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "PHLEXR | Post it. Prove it. Get rated.",
-  description:
-    "PHLEXR is a premium social landing page for a black-and-gold app concept built around posting flexes, proving credibility, and getting rated.",
+  metadataBase: new URL("https://phlexr.com"),
+  title: "PHLEXR",
+  description: "Flex. Verify. Expose.",
   verification: {
     google: "h9N7agUa5jYfJZlFXSktJin_dUCgnVy_pmoLPafuAb4",
+  },
+  openGraph: {
+    title: "PHLEXR",
+    description: "Flex. Verify. Expose.",
+    url: "https://phlexr.com",
+    siteName: "PHLEXR",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PHLEXR luxury hero image",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PHLEXR",
+    description: "Flex. Verify. Expose.",
+    images: ["/og-image.png"],
   },
 };
 
