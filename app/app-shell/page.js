@@ -10,6 +10,21 @@ const shellNav = [
   { label: "Ranks", href: "#leaderboard" },
 ];
 
+const categories = [
+  "Houses",
+  "Cars",
+  "Watches",
+  "Shoes",
+  "Boats",
+  "Handbags",
+  "Dresses",
+  "Suits",
+  "Gaming Setups",
+  "Backyards",
+  "Garages",
+  "Misc",
+];
+
 const seededPosts = [
   {
     id: "post-1",
@@ -24,7 +39,7 @@ const seededPosts = [
     wouldFlexPercent: 94,
     fakeAiPercent: 3,
     timestamp: "23 min ago",
-    owner: true,
+    owner: false,
   },
   {
     id: "post-2",
@@ -34,7 +49,7 @@ const seededPosts = [
     image:
       "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1600&auto=format&fit=crop",
     caption: "Diamond flap. Soft launch. Real pressure only.",
-    category: "Fashion",
+    category: "Handbags",
     score: 9.4,
     wouldFlexPercent: 88,
     fakeAiPercent: 7,
@@ -71,6 +86,21 @@ const seededPosts = [
     timestamp: "5 hours ago",
     owner: false,
   },
+  {
+    id: "post-5",
+    username: "phlexrfounder",
+    displayName: "PHLEXR Founder",
+    badge: "PHLEXR ELITE",
+    image:
+      "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1600&auto=format&fit=crop",
+    caption: "Camera flash. Midnight energy. Clean proof only.",
+    category: "Cars",
+    score: 9.1,
+    wouldFlexPercent: 85,
+    fakeAiPercent: 5,
+    timestamp: "12 min ago",
+    owner: true,
+  },
 ];
 
 const profileDirectory = {
@@ -100,8 +130,6 @@ const profileDirectory = {
     location: "Miami, FL",
   },
 };
-
-const categories = ["Cars", "Watches", "Fashion", "Travel", "Real Estate"];
 
 function SectionCard({ id, eyebrow, title, copy, children }) {
   return (
@@ -135,6 +163,8 @@ function formatScore(value) {
 
 export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
+  const [hasEnteredApp, setHasEnteredApp] = useState(false);
+  const [selectedProfileUsername, setSelectedProfileUsername] = useState("phlexrfounder");
   const [draft, setDraft] = useState({
     image:
       "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200&auto=format&fit=crop",
@@ -143,35 +173,7 @@ export default function AppShellPage() {
     story: "Tell the story behind the flex.",
   });
 
-  const currentUser = useMemo(() => {
-    const ownedPosts = posts.filter((post) => post.owner);
-    const totalPosts = ownedPosts.length;
-    const averageScore =
-      totalPosts === 0
-        ? 0
-        : ownedPosts.reduce((sum, post) => sum + post.score, 0) / totalPosts;
-
-    return {
-      username: "phlexrfounder",
-      displayName: "PHLEXR Founder",
-      badge: "PHLEXR ELITE",
-      avatar: profileDirectory.phlexrfounder.avatar,
-      location: profileDirectory.phlexrfounder.location,
-      totalPosts,
-      averageScore,
-      posts: ownedPosts,
-      wouldFlexAverage:
-        totalPosts === 0
-          ? 0
-          : ownedPosts.reduce((sum, post) => sum + post.wouldFlexPercent, 0) / totalPosts,
-      fakeAiAverage:
-        totalPosts === 0
-          ? 0
-          : ownedPosts.reduce((sum, post) => sum + post.fakeAiPercent, 0) / totalPosts,
-    };
-  }, [posts]);
-
-  const leaderboard = useMemo(() => {
+  const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
       if (!accumulator[post.username]) {
         const profile = profileDirectory[post.username] || profileDirectory.phlexrfounder;
@@ -192,11 +194,48 @@ export default function AppShellPage() {
     return Object.values(grouped)
       .map((entry) => ({
         ...entry,
+        totalPosts: entry.posts.length,
         averageScore:
           entry.posts.reduce((sum, post) => sum + post.score, 0) / entry.posts.length,
+        wouldFlexAverage:
+          entry.posts.reduce((sum, post) => sum + post.wouldFlexPercent, 0) / entry.posts.length,
+        fakeAiAverage:
+          entry.posts.reduce((sum, post) => sum + post.fakeAiPercent, 0) / entry.posts.length,
       }))
       .sort((left, right) => right.averageScore - left.averageScore);
   }, [posts]);
+
+  const currentUser =
+    profiles.find((profile) => profile.username === "phlexrfounder") || {
+      username: "phlexrfounder",
+      displayName: "PHLEXR Founder",
+      badge: "PHLEXR ELITE",
+      avatar: profileDirectory.phlexrfounder.avatar,
+      location: profileDirectory.phlexrfounder.location,
+      totalPosts: 0,
+      averageScore: 0,
+      wouldFlexAverage: 0,
+      fakeAiAverage: 0,
+      posts: [],
+    };
+
+  const selectedProfile =
+    profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
+
+  function enterShell(targetId = "feed") {
+    setHasEnteredApp(true);
+    if (typeof window !== "undefined") {
+      window.location.hash = targetId;
+    }
+  }
+
+  function openProfile(username) {
+    setHasEnteredApp(true);
+    setSelectedProfileUsername(username);
+    if (typeof window !== "undefined") {
+      window.location.hash = "profile";
+    }
+  }
 
   function handleVote(postId, voteType) {
     setPosts((currentPosts) =>
@@ -231,6 +270,7 @@ export default function AppShellPage() {
 
   function handlePostSubmit(event) {
     event.preventDefault();
+    setHasEnteredApp(true);
 
     const newPost = {
       id: `post-${Date.now()}`,
@@ -248,11 +288,16 @@ export default function AppShellPage() {
     };
 
     setPosts((currentPosts) => [newPost, ...currentPosts]);
+    setSelectedProfileUsername(currentUser.username);
     setDraft((currentDraft) => ({
       ...currentDraft,
       caption: "",
       story: "",
     }));
+
+    if (typeof window !== "undefined") {
+      window.location.hash = "feed";
+    }
   }
 
   return (
@@ -291,6 +336,7 @@ export default function AppShellPage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
+                {hasEnteredApp ? <PremiumBadge>Shell unlocked</PremiumBadge> : null}
                 <PremiumBadge>Premium badge system</PremiumBadge>
                 <a
                   href="/"
@@ -338,13 +384,22 @@ export default function AppShellPage() {
                 </div>
 
                 <div className="mt-5 grid gap-3">
-                  <button className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian">
-                    Enter PHLEXR
+                  <button
+                    onClick={() => enterShell("feed")}
+                    className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
+                  >
+                    Create account
                   </button>
-                  <button className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white">
+                  <button
+                    onClick={() => enterShell("feed")}
+                    className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
+                  >
                     Continue with Google
                   </button>
-                  <button className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white">
+                  <button
+                    onClick={() => enterShell("feed")}
+                    className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
+                  >
                     Continue with Apple
                   </button>
                 </div>
@@ -386,25 +441,31 @@ export default function AppShellPage() {
               {posts.map((post) => (
                 <article
                   key={post.id}
-                  className="overflow-hidden rounded-[1.7rem] border border-white/8 bg-black/35"
+                  className="flex min-h-[42rem] flex-col overflow-hidden rounded-[1.7rem] border border-white/8 bg-black/35"
                 >
                   <img
                     src={post.image}
                     alt={post.displayName}
                     className="h-64 w-full object-cover sm:h-72"
                   />
-                  <div className="grid gap-5 p-4 sm:p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
+                  <div className="flex flex-1 flex-col p-4 sm:p-5">
+                    <div className="flex min-h-[5.75rem] items-start justify-between gap-3">
+                      <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
                         <p className="mt-2 text-sm text-gold">
                           @{post.username} · {post.badge} · {post.timestamp}
                         </p>
                       </div>
-                      <PremiumBadge>Score {formatScore(post.score)}</PremiumBadge>
+                      <div className="flex min-h-[3rem] items-start">
+                        <PremiumBadge>Score {formatScore(post.score)}</PremiumBadge>
+                      </div>
                     </div>
-                    <p className="text-base leading-7 text-white/68">{post.caption}</p>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+
+                    <div className="mt-5 min-h-[5.5rem]">
+                      <p className="text-base leading-7 text-white/68">{post.caption}</p>
+                    </div>
+
+                    <div className="mt-5 grid min-h-[7.75rem] grid-cols-1 gap-3 sm:grid-cols-3">
                       {[
                         ["Would-Flex", formatPercent(post.wouldFlexPercent)],
                         ["Fake / AI", formatPercent(post.fakeAiPercent)],
@@ -419,7 +480,8 @@ export default function AppShellPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+
+                    <div className="mt-auto grid min-h-[4.5rem] grid-cols-1 gap-3 pt-5 sm:grid-cols-3">
                       {[
                         ["Flex", "flex"],
                         ["Not It", "notIt"],
@@ -567,23 +629,23 @@ export default function AppShellPage() {
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">
                     <img
-                      src={currentUser.avatar}
-                      alt={currentUser.displayName}
+                      src={selectedProfile.avatar}
+                      alt={selectedProfile.displayName}
                       className="h-20 w-20 rounded-full border-2 border-gold/55 object-cover"
                     />
                     <div>
-                      <p className="text-3xl font-semibold text-white">{currentUser.displayName}</p>
-                      <p className="mt-2 text-base text-white/55">{currentUser.location}</p>
+                      <p className="text-3xl font-semibold text-white">{selectedProfile.displayName}</p>
+                      <p className="mt-2 text-base text-white/55">{selectedProfile.location}</p>
                     </div>
                   </div>
-                  <PremiumBadge>{currentUser.badge}</PremiumBadge>
+                  <PremiumBadge>{selectedProfile.badge}</PremiumBadge>
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                   {[
-                    ["Total Posts", currentUser.totalPosts],
-                    ["Average Score", formatScore(currentUser.averageScore || 0)],
-                    ["Badge", currentUser.badge],
+                    ["Total Posts", selectedProfile.totalPosts],
+                    ["Average Score", formatScore(selectedProfile.averageScore || 0)],
+                    ["Badge", selectedProfile.badge],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -597,7 +659,7 @@ export default function AppShellPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {currentUser.posts.map((post) => (
+                {selectedProfile.posts.map((post) => (
                   <div
                     key={post.id}
                     className="overflow-hidden rounded-[1.5rem] border border-white/8 bg-black/35"
@@ -620,10 +682,12 @@ export default function AppShellPage() {
             copy="High-status ranking view built live from the same local dataset that powers the feed and profile."
           >
             <div className="grid gap-4">
-              {leaderboard.map((entry, index) => (
-                <div
+              {profiles.map((entry, index) => (
+                <button
+                  type="button"
                   key={entry.username}
-                  className="flex flex-col gap-4 rounded-[1.5rem] border border-white/8 bg-black/35 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  onClick={() => openProfile(entry.username)}
+                  className="flex flex-col gap-4 rounded-[1.5rem] border border-white/8 bg-black/35 p-4 text-left transition hover:border-gold/20 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/25 bg-white/[0.03] text-lg font-semibold text-gold">
@@ -645,7 +709,7 @@ export default function AppShellPage() {
                       {formatScore(entry.averageScore)}
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </SectionCard>
