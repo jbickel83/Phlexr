@@ -388,7 +388,7 @@ export default function Page() {
 
             <div className="rounded-[1.6rem] border border-white/10 bg-black/45 p-5 sm:p-6">
               <form
-                action="https://formsubmit.co/REPLACE_THIS_WITH_YOUR_EMAIL@gmail.com"
+                action="https://formsubmit.co/phlexrapp@gmail.com"
                 method="POST"
                 className="grid gap-4"
               >
