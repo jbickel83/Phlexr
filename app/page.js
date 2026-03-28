@@ -430,10 +430,17 @@ export default function Page() {
             </div>
 
             <div className="flex flex-wrap gap-3 md:justify-end">
-              {["Facebook", "X", "Instagram", "TikTok"].map((social) => (
+              {[
+                ["Facebook", "https://www.facebook.com/profile.php?id=61578504254021"],
+                ["X", "https://x.com/Phlexr_Official"],
+                ["Instagram", "https://instagram.com/phelxr_Official"],
+                ["TikTok", "https://tiktok.com/@phlexr"],
+              ].map(([social, href]) => (
                 <a
                   key={social}
-                  href="#"
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
                   aria-label={social}
                   className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-medium text-white/78 transition hover:border-gold/30 hover:text-gold hover:shadow-[0_0_18px_rgba(230,179,58,0.15)]"
                 >
