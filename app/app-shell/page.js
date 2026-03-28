@@ -3,12 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const shellNav = [
-  { label: "Auth", href: "#auth" },
-  { label: "Feed", href: "#feed" },
-  { label: "Post", href: "#post" },
-  { label: "Profile", href: "#profile" },
-  { label: "Edit", href: "#edit-profile" },
-  { label: "Ranks", href: "#leaderboard" },
+  { label: "Feed", view: "feed" },
+  { label: "Post", view: "post" },
+  { label: "Leaderboard", view: "leaderboard" },
 ];
 
 const categories = [
@@ -179,6 +176,7 @@ function formatScore(value) {
 export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
+  const [currentView, setCurrentView] = useState("feed");
   const [selectedProfileUsername, setSelectedProfileUsername] = useState(
     defaultCurrentUserProfile.username
   );
@@ -252,6 +250,34 @@ export default function AppShellPage() {
 
   const selectedProfile =
     profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
+  const leaderboardPreview = profiles.slice(0, 5);
+  const viewMeta = {
+    feed: {
+      eyebrow: "Main Feed",
+      title: "Feed",
+      copy: "Live PHLEXR flex posts with story-style leaderboard momentum at the top.",
+    },
+    post: {
+      eyebrow: "Create",
+      title: "Post",
+      copy: "Upload locally, preview instantly, and push a new flex straight into your fake-data feed.",
+    },
+    profile: {
+      eyebrow: "Profile",
+      title: selectedProfile.displayName,
+      copy: "Your profile, score presence, and post grid all stay connected to the same local shell state.",
+    },
+    "edit-profile": {
+      eyebrow: "Profile Edit",
+      title: "Edit profile",
+      copy: "Refine your visible PHLEXR identity and keep it saved locally.",
+    },
+    leaderboard: {
+      eyebrow: "Rankings",
+      title: "Leaderboard",
+      copy: "Top performers across the same local dataset powering the feed and profiles.",
+    },
+  };
 
   useEffect(() => {
     function handlePointerDown(event) {
@@ -264,6 +290,23 @@ export default function AppShellPage() {
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const hashView = window.location.hash.replace("#", "");
+    if (!hashView) {
+      return;
+    }
+
+    const validViews = new Set(["feed", "post", "profile", "edit-profile", "leaderboard"]);
+    if (validViews.has(hashView)) {
+      setHasEnteredApp(true);
+      setCurrentView(hashView);
+    }
   }, []);
 
   useEffect(() => {
@@ -335,19 +378,33 @@ export default function AppShellPage() {
     setProfileDraft(currentUserProfile);
   }, [currentUserProfile]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !hasEnteredApp) {
+      return;
+    }
+
+    window.location.hash = currentView;
+  }, [currentView, hasEnteredApp]);
+
   function enterShell(targetId = "feed") {
     setHasEnteredApp(true);
-    if (typeof window !== "undefined") {
-      window.location.hash = targetId;
-    }
+    setCurrentView(targetId);
   }
 
   function openProfile(username) {
     setHasEnteredApp(true);
     setSelectedProfileUsername(username);
-    if (typeof window !== "undefined") {
-      window.location.hash = "profile";
-    }
+    setCurrentView("profile");
+  }
+
+  function openLeaderboard() {
+    setHasEnteredApp(true);
+    setCurrentView("leaderboard");
+  }
+
+  function navigateTo(view) {
+    setHasEnteredApp(true);
+    setCurrentView(view);
   }
 
   function handleVote(postId, voteType) {
@@ -467,9 +524,7 @@ export default function AppShellPage() {
     setSelectedProfileUsername((currentUsername) =>
       currentUsername === previousUsername ? nextProfile.username : currentUsername
     );
-    if (typeof window !== "undefined") {
-      window.location.hash = "profile";
-    }
+    setCurrentView("profile");
   }
 
   function handlePostSubmit(event) {
@@ -507,59 +562,106 @@ export default function AppShellPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-
-    if (typeof window !== "undefined") {
-      window.location.hash = "feed";
-    }
+    setCurrentView("feed");
   }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-obsidian text-ivory">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[32rem] bg-[radial-gradient(circle_at_top,_rgba(230,179,58,0.16),_transparent_40%)]" />
 
-      <div className="mx-auto flex max-w-7xl gap-8 px-4 pb-24 pt-6 sm:px-6 lg:px-8">
-        <aside className="sticky top-6 hidden h-fit w-64 rounded-[2rem] border border-white/10 bg-black/35 p-5 lg:block">
-          <p className="font-display text-2xl tracking-[0.22em] text-gold">PHLEXR</p>
-          <p className="mt-3 text-sm text-white/55">App shell prototype</p>
-          <nav className="mt-8 grid gap-2">
-            {shellNav.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-white/72 transition hover:border-gold/20 hover:bg-white/[0.03] hover:text-gold"
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-        </aside>
+      <div className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
+        <div className="relative z-10 space-y-6">
+          {hasEnteredApp ? (
+            <>
+              <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-5 py-4 sm:px-6">
+                <div className="flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={() => navigateTo("feed")}
+                    className="font-display text-2xl tracking-[0.22em] text-gold"
+                  >
+                    PHLEXR
+                  </button>
+                  <div className="hidden min-w-0 flex-1 px-6 lg:block">
+                    <p className="truncate text-center text-sm uppercase tracking-[0.22em] text-white/42">
+                      {viewMeta[currentView]?.eyebrow}
+                    </p>
+                    <p className="mt-1 truncate text-center text-lg font-semibold text-white">
+                      {viewMeta[currentView]?.title}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href="/"
+                      className="hidden rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold sm:inline-flex"
+                    >
+                      Back to landing page
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => openProfile(currentUser.username)}
+                      className="flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.03] px-2.5 py-2 transition hover:border-gold/30"
+                    >
+                      <img
+                        src={currentUser.avatar}
+                        alt={currentUser.displayName}
+                        className="h-10 w-10 rounded-full border border-gold/40 object-cover"
+                      />
+                      <div className="hidden text-left sm:block">
+                        <p className="text-sm font-semibold text-white">{currentUser.displayName}</p>
+                        <p className="text-xs uppercase tracking-[0.16em] text-gold/75">
+                          View profile
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </header>
 
-        <div className="relative z-10 flex-1 space-y-6">
-          <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] p-5 sm:p-6">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Separate App Route</p>
-                <h1 className="mt-4 text-balance font-display text-4xl text-white sm:text-5xl">
-                  PHLEXR app shell
-                </h1>
-                <p className="mt-4 max-w-3xl text-base leading-7 text-white/62 sm:text-lg">
-                  Seeded local-state prototype for the real PHLEXR app experience. No backend, no
-                  APIs, no persistence, just polished shell behavior.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                {hasEnteredApp ? <PremiumBadge>Shell unlocked</PremiumBadge> : null}
+              <div className="hidden items-center gap-3 lg:flex">
+                {shellNav.map((item) => (
+                  <button
+                    key={item.view}
+                    type="button"
+                    onClick={() => navigateTo(item.view)}
+                    className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
+                      currentView === item.view
+                        ? "bg-gold text-obsidian"
+                        : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
                 <PremiumBadge>Premium badge system</PremiumBadge>
-                <a
-                  href="/"
-                  className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
-                >
-                  Back to landing page
-                </a>
               </div>
-            </div>
-          </header>
+            </>
+          ) : (
+            <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] p-5 sm:p-6">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Separate App Route</p>
+                  <h1 className="mt-4 text-balance font-display text-4xl text-white sm:text-5xl">
+                    PHLEXR app shell
+                  </h1>
+                  <p className="mt-4 max-w-3xl text-base leading-7 text-white/62 sm:text-lg">
+                    Seeded local-state prototype for the real PHLEXR app experience. No backend, no
+                    APIs, no persistence, just polished shell behavior.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <PremiumBadge>Premium badge system</PremiumBadge>
+                  <a
+                    href="/"
+                    className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Back to landing page
+                  </a>
+                </div>
+              </div>
+            </header>
+          )}
 
           {!hasEnteredApp ? (
             <SectionCard
@@ -653,12 +755,49 @@ export default function AppShellPage() {
             </SectionCard>
           ) : null}
 
+          {hasEnteredApp && currentView === "feed" ? (
           <SectionCard
             id="feed"
             eyebrow="02. Feed"
             title="Feed"
             copy="Seeded PHLEXR flex posts with local score data, trust signals, and working vote controls."
           >
+            <div className="mb-5 flex gap-4 overflow-x-auto pb-2">
+              {leaderboardPreview.map((entry, index) => (
+                <button
+                  key={entry.username}
+                  type="button"
+                  onClick={() => openProfile(entry.username)}
+                  className="min-w-[10rem] rounded-[1.4rem] border border-white/10 bg-black/35 p-4 text-left transition hover:border-gold/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={entry.avatar}
+                      alt={entry.displayName}
+                      className="h-12 w-12 rounded-full border border-gold/45 object-cover"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-white">{entry.displayName}</p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-gold/75">
+                        #{index + 1} · {formatScore(entry.averageScore)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 truncate text-xs uppercase tracking-[0.16em] text-white/45">
+                    {entry.badge}
+                  </p>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={openLeaderboard}
+                className="min-w-[10rem] rounded-[1.4rem] border border-gold/25 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] p-4 text-left transition hover:border-gold/40"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] text-gold/75">Leaderboard</p>
+                <p className="mt-3 text-lg font-semibold text-white">See Leaderboard</p>
+                <p className="mt-2 text-sm text-white/52">Open the full rankings page</p>
+              </button>
+            </div>
             <div className="grid items-stretch gap-5 xl:grid-cols-2">
               {posts.map((post) => {
                 const lockedVote = votedPosts[post.id];
@@ -759,7 +898,9 @@ export default function AppShellPage() {
               })}
             </div>
           </SectionCard>
+          ) : null}
 
+          {hasEnteredApp && currentView === "post" ? (
           <SectionCard
             id="post"
             eyebrow="03. Post"
@@ -934,7 +1075,9 @@ export default function AppShellPage() {
               </div>
             </div>
           </SectionCard>
+          ) : null}
 
+          {hasEnteredApp && currentView === "profile" ? (
           <SectionCard
             id="profile"
             eyebrow="04. Profile"
@@ -962,12 +1105,13 @@ export default function AppShellPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <PremiumBadge>{selectedProfile.badge}</PremiumBadge>
                     {selectedProfile.username === currentUser.username ? (
-                      <a
-                        href="#edit-profile"
+                      <button
+                        type="button"
+                        onClick={() => navigateTo("edit-profile")}
                         className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
                       >
                         Edit profile
-                      </a>
+                      </button>
                     ) : null}
                   </div>
                 </div>
@@ -1011,7 +1155,9 @@ export default function AppShellPage() {
               </div>
             </div>
           </SectionCard>
+          ) : null}
 
+          {hasEnteredApp && currentView === "edit-profile" ? (
           <SectionCard
             id="edit-profile"
             eyebrow="05. Edit"
@@ -1150,7 +1296,9 @@ export default function AppShellPage() {
               </div>
             </div>
           </SectionCard>
+          ) : null}
 
+          {hasEnteredApp && currentView === "leaderboard" ? (
           <SectionCard
             id="leaderboard"
             eyebrow="06. Leaderboard"
@@ -1189,19 +1337,32 @@ export default function AppShellPage() {
               ))}
             </div>
           </SectionCard>
+          ) : null}
         </div>
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-obsidian/95 px-4 py-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-2">
-          {shellNav.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="flex-1 rounded-full border border-white/15 bg-white/[0.03] px-3 py-2 text-center text-xs font-medium text-white/72"
+          {[
+            { label: "Feed", view: "feed" },
+            { label: "Post", view: "post" },
+            { label: "Ranks", view: "leaderboard" },
+            { label: "Profile", view: "profile" },
+          ].map((item) => (
+            <button
+              key={item.view}
+              type="button"
+              onClick={() =>
+                item.view === "profile" ? openProfile(currentUser.username) : navigateTo(item.view)
+              }
+              className={`flex-1 rounded-full px-3 py-2 text-center text-xs font-medium transition ${
+                currentView === item.view
+                  ? "bg-gold text-obsidian"
+                  : "border border-white/15 bg-white/[0.03] text-white/72"
+              }`}
             >
               {item.label}
-            </a>
+            </button>
           ))}
         </div>
       </nav>
