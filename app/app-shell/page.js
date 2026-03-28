@@ -7,6 +7,7 @@ const shellNav = [
   { label: "Feed", href: "#feed" },
   { label: "Post", href: "#post" },
   { label: "Profile", href: "#profile" },
+  { label: "Edit", href: "#edit-profile" },
   { label: "Ranks", href: "#leaderboard" },
 ];
 
@@ -26,6 +27,18 @@ const categories = [
 ];
 
 const POSTS_STORAGE_KEY = "phlexr-app-shell-posts";
+const VOTED_POSTS_STORAGE_KEY = "phlexr-app-shell-voted-posts";
+const PROFILE_STORAGE_KEY = "phlexr-app-shell-current-profile";
+
+const defaultCurrentUserProfile = {
+  username: "phlexrfounder",
+  displayName: "PHLEXR Founder",
+  badge: "PHLEXR ELITE",
+  avatar:
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+  location: "Miami, FL",
+  bio: "Building the cleanest flex-rating platform on the internet.",
+};
 
 const seededPosts = [
   {
@@ -166,8 +179,12 @@ function formatScore(value) {
 export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
-  const [selectedProfileUsername, setSelectedProfileUsername] = useState("phlexrfounder");
+  const [selectedProfileUsername, setSelectedProfileUsername] = useState(
+    defaultCurrentUserProfile.username
+  );
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [votedPosts, setVotedPosts] = useState({});
+  const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
   const [draft, setDraft] = useState({
     image: "",
     category: "Cars",
@@ -175,19 +192,25 @@ export default function AppShellPage() {
     story: "",
   });
   const [draftImageName, setDraftImageName] = useState("");
+  const [profileDraft, setProfileDraft] = useState(defaultCurrentUserProfile);
+  const [profileImageName, setProfileImageName] = useState("");
   const categoryMenuRef = useRef(null);
   const fileInputRef = useRef(null);
+  const profileImageInputRef = useRef(null);
 
   const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
       if (!accumulator[post.username]) {
-        const profile = profileDirectory[post.username] || profileDirectory.phlexrfounder;
+        const profile = post.owner
+          ? currentUserProfile
+          : profileDirectory[post.username] || profileDirectory.phlexrfounder;
         accumulator[post.username] = {
           username: post.username,
-          displayName: post.displayName,
-          badge: post.badge,
+          displayName: post.owner ? currentUserProfile.displayName : post.displayName,
+          badge: post.owner ? currentUserProfile.badge : post.badge,
           avatar: profile.avatar,
           location: profile.location,
+          bio: profile.bio || "",
           posts: [],
         };
       }
@@ -195,6 +218,13 @@ export default function AppShellPage() {
       accumulator[post.username].posts.push(post);
       return accumulator;
     }, {});
+
+    if (!grouped[currentUserProfile.username]) {
+      grouped[currentUserProfile.username] = {
+        ...currentUserProfile,
+        posts: [],
+      };
+    }
 
     return Object.values(grouped)
       .map((entry) => ({
@@ -208,15 +238,11 @@ export default function AppShellPage() {
           entry.posts.reduce((sum, post) => sum + post.fakeAiPercent, 0) / entry.posts.length,
       }))
       .sort((left, right) => right.averageScore - left.averageScore);
-  }, [posts]);
+  }, [currentUserProfile, posts]);
 
   const currentUser =
-    profiles.find((profile) => profile.username === "phlexrfounder") || {
-      username: "phlexrfounder",
-      displayName: "PHLEXR Founder",
-      badge: "PHLEXR ELITE",
-      avatar: profileDirectory.phlexrfounder.avatar,
-      location: profileDirectory.phlexrfounder.location,
+    profiles.find((profile) => profile.username === currentUserProfile.username) || {
+      ...currentUserProfile,
       totalPosts: 0,
       averageScore: 0,
       wouldFlexAverage: 0,
@@ -253,8 +279,34 @@ export default function AppShellPage() {
           setPosts(parsedPosts);
         }
       }
+
+      const savedVotes = window.localStorage.getItem(VOTED_POSTS_STORAGE_KEY);
+      if (savedVotes) {
+        const parsedVotes = JSON.parse(savedVotes);
+        if (parsedVotes && typeof parsedVotes === "object") {
+          setVotedPosts(parsedVotes);
+        }
+      }
+
+      const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (savedProfile) {
+        const parsedProfile = JSON.parse(savedProfile);
+        if (parsedProfile && typeof parsedProfile === "object") {
+          const mergedProfile = {
+            ...defaultCurrentUserProfile,
+            ...parsedProfile,
+          };
+          setCurrentUserProfile(mergedProfile);
+          setProfileDraft(mergedProfile);
+          setSelectedProfileUsername(mergedProfile.username);
+        }
+      } else {
+        setProfileDraft(defaultCurrentUserProfile);
+      }
     } catch {
       window.localStorage.removeItem(POSTS_STORAGE_KEY);
+      window.localStorage.removeItem(VOTED_POSTS_STORAGE_KEY);
+      window.localStorage.removeItem(PROFILE_STORAGE_KEY);
     }
   }, []);
 
@@ -265,6 +317,23 @@ export default function AppShellPage() {
 
     window.localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
   }, [posts]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(VOTED_POSTS_STORAGE_KEY, JSON.stringify(votedPosts));
+  }, [votedPosts]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(currentUserProfile));
+    setProfileDraft(currentUserProfile);
+  }, [currentUserProfile]);
 
   function enterShell(targetId = "feed") {
     setHasEnteredApp(true);
@@ -282,6 +351,10 @@ export default function AppShellPage() {
   }
 
   function handleVote(postId, voteType) {
+    if (votedPosts[postId]) {
+      return;
+    }
+
     setPosts((currentPosts) =>
       currentPosts.map((post) => {
         if (post.id !== postId) {
@@ -310,6 +383,10 @@ export default function AppShellPage() {
         };
       })
     );
+    setVotedPosts((currentVotes) => ({
+      ...currentVotes,
+      [postId]: voteType,
+    }));
   }
 
   function handleImageUrlChange(event) {
@@ -341,6 +418,58 @@ export default function AppShellPage() {
       setDraftImageName(selectedFile.name);
     };
     reader.readAsDataURL(selectedFile);
+  }
+
+  function handleProfileImageFileChange(event) {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile || !selectedFile.type.startsWith("image/")) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      setProfileDraft((currentDraft) => ({
+        ...currentDraft,
+        avatar: result,
+      }));
+      setProfileImageName(selectedFile.name);
+    };
+    reader.readAsDataURL(selectedFile);
+  }
+
+  function handleProfileSave(event) {
+    event.preventDefault();
+    const nextProfile = {
+      ...currentUserProfile,
+      ...profileDraft,
+      username: profileDraft.username.trim() || currentUserProfile.username,
+      displayName: profileDraft.displayName.trim() || currentUserProfile.displayName,
+      bio: profileDraft.bio.trim(),
+      location: profileDraft.location.trim() || currentUserProfile.location,
+      avatar: profileDraft.avatar.trim() || currentUserProfile.avatar,
+    };
+
+    const previousUsername = currentUserProfile.username;
+    setCurrentUserProfile(nextProfile);
+    setPosts((currentPosts) =>
+      currentPosts.map((post) =>
+        post.owner
+          ? {
+              ...post,
+              username: nextProfile.username,
+              displayName: nextProfile.displayName,
+              badge: nextProfile.badge,
+            }
+          : post
+      )
+    );
+    setSelectedProfileUsername((currentUsername) =>
+      currentUsername === previousUsername ? nextProfile.username : currentUsername
+    );
+    if (typeof window !== "undefined") {
+      window.location.hash = "profile";
+    }
   }
 
   function handlePostSubmit(event) {
@@ -531,7 +660,9 @@ export default function AppShellPage() {
             copy="Seeded PHLEXR flex posts with local score data, trust signals, and working vote controls."
           >
             <div className="grid items-stretch gap-5 xl:grid-cols-2">
-              {posts.map((post) => (
+              {posts.map((post) => {
+                const lockedVote = votedPosts[post.id];
+                return (
                 <article
                   key={post.id}
                   className="flex h-full min-h-[42rem] flex-col overflow-hidden rounded-[1.7rem] border border-white/8 bg-black/35"
@@ -541,7 +672,7 @@ export default function AppShellPage() {
                     alt={post.displayName}
                     className="h-64 w-full object-cover sm:h-72"
                   />
-                  <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_minmax(0,7.75rem)_4.5rem] gap-y-5 p-4 sm:p-5">
+                  <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_minmax(0,7.75rem)_4.5rem_auto] gap-y-5 p-4 sm:p-5">
                     <div className="relative pr-32">
                       <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
@@ -596,20 +727,36 @@ export default function AppShellPage() {
                       ].map(([label, action], index) => (
                         <button
                           key={label}
+                          type="button"
                           onClick={() => handleVote(post.id, action)}
-                          className={`h-full rounded-full px-4 py-3 text-sm font-semibold ${
-                            index === 0
+                          disabled={Boolean(lockedVote)}
+                          className={`h-full rounded-full px-4 py-3 text-sm font-semibold transition ${
+                            lockedVote === action
                               ? "bg-gold text-obsidian"
-                              : "border border-white/15 bg-white/[0.03] text-white"
+                              : index === 0
+                                ? "bg-gold text-obsidian"
+                                : "border border-white/15 bg-white/[0.03] text-white"
+                          } ${
+                            lockedVote && lockedVote !== action
+                              ? "cursor-not-allowed border-white/10 bg-white/[0.02] text-white/35"
+                              : ""
                           }`}
                         >
                           {label}
                         </button>
                       ))}
                     </div>
+                    <div className="flex min-h-4 items-center">
+                      {lockedVote ? (
+                        <p className="text-xs uppercase tracking-[0.18em] text-gold/70">
+                          Vote locked for this post
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </SectionCard>
 
@@ -805,10 +952,24 @@ export default function AppShellPage() {
                     />
                     <div>
                       <p className="text-3xl font-semibold text-white">{selectedProfile.displayName}</p>
+                      <p className="mt-2 text-sm text-gold">@{selectedProfile.username}</p>
                       <p className="mt-2 text-base text-white/55">{selectedProfile.location}</p>
+                      <p className="mt-3 max-w-2xl text-sm leading-6 text-white/52">
+                        {selectedProfile.bio || "No bio added yet."}
+                      </p>
                     </div>
                   </div>
-                  <PremiumBadge>{selectedProfile.badge}</PremiumBadge>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <PremiumBadge>{selectedProfile.badge}</PremiumBadge>
+                    {selectedProfile.username === currentUser.username ? (
+                      <a
+                        href="#edit-profile"
+                        className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                      >
+                        Edit profile
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -829,25 +990,170 @@ export default function AppShellPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {selectedProfile.posts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="overflow-hidden rounded-[1.5rem] border border-white/8 bg-black/35"
-                  >
-                    <img src={post.image} alt={post.caption} className="h-56 w-full object-cover" />
-                    <div className="p-4">
-                      <p className="text-lg font-semibold text-white">{post.category}</p>
-                      <p className="mt-2 text-sm text-white/60">{post.caption}</p>
+                {selectedProfile.posts.length ? (
+                  selectedProfile.posts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="overflow-hidden rounded-[1.5rem] border border-white/8 bg-black/35"
+                    >
+                      <img src={post.image} alt={post.caption} className="h-56 w-full object-cover" />
+                      <div className="p-4">
+                        <p className="text-lg font-semibold text-white">{post.category}</p>
+                        <p className="mt-2 text-sm text-white/60">{post.caption}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[1.5rem] border border-white/8 bg-black/35 p-5 text-sm text-white/55">
+                    No posts yet. Upload a flex to populate this profile.
+                  </div>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            id="edit-profile"
+            eyebrow="05. Edit"
+            title="Edit profile"
+            copy="Update your visible identity in the shell and keep it stored locally across refreshes."
+          >
+            <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+              <form
+                onSubmit={handleProfileSave}
+                className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5"
+              >
+                <div className="grid gap-4">
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-white/72">Display name</span>
+                    <input
+                      type="text"
+                      value={profileDraft.displayName}
+                      onChange={(event) =>
+                        setProfileDraft((currentDraft) => ({
+                          ...currentDraft,
+                          displayName: event.target.value,
+                        }))
+                      }
+                      className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-white/72">Username</span>
+                    <input
+                      type="text"
+                      value={profileDraft.username}
+                      onChange={(event) =>
+                        setProfileDraft((currentDraft) => ({
+                          ...currentDraft,
+                          username: event.target.value.toLowerCase().replace(/\s+/g, ""),
+                        }))
+                      }
+                      className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-white/72">Bio</span>
+                    <textarea
+                      rows={4}
+                      value={profileDraft.bio}
+                      onChange={(event) =>
+                        setProfileDraft((currentDraft) => ({
+                          ...currentDraft,
+                          bio: event.target.value,
+                        }))
+                      }
+                      className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-white/72">Location</span>
+                    <input
+                      type="text"
+                      value={profileDraft.location}
+                      onChange={(event) =>
+                        setProfileDraft((currentDraft) => ({
+                          ...currentDraft,
+                          location: event.target.value,
+                        }))
+                      }
+                      className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-white/72">Profile photo URL</span>
+                    <input
+                      type="url"
+                      value={profileDraft.avatar.startsWith("data:") ? "" : profileDraft.avatar}
+                      onChange={(event) => {
+                        setProfileImageName("");
+                        setProfileDraft((currentDraft) => ({
+                          ...currentDraft,
+                          avatar: event.target.value,
+                        }));
+                      }}
+                      placeholder="https://..."
+                      className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                    />
+                  </label>
+                  <div className="rounded-[1.5rem] border border-dashed border-gold/28 bg-white/[0.02] p-4">
+                    <input
+                      ref={profileImageInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                      onChange={handleProfileImageFileChange}
+                      className="hidden"
+                      id="profile-image-upload"
+                    />
+                    <label
+                      htmlFor="profile-image-upload"
+                      className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-[1.25rem] border border-white/15 bg-black/30 px-4 text-center transition hover:border-gold/35"
+                    >
+                      <span className="text-sm font-semibold text-gold">Upload profile image</span>
+                      <span className="mt-2 text-sm text-white/55">
+                        {profileImageName || "PNG, JPG, WEBP, GIF, or AVIF"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
+                >
+                  Save local profile
+                </button>
+              </form>
+
+              <div className="rounded-[1.6rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-4 sm:p-5">
+                <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Profile preview</p>
+                <div className="mt-5 rounded-[1.6rem] border border-white/8 bg-black/35 p-5">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={profileDraft.avatar}
+                      alt={profileDraft.displayName}
+                      className="h-20 w-20 rounded-full border-2 border-gold/55 object-cover"
+                    />
+                    <div>
+                      <p className="text-2xl font-semibold text-white">{profileDraft.displayName}</p>
+                      <p className="mt-2 text-sm text-gold">@{profileDraft.username}</p>
+                      <p className="mt-2 text-sm text-white/55">{profileDraft.location}</p>
                     </div>
                   </div>
-                ))}
+                  <div className="mt-5">
+                    <PremiumBadge>{currentUserProfile.badge}</PremiumBadge>
+                  </div>
+                  <p className="mt-5 text-sm leading-6 text-white/60">
+                    {profileDraft.bio || "Write a short line that tells people what kind of flexes you post."}
+                  </p>
+                </div>
               </div>
             </div>
           </SectionCard>
 
           <SectionCard
             id="leaderboard"
-            eyebrow="05. Leaderboard"
+            eyebrow="06. Leaderboard"
             title="Leaderboard"
             copy="High-status ranking view built live from the same local dataset that powers the feed and profile."
           >
