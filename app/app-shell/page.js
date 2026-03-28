@@ -815,7 +815,7 @@ export default function AppShellPage() {
                     alt={post.displayName}
                     className="h-64 w-full object-cover sm:h-72"
                   />
-                  <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_minmax(0,7.75rem)_4.5rem_auto] gap-y-5 p-4 sm:p-5">
+                    <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_auto_auto_auto] gap-y-5 p-4 sm:grid-rows-[6.5rem_5.5rem_minmax(0,7.75rem)_4.5rem_auto] sm:p-5">
                     <div className="relative pr-32">
                       <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
@@ -832,7 +832,7 @@ export default function AppShellPage() {
                       <p className="text-base leading-7 text-white/68">{post.caption}</p>
                     </div>
 
-                    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div className="grid grid-cols-1 gap-3 sm:h-full sm:grid-cols-3">
                       {[
                         ["Would-Flex", formatPercent(post.wouldFlexPercent)],
                         ["Fake / AI", formatPercent(post.fakeAiPercent)],
@@ -862,7 +862,7 @@ export default function AppShellPage() {
                       ))}
                     </div>
 
-                    <div className="grid h-full grid-cols-1 items-end gap-3 sm:grid-cols-3">
+                      <div className="mt-2 grid grid-cols-1 gap-3 sm:mt-0 sm:h-full sm:grid-cols-3 sm:items-end">
                       {[
                         ["Flex", "flex"],
                         ["Not It", "notIt"],
@@ -873,7 +873,7 @@ export default function AppShellPage() {
                           type="button"
                           onClick={() => handleVote(post.id, action)}
                           disabled={Boolean(lockedVote)}
-                          className={`h-full rounded-full px-4 py-3 text-sm font-semibold transition ${
+                            className={`rounded-full px-4 py-3 text-sm font-semibold transition sm:h-full ${
                             lockedVote === action
                               ? "bg-gold text-obsidian"
                               : index === 0
