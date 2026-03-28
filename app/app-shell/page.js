@@ -1101,14 +1101,31 @@ export default function AppShellPage() {
                   key={entry.username}
                   type="button"
                   onClick={() => openProfile(entry.username)}
-                  className="min-w-[10rem] rounded-[1.4rem] border border-white/10 bg-black/35 p-4 text-left transition hover:border-gold/20"
+                  className={`min-w-[10rem] rounded-[1.4rem] border bg-black/35 p-4 text-left transition ${
+                    index === 0
+                      ? "border-[#d8b25a]/85 shadow-[0_0_20px_rgba(216,178,90,0.25)] hover:border-[#d8b25a]"
+                      : "border-white/10 hover:border-gold/20"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    <img
-                      src={entry.avatar}
-                      alt={entry.displayName}
-                      className="h-12 w-12 rounded-full border border-gold/45 object-cover"
-                    />
+                    <div className="relative">
+                      <img
+                        src={entry.avatar}
+                        alt={entry.displayName}
+                        className="h-12 w-12 rounded-full border border-gold/45 object-cover"
+                      />
+                      {index === 0 ? (
+                        <span className="pointer-events-none absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#d8b25a]/55 bg-[#241a0a]/95 shadow-[0_0_10px_rgba(216,178,90,0.22)]">
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            className="h-3 w-3 fill-[#efc467]"
+                          >
+                            <path d="M5.25 18.5h13.5a1 1 0 0 0 .98-1.21l-1.63-8.12a.75.75 0 0 0-1.22-.42l-3.02 2.67-4.36-6.03a.75.75 0 0 0-1.22 0L3.92 11.42.9 8.75a.75.75 0 0 0-1.22.42l-1.63 8.12a1 1 0 0 0 .98 1.21h6.27Z" />
+                          </svg>
+                        </span>
+                      ) : null}
+                    </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-white">{entry.displayName}</p>
                       <p className="mt-1 text-xs uppercase tracking-[0.16em] text-gold/75">
