@@ -870,21 +870,8 @@ export default function AppShellPage() {
                   >
                     PHLEXR
                   </button>
-                  <div className="hidden min-w-0 flex-1 px-6 lg:block">
-                    <p className="truncate text-center text-sm uppercase tracking-[0.22em] text-white/42">
-                      {viewMeta[currentView]?.eyebrow}
-                    </p>
-                    <p className="mt-1 truncate text-center text-lg font-semibold text-white">
-                      {viewMeta[currentView]?.title}
-                    </p>
-                  </div>
+                  <div className="hidden flex-1 lg:block" aria-hidden="true" />
                   <div className="flex items-center gap-3">
-                    <a
-                      href="/"
-                      className="hidden rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold sm:inline-flex"
-                    >
-                      Back to landing page
-                    </a>
                     <button
                       type="button"
                       onClick={() => openProfile(currentUser.username)}
