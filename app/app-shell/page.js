@@ -143,15 +143,19 @@ const profileDirectory = {
   },
 };
 
-function SectionCard({ id, eyebrow, title, copy, children }) {
+function SectionCard({ id, eyebrow, title, copy, children, hideHeader = false }) {
   return (
     <section
       id={id}
       className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.95)] sm:p-6"
     >
-      <h2 className="text-3xl font-semibold text-white sm:text-4xl">{title}</h2>
-      <p className="mt-4 max-w-3xl text-base leading-7 text-white/62">{copy}</p>
-      <div className="mt-8">{children}</div>
+      {hideHeader ? null : (
+        <>
+          <h2 className="text-3xl font-semibold text-white sm:text-4xl">{title}</h2>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-white/62">{copy}</p>
+        </>
+      )}
+      <div className={hideHeader ? "" : "mt-8"}>{children}</div>
     </section>
   );
 }
@@ -760,6 +764,7 @@ export default function AppShellPage() {
             eyebrow="02. Feed"
             title="Feed"
             copy="Seeded PHLEXR flex posts with local score data, trust signals, and working vote controls."
+            hideHeader
           >
             <div className="mb-5 flex gap-4 overflow-x-auto pb-2">
               {leaderboardPreview.map((entry, index) => (
