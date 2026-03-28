@@ -183,6 +183,7 @@ export default function AppShellPage() {
   const [selectedProfileUsername, setSelectedProfileUsername] = useState(
     defaultCurrentUserProfile.username
   );
+  const [editingPostId, setEditingPostId] = useState(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [votedPosts, setVotedPosts] = useState({});
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
@@ -530,6 +531,43 @@ export default function AppShellPage() {
     setCurrentView("profile");
   }
 
+  function startEditingPost(post) {
+    setEditingPostId(post.id);
+    setDraft({
+      image: post.image,
+      category: post.category,
+      caption: post.caption,
+      story: "",
+    });
+    setDraftImageName(post.image.startsWith("data:") ? "Current uploaded image" : "");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setCurrentView("post");
+  }
+
+  function handleDeletePost(postId) {
+    setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
+    setVotedPosts((currentVotes) => {
+      const nextVotes = { ...currentVotes };
+      delete nextVotes[postId];
+      return nextVotes;
+    });
+    if (editingPostId === postId) {
+      setEditingPostId(null);
+      setDraft({
+        image: "",
+        category: currentUser.posts[0]?.category || "Cars",
+        caption: "",
+        story: "",
+      });
+      setDraftImageName("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
   function handlePostSubmit(event) {
     event.preventDefault();
     setHasEnteredApp(true);
@@ -538,22 +576,37 @@ export default function AppShellPage() {
       return;
     }
 
-    const newPost = {
-      id: `post-${Date.now()}`,
-      username: currentUser.username,
-      displayName: currentUser.displayName,
-      badge: currentUser.badge,
-      image: draft.image,
-      caption: draft.caption,
-      category: draft.category,
-      score: 8.9,
-      wouldFlexPercent: 82,
-      fakeAiPercent: 6,
-      timestamp: "Just now",
-      owner: true,
-    };
+    if (editingPostId) {
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === editingPostId
+            ? {
+                ...post,
+                image: draft.image,
+                caption: draft.caption,
+                category: draft.category,
+              }
+            : post
+        )
+      );
+    } else {
+      const newPost = {
+        id: `post-${Date.now()}`,
+        username: currentUser.username,
+        displayName: currentUser.displayName,
+        badge: currentUser.badge,
+        image: draft.image,
+        caption: draft.caption,
+        category: draft.category,
+        score: 8.9,
+        wouldFlexPercent: 82,
+        fakeAiPercent: 6,
+        timestamp: "Just now",
+        owner: true,
+      };
 
-    setPosts((currentPosts) => [newPost, ...currentPosts]);
+      setPosts((currentPosts) => [newPost, ...currentPosts]);
+    }
     setSelectedProfileUsername(currentUser.username);
     setDraft({
       image: "",
@@ -561,6 +614,7 @@ export default function AppShellPage() {
       caption: "",
       story: "",
     });
+    setEditingPostId(null);
     setDraftImageName("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -832,6 +886,25 @@ export default function AppShellPage() {
                       <p className="text-base leading-7 text-white/68">{post.caption}</p>
                     </div>
 
+                    {post.owner ? (
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => startEditingPost(post)}
+                          className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:border-gold/30 hover:text-gold"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePost(post.id)}
+                          className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:border-gold/30 hover:text-gold"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : null}
+
                       <div className="grid grid-cols-1 gap-3 sm:h-full sm:grid-cols-3">
                       {[
                         ["Would-Flex", formatPercent(post.wouldFlexPercent)],
@@ -917,6 +990,37 @@ export default function AppShellPage() {
                 onSubmit={handlePostSubmit}
                 className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5"
               >
+                {editingPostId ? (
+                  <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.25rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-gold/75">
+                        Editing post
+                      </p>
+                      <p className="mt-1 text-sm text-white/62">
+                        Update your flex and save it locally.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPostId(null);
+                        setDraft({
+                          image: "",
+                          category: currentUser.posts[0]?.category || "Cars",
+                          caption: "",
+                          story: "",
+                        });
+                        setDraftImageName("");
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = "";
+                        }
+                      }}
+                      className="rounded-full border border-white/15 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:border-gold/30 hover:text-gold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
                 <div className="grid gap-4">
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-white/72">Upload image</span>
@@ -1035,7 +1139,7 @@ export default function AppShellPage() {
                   disabled={!draft.image}
                   className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
                 >
-                  Post to local feed
+                  {editingPostId ? "Save post changes" : "Post to local feed"}
                 </button>
               </form>
 
