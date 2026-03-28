@@ -1,3 +1,7 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
 const shellNav = [
   { label: "Auth", href: "#auth" },
   { label: "Feed", href: "#feed" },
@@ -6,42 +10,98 @@ const shellNav = [
   { label: "Ranks", href: "#leaderboard" },
 ];
 
-const feedPosts = [
+const seededPosts = [
   {
-    user: "Marcus Prime",
+    id: "post-1",
+    username: "marcusprime",
+    displayName: "Marcus Prime",
     badge: "PHLEXR ELITE",
-    score: "9.8",
-    wouldFlex: "94%",
-    fakeAi: "03%",
     image:
       "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop",
     caption: "Midnight delivery. Mansion lights. No explanation needed.",
+    category: "Cars",
+    score: 9.8,
+    wouldFlexPercent: 94,
+    fakeAiPercent: 3,
+    timestamp: "23 min ago",
+    owner: true,
   },
   {
-    user: "Layla Royale",
+    id: "post-2",
+    username: "laylaroyale",
+    displayName: "Layla Royale",
     badge: "VERIFIED PREMIUM",
-    score: "9.4",
-    wouldFlex: "88%",
-    fakeAi: "07%",
     image:
       "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1600&auto=format&fit=crop",
     caption: "Diamond flap. Soft launch. Real pressure only.",
+    category: "Fashion",
+    score: 9.4,
+    wouldFlexPercent: 88,
+    fakeAiPercent: 7,
+    timestamp: "1 hour ago",
+    owner: false,
+  },
+  {
+    id: "post-3",
+    username: "zayk",
+    displayName: "Zay K.",
+    badge: "GOLD VERIFIED",
+    image:
+      "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1600&auto=format&fit=crop",
+    caption: "18k pressure with skyline energy behind it.",
+    category: "Watches",
+    score: 9.7,
+    wouldFlexPercent: 91,
+    fakeAiPercent: 4,
+    timestamp: "3 hours ago",
+    owner: false,
+  },
+  {
+    id: "post-4",
+    username: "danteog",
+    displayName: 'Dante "OG"',
+    badge: "OG STATUS",
+    image:
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1600&auto=format&fit=crop",
+    caption: "Classic body. Mountain air. No replica energy anywhere near it.",
+    category: "Cars",
+    score: 9.3,
+    wouldFlexPercent: 86,
+    fakeAiPercent: 5,
+    timestamp: "5 hours ago",
+    owner: false,
   },
 ];
 
-const leaderboard = [
-  ["Marcus Prime", "PHLEXR ELITE", "9.8"],
-  ["Zay K.", "GOLD VERIFIED", "9.7"],
-  ["Layla Royale", "PREMIUM", "9.5"],
-  ["Dante OG", "OG STATUS", "9.3"],
-];
+const profileDirectory = {
+  marcusprime: {
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+    location: "Miami, FL",
+  },
+  laylaroyale: {
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
+    location: "Los Angeles, CA",
+  },
+  zayk: {
+    avatar:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=300&auto=format&fit=crop",
+    location: "Dubai, UAE",
+  },
+  danteog: {
+    avatar:
+      "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?q=80&w=300&auto=format&fit=crop",
+    location: "Aspen, CO",
+  },
+  phlexrfounder: {
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+    location: "Miami, FL",
+  },
+};
 
-const profilePosts = [
-  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1200&auto=format&fit=crop",
-];
+const categories = ["Cars", "Watches", "Fashion", "Travel", "Real Estate"];
 
 function SectionCard({ id, eyebrow, title, copy, children }) {
   return (
@@ -65,7 +125,136 @@ function PremiumBadge({ children }) {
   );
 }
 
+function formatPercent(value) {
+  return `${Math.max(0, Math.min(99, Math.round(value)))}%`;
+}
+
+function formatScore(value) {
+  return value.toFixed(1);
+}
+
 export default function AppShellPage() {
+  const [posts, setPosts] = useState(seededPosts);
+  const [draft, setDraft] = useState({
+    image:
+      "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200&auto=format&fit=crop",
+    caption: "Midnight delivery. Camera flash. Storyline locked before the first vote.",
+    category: "Cars",
+    story: "Tell the story behind the flex.",
+  });
+
+  const currentUser = useMemo(() => {
+    const ownedPosts = posts.filter((post) => post.owner);
+    const totalPosts = ownedPosts.length;
+    const averageScore =
+      totalPosts === 0
+        ? 0
+        : ownedPosts.reduce((sum, post) => sum + post.score, 0) / totalPosts;
+
+    return {
+      username: "phlexrfounder",
+      displayName: "PHLEXR Founder",
+      badge: "PHLEXR ELITE",
+      avatar: profileDirectory.phlexrfounder.avatar,
+      location: profileDirectory.phlexrfounder.location,
+      totalPosts,
+      averageScore,
+      posts: ownedPosts,
+      wouldFlexAverage:
+        totalPosts === 0
+          ? 0
+          : ownedPosts.reduce((sum, post) => sum + post.wouldFlexPercent, 0) / totalPosts,
+      fakeAiAverage:
+        totalPosts === 0
+          ? 0
+          : ownedPosts.reduce((sum, post) => sum + post.fakeAiPercent, 0) / totalPosts,
+    };
+  }, [posts]);
+
+  const leaderboard = useMemo(() => {
+    const grouped = posts.reduce((accumulator, post) => {
+      if (!accumulator[post.username]) {
+        const profile = profileDirectory[post.username] || profileDirectory.phlexrfounder;
+        accumulator[post.username] = {
+          username: post.username,
+          displayName: post.displayName,
+          badge: post.badge,
+          avatar: profile.avatar,
+          location: profile.location,
+          posts: [],
+        };
+      }
+
+      accumulator[post.username].posts.push(post);
+      return accumulator;
+    }, {});
+
+    return Object.values(grouped)
+      .map((entry) => ({
+        ...entry,
+        averageScore:
+          entry.posts.reduce((sum, post) => sum + post.score, 0) / entry.posts.length,
+      }))
+      .sort((left, right) => right.averageScore - left.averageScore);
+  }, [posts]);
+
+  function handleVote(postId, voteType) {
+    setPosts((currentPosts) =>
+      currentPosts.map((post) => {
+        if (post.id !== postId) {
+          return post;
+        }
+
+        const adjustments = {
+          flex: { score: 0.12, wouldFlexPercent: 3, fakeAiPercent: -1 },
+          notIt: { score: -0.18, wouldFlexPercent: -4, fakeAiPercent: 1 },
+          fakeAi: { score: -0.26, wouldFlexPercent: -6, fakeAiPercent: 4 },
+        };
+
+        const change = adjustments[voteType];
+
+        return {
+          ...post,
+          score: Math.max(5.5, Math.min(10, Number((post.score + change.score).toFixed(1)))),
+          wouldFlexPercent: Math.max(
+            35,
+            Math.min(99, Math.round(post.wouldFlexPercent + change.wouldFlexPercent))
+          ),
+          fakeAiPercent: Math.max(
+            1,
+            Math.min(60, Math.round(post.fakeAiPercent + change.fakeAiPercent))
+          ),
+        };
+      })
+    );
+  }
+
+  function handlePostSubmit(event) {
+    event.preventDefault();
+
+    const newPost = {
+      id: `post-${Date.now()}`,
+      username: currentUser.username,
+      displayName: currentUser.displayName,
+      badge: currentUser.badge,
+      image: draft.image,
+      caption: draft.caption,
+      category: draft.category,
+      score: 8.9,
+      wouldFlexPercent: 82,
+      fakeAiPercent: 6,
+      timestamp: "Just now",
+      owner: true,
+    };
+
+    setPosts((currentPosts) => [newPost, ...currentPosts]);
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      caption: "",
+      story: "",
+    }));
+  }
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-obsidian text-ivory">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[32rem] bg-[radial-gradient(circle_at_top,_rgba(230,179,58,0.16),_transparent_40%)]" />
@@ -73,7 +262,7 @@ export default function AppShellPage() {
       <div className="mx-auto flex max-w-7xl gap-8 px-4 pb-24 pt-6 sm:px-6 lg:px-8">
         <aside className="sticky top-6 hidden h-fit w-64 rounded-[2rem] border border-white/10 bg-black/35 p-5 lg:block">
           <p className="font-display text-2xl tracking-[0.22em] text-gold">PHLEXR</p>
-          <p className="mt-3 text-sm text-white/55">App shell preview</p>
+          <p className="mt-3 text-sm text-white/55">App shell prototype</p>
           <nav className="mt-8 grid gap-2">
             {shellNav.map((item) => (
               <a
@@ -96,8 +285,8 @@ export default function AppShellPage() {
                   PHLEXR app shell
                 </h1>
                 <p className="mt-4 max-w-3xl text-base leading-7 text-white/62 sm:text-lg">
-                  Premium shell screens for the real PHLEXR app experience, kept separate from the
-                  landing page and ready for backend wiring later.
+                  Seeded local-state prototype for the real PHLEXR app experience. No backend, no
+                  APIs, no persistence, just polished shell behavior.
                 </p>
               </div>
 
@@ -142,7 +331,7 @@ export default function AppShellPage() {
                     <span className="text-sm font-medium text-white/72">Password</span>
                     <input
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="........"
                       className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                     />
                   </label>
@@ -171,13 +360,15 @@ export default function AppShellPage() {
                 <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/40 p-4">
                   <div className="flex items-center gap-4">
                     <img
-                      src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop"
-                      alt="Premium member"
+                      src={currentUser.avatar}
+                      alt={currentUser.displayName}
                       className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
                     />
                     <div>
-                      <p className="text-2xl font-semibold text-white">Marcus Prime</p>
-                      <p className="mt-2 text-sm text-gold">Badge visible on auth, feed, profile, leaderboard</p>
+                      <p className="text-2xl font-semibold text-white">{currentUser.displayName}</p>
+                      <p className="mt-2 text-sm text-gold">
+                        Badge visible on auth, feed, profile, leaderboard
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -189,33 +380,35 @@ export default function AppShellPage() {
             id="feed"
             eyebrow="02. Feed"
             title="Feed"
-            copy="Example flex posts with score data, trust signals, and fast swipe-era actions."
+            copy="Seeded PHLEXR flex posts with local score data, trust signals, and working vote controls."
           >
             <div className="grid gap-5 xl:grid-cols-2">
-              {feedPosts.map((post) => (
+              {posts.map((post) => (
                 <article
-                  key={post.user}
+                  key={post.id}
                   className="overflow-hidden rounded-[1.7rem] border border-white/8 bg-black/35"
                 >
                   <img
                     src={post.image}
-                    alt={post.user}
+                    alt={post.displayName}
                     className="h-64 w-full object-cover sm:h-72"
                   />
                   <div className="grid gap-5 p-4 sm:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-2xl font-semibold text-white">{post.user}</p>
-                        <p className="mt-2 text-sm text-gold">{post.badge}</p>
+                        <p className="text-2xl font-semibold text-white">{post.displayName}</p>
+                        <p className="mt-2 text-sm text-gold">
+                          @{post.username} · {post.badge} · {post.timestamp}
+                        </p>
                       </div>
-                      <PremiumBadge>Score {post.score}</PremiumBadge>
+                      <PremiumBadge>Score {formatScore(post.score)}</PremiumBadge>
                     </div>
                     <p className="text-base leading-7 text-white/68">{post.caption}</p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                       {[
-                        ["Would-Flex", post.wouldFlex],
-                        ["Fake / AI", post.fakeAi],
-                        ["Trust", post.score],
+                        ["Would-Flex", formatPercent(post.wouldFlexPercent)],
+                        ["Fake / AI", formatPercent(post.fakeAiPercent)],
+                        ["Category", post.category],
                       ].map(([label, value]) => (
                         <div
                           key={label}
@@ -227,16 +420,21 @@ export default function AppShellPage() {
                       ))}
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      {["Flex", "Not It", "Fake-AI"].map((action, index) => (
+                      {[
+                        ["Flex", "flex"],
+                        ["Not It", "notIt"],
+                        ["Fake-AI", "fakeAi"],
+                      ].map(([label, action], index) => (
                         <button
-                          key={action}
+                          key={label}
+                          onClick={() => handleVote(post.id, action)}
                           className={`rounded-full px-4 py-3 text-sm font-semibold ${
                             index === 0
                               ? "bg-gold text-obsidian"
                               : "border border-white/10 bg-white/[0.03] text-white"
                           }`}
                         >
-                          {action}
+                          {label}
                         </button>
                       ))}
                     </div>
@@ -250,57 +448,107 @@ export default function AppShellPage() {
             id="post"
             eyebrow="03. Post"
             title="Post page"
-            copy="A clean creation flow for uploads, captions, storytelling, and premium preview before publish."
+            copy="A clean creation flow for image URLs, captions, categories, and live preview before publish."
           >
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-              <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5">
+              <form
+                onSubmit={handlePostSubmit}
+                className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5"
+              >
                 <div className="grid gap-4">
-                  <div className="grid min-h-40 place-items-center rounded-[1.5rem] border border-dashed border-gold/28 bg-white/[0.02] text-center text-white/55">
-                    Drop image or video here
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-white/72">Image URL</span>
+                    <input
+                      type="url"
+                      value={draft.image}
+                      onChange={(event) =>
+                        setDraft((currentDraft) => ({
+                          ...currentDraft,
+                          image: event.target.value,
+                        }))
+                      }
+                      placeholder="https://..."
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
+                    />
+                  </label>
+                  <div className="grid min-h-28 place-items-center rounded-[1.5rem] border border-dashed border-gold/28 bg-white/[0.02] text-center text-white/55">
+                    Upload placeholder only
                   </div>
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-white/72">Caption</span>
                     <input
                       type="text"
+                      value={draft.caption}
+                      onChange={(event) =>
+                        setDraft((currentDraft) => ({
+                          ...currentDraft,
+                          caption: event.target.value,
+                        }))
+                      }
                       placeholder="What makes this flex undeniable?"
                       className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
                     />
                   </label>
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-white/72">Category</span>
-                    <select className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none">
-                      <option>Cars</option>
-                      <option>Watches</option>
-                      <option>Fashion</option>
-                      <option>Travel</option>
+                    <select
+                      value={draft.category}
+                      onChange={(event) =>
+                        setDraft((currentDraft) => ({
+                          ...currentDraft,
+                          category: event.target.value,
+                        }))
+                      }
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none"
+                    >
+                      {categories.map((category) => (
+                        <option key={category}>{category}</option>
+                      ))}
                     </select>
                   </label>
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-white/72">Story</span>
                     <textarea
                       rows={5}
+                      value={draft.story}
+                      onChange={(event) =>
+                        setDraft((currentDraft) => ({
+                          ...currentDraft,
+                          story: event.target.value,
+                        }))
+                      }
                       placeholder="Tell the story behind the flex."
                       className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
                     />
                   </label>
                 </div>
-              </div>
+
+                <button
+                  type="submit"
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
+                >
+                  Post to local feed
+                </button>
+              </form>
 
               <div className="rounded-[1.6rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-4 sm:p-5">
                 <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Live preview</p>
                 <div className="mt-5 overflow-hidden rounded-[1.6rem] border border-white/8 bg-black/35">
                   <img
-                    src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200&auto=format&fit=crop"
+                    src={draft.image}
                     alt="Post preview"
                     className="h-72 w-full object-cover"
                   />
                   <div className="grid gap-4 p-5">
                     <div className="flex items-center justify-between gap-4">
-                      <p className="text-2xl font-semibold text-white">@phlexrfounder</p>
-                      <PremiumBadge>Awaiting scan</PremiumBadge>
+                      <p className="text-2xl font-semibold text-white">@{currentUser.username}</p>
+                      <PremiumBadge>{currentUser.badge}</PremiumBadge>
                     </div>
                     <p className="text-base leading-7 text-white/65">
-                      Midnight delivery. Camera flash. Storyline locked before the first vote.
+                      {draft.caption || "What makes this flex undeniable?"}
+                    </p>
+                    <p className="text-sm uppercase tracking-[0.18em] text-gold/70">
+                      {draft.category} preview
                     </p>
                   </div>
                 </div>
@@ -312,30 +560,30 @@ export default function AppShellPage() {
             id="profile"
             eyebrow="04. Profile"
             title="Profile page"
-            copy="Score-rich profile layout with premium badge visibility, stats, and a grid of flex posts."
+            copy="Score-rich profile layout with premium badge visibility, live stats, and a grid of locally seeded posts."
           >
             <div className="grid gap-6">
               <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-5">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">
                     <img
-                      src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop"
-                      alt="Profile avatar"
+                      src={currentUser.avatar}
+                      alt={currentUser.displayName}
                       className="h-20 w-20 rounded-full border-2 border-gold/55 object-cover"
                     />
                     <div>
-                      <p className="text-3xl font-semibold text-white">Marcus Prime</p>
-                      <p className="mt-2 text-base text-white/55">Miami, FL</p>
+                      <p className="text-3xl font-semibold text-white">{currentUser.displayName}</p>
+                      <p className="mt-2 text-base text-white/55">{currentUser.location}</p>
                     </div>
                   </div>
-                  <PremiumBadge>PHLEXR elite</PremiumBadge>
+                  <PremiumBadge>{currentUser.badge}</PremiumBadge>
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                   {[
-                    ["PHLEX Score", "9.8"],
-                    ["Would-Flex", "94%"],
-                    ["Fake / AI", "03%"],
+                    ["Total Posts", currentUser.totalPosts],
+                    ["Average Score", formatScore(currentUser.averageScore || 0)],
+                    ["Badge", currentUser.badge],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -348,13 +596,17 @@ export default function AppShellPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {profilePosts.map((image) => (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {currentUser.posts.map((post) => (
                   <div
-                    key={image}
+                    key={post.id}
                     className="overflow-hidden rounded-[1.5rem] border border-white/8 bg-black/35"
                   >
-                    <img src={image} alt="Profile post" className="h-56 w-full object-cover" />
+                    <img src={post.image} alt={post.caption} className="h-56 w-full object-cover" />
+                    <div className="p-4">
+                      <p className="text-lg font-semibold text-white">{post.category}</p>
+                      <p className="mt-2 text-sm text-white/60">{post.caption}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -365,27 +617,32 @@ export default function AppShellPage() {
             id="leaderboard"
             eyebrow="05. Leaderboard"
             title="Leaderboard"
-            copy="High-status ranking view with badge visibility front and center."
+            copy="High-status ranking view built live from the same local dataset that powers the feed and profile."
           >
             <div className="grid gap-4">
-              {leaderboard.map(([name, badge, score], index) => (
+              {leaderboard.map((entry, index) => (
                 <div
-                  key={name}
+                  key={entry.username}
                   className="flex flex-col gap-4 rounded-[1.5rem] border border-white/8 bg-black/35 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/25 bg-white/[0.03] text-lg font-semibold text-gold">
                       {index + 1}
                     </div>
+                    <img
+                      src={entry.avatar}
+                      alt={entry.displayName}
+                      className="h-14 w-14 rounded-full border-2 border-gold/45 object-cover"
+                    />
                     <div>
-                      <p className="text-2xl font-semibold text-white">{name}</p>
-                      <p className="mt-2 text-sm text-gold">{badge}</p>
+                      <p className="text-2xl font-semibold text-white">{entry.displayName}</p>
+                      <p className="mt-2 text-sm text-gold">{entry.badge}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <PremiumBadge>Premium visible</PremiumBadge>
                     <div className="rounded-full border border-gold/25 bg-[#2c2010] px-4 py-2 text-lg text-[#efc467]">
-                      {score}
+                      {formatScore(entry.averageScore)}
                     </div>
                   </div>
                 </div>
