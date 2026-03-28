@@ -86,7 +86,7 @@ const metrics = [
 
 export default function Page() {
   return (
-    <main className="min-h-screen bg-obsidian text-ivory">
+    <main className="min-h-screen overflow-x-hidden bg-obsidian text-ivory">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-gold focus:px-4 focus:py-2 focus:text-obsidian"
@@ -97,8 +97,8 @@ export default function Page() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[38rem] bg-[radial-gradient(circle_at_top,_rgba(230,179,58,0.18),_transparent_45%)]" />
 
       <header className="sticky top-0 z-40 border-b border-white/10 bg-obsidian/88 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-8 lg:px-12">
-          <a href="#top" className="font-display text-xl tracking-[0.35em] text-gold">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-12">
+          <a href="#top" className="font-display text-lg tracking-[0.26em] text-gold sm:text-xl sm:tracking-[0.35em]">
             PHLEXR
           </a>
 
@@ -113,7 +113,7 @@ export default function Page() {
 
           <a
             href="#reserve"
-            className="inline-flex items-center rounded-full border border-gold/40 bg-gold px-5 py-2.5 text-sm font-semibold text-obsidian transition hover:bg-gold-soft"
+            className="inline-flex items-center rounded-full border border-gold/40 bg-gold px-4 py-2 text-xs font-semibold text-obsidian transition hover:bg-gold-soft sm:px-5 sm:py-2.5 sm:text-sm"
           >
             Get early access
           </a>
@@ -124,20 +124,20 @@ export default function Page() {
 
       <section
         id="main-content"
-        className="mx-auto grid max-w-7xl gap-14 px-6 pb-20 pt-16 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-12 lg:pb-28 lg:pt-24"
+        className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-12 lg:pb-28 lg:pt-24"
       >
         <div>
-          <div className="inline-flex items-center rounded-full border border-gold/20 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-gold/90">
+          <div className="inline-flex max-w-full items-center rounded-full border border-gold/20 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-gold/90 sm:text-xs sm:tracking-[0.24em]">
             Premium social credibility
           </div>
 
-          <h1 className="mt-8 max-w-3xl font-display text-5xl leading-none text-white sm:text-6xl lg:text-7xl">
+          <h1 className="mt-6 max-w-3xl text-balance font-display text-4xl leading-none text-white sm:mt-8 sm:text-6xl lg:text-7xl">
             PHLEXR
           </h1>
-          <p className="mt-5 max-w-2xl text-xl text-gold sm:text-2xl">
+          <p className="mt-4 max-w-2xl text-lg text-gold sm:mt-5 sm:text-2xl">
             Post it. Prove it. Get rated.
           </p>
-          <p className="mt-6 max-w-2xl text-base leading-8 text-white/68 sm:text-lg">
+          <p className="mt-5 max-w-2xl text-base leading-7 text-white/68 sm:mt-6 sm:leading-8 sm:text-lg">
             A black-and-gold launch page for the next social app built to rate the flex, surface
             the truth, and reward what actually holds up.
           </p>
@@ -157,11 +157,11 @@ export default function Page() {
             </a>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-3">
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-3">
             {metrics.map((metric) => (
               <div
                 key={metric.label}
-                className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 shadow-[0_18px_60px_-30px_rgba(0,0,0,0.8)]"
+                className="max-w-full rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 shadow-[0_18px_60px_-30px_rgba(0,0,0,0.8)] sm:p-5"
               >
                 <p className="text-xs uppercase tracking-[0.2em] text-white/45">{metric.label}</p>
                 <p className="mt-3 text-2xl font-semibold text-white">{metric.value}</p>
@@ -170,10 +170,10 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative max-w-full">
           <div className="absolute -inset-6 rounded-[2rem] bg-[radial-gradient(circle,_rgba(230,179,58,0.2),_transparent_62%)] blur-2xl" />
-          <div className="relative overflow-hidden rounded-[2rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-4 shadow-[0_30px_120px_-40px_rgba(0,0,0,0.95)]">
-            <div className="rounded-[1.6rem] border border-white/10 bg-[#090909] p-5 sm:p-6">
+          <div className="relative max-w-full overflow-hidden rounded-[2rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-3 shadow-[0_30px_120px_-40px_rgba(0,0,0,0.95)] sm:p-4">
+            <div className="rounded-[1.6rem] border border-white/10 bg-[#090909] p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.22em] text-gold/80">Featured flex</p>
@@ -199,7 +199,7 @@ export default function Page() {
                   <img
                     src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1600&auto=format&fit=crop"
                     alt="Luxury black supercar"
-                    className="w-full h-[320px] object-cover"
+                    className="h-[240px] w-full object-cover sm:h-[320px]"
                   />
 
                   <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
@@ -214,13 +214,13 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {[
                     ["Rating", "9.1"],
                     ["Would-flex %", "87%"],
                     ["Fake / AI %", "06%"],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-[1.1rem] border border-white/8 bg-white/[0.03] p-4">
+                    <div key={label} className="max-w-full rounded-[1.1rem] border border-white/8 bg-white/[0.03] p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</p>
                       <p className="mt-2 text-2xl font-semibold text-gold">{value}</p>
                     </div>
@@ -228,7 +228,7 @@ export default function Page() {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center justify-between rounded-[1.25rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-white/62">
+              <div className="mt-5 flex flex-col gap-2 rounded-[1.25rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-center text-sm text-white/62 sm:flex-row sm:items-center sm:justify-between sm:text-left">
                 <span>Consensus says the flex is real.</span>
                 <span className="font-semibold uppercase tracking-[0.18em] text-gold">Verified heat</span>
               </div>
@@ -237,22 +237,22 @@ export default function Page() {
         </div>
       </section>
 
-      <section id="features" className="mx-auto max-w-7xl px-6 py-4 sm:px-8 lg:px-12">
+      <section id="features" className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-12">
         <div className="max-w-3xl">
-          <h2 className="font-display text-4xl text-white sm:text-5xl">
+          <h2 className="text-balance font-display text-3xl text-white sm:text-5xl">
             Built to make the flex undeniable.
           </h2>
-          <p className="mt-5 text-base leading-8 text-white/62 sm:text-lg">
+          <p className="mt-5 text-base leading-7 text-white/62 sm:leading-8 sm:text-lg">
             PHLEXR stays focused: premium presentation, sharp scoring, and a username reserve
             flow that feels like an invite-only social launch.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           {featureCards.map((card) => (
             <article
               key={card.title}
-              className="rounded-[1.8rem] border border-white/10 bg-white/[0.035] p-7 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.9)]"
+              className="max-w-full rounded-[1.8rem] border border-white/10 bg-white/[0.035] p-4 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.9)] sm:p-7"
             >
               <h3 className="text-2xl font-semibold text-white">{card.title}</h3>
               <p className="mt-4 text-base leading-7 text-white/62">{card.copy}</p>
@@ -260,7 +260,7 @@ export default function Page() {
           ))}
         </div>
 
-        <div className="mt-16 rounded-[2rem] border border-gold/18 bg-[radial-gradient(circle_at_top,rgba(230,179,58,0.09),rgba(255,255,255,0.015)_42%,rgba(0,0,0,0)_72%)] px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mt-16 rounded-[2rem] border border-gold/18 bg-[radial-gradient(circle_at_top,rgba(230,179,58,0.09),rgba(255,255,255,0.015)_42%,rgba(0,0,0,0)_72%)] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           <div className="text-center">
             <h3 className="text-4xl font-semibold text-white sm:text-5xl">
               🔥 Real Flex Examples
@@ -271,17 +271,17 @@ export default function Page() {
             </p>
           </div>
 
-          <div className="mt-10 grid gap-5 xl:grid-cols-4">
+          <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
             {realFlexExamples.map((example) => (
               <article
                 key={example.name}
-                className="flex h-full min-h-[38rem] flex-col overflow-hidden rounded-[1.85rem] border border-gold/28 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] shadow-[0_24px_80px_-40px_rgba(0,0,0,0.95)]"
+                className="flex h-full max-w-full min-h-[38rem] flex-col overflow-hidden rounded-[1.85rem] border border-gold/28 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] shadow-[0_24px_80px_-40px_rgba(0,0,0,0.95)]"
               >
                 <div className="relative">
                   <img
                     src={example.image}
                     alt={example.imageAlt}
-                    className="h-52 w-full object-cover"
+                    className="h-48 w-full object-cover sm:h-52"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/28 to-transparent" />
                   <div className="absolute left-4 top-4">
@@ -293,21 +293,21 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="flex flex-1 flex-col border-t border-gold/12 bg-[linear-gradient(180deg,#12100d,#0b0b0b)] p-5">
+                <div className="flex flex-1 flex-col border-t border-gold/12 bg-[linear-gradient(180deg,#12100d,#0b0b0b)] p-4 sm:p-5">
                   <div className="flex min-h-[7.5rem] items-center gap-4">
                     <img
                       src={example.avatar}
                       alt={example.name}
                       className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
                     />
-                    <div className="flex min-h-[5.5rem] flex-col justify-center">
-                      <p className="text-[2rem] font-semibold leading-none text-white">{example.name}</p>
-                      <p className="mt-3 text-lg text-[#ddb76b]">{example.location}</p>
+                    <div className="flex min-h-[5.5rem] min-w-0 flex-col justify-center">
+                      <p className="text-[1.7rem] font-semibold leading-none text-white sm:text-[2rem]">{example.name}</p>
+                      <p className="mt-3 text-base text-[#ddb76b] sm:text-lg">{example.location}</p>
                     </div>
                   </div>
 
                   <div className="mt-5 flex min-h-[3.5rem] items-start">
-                    <div className="inline-flex rounded-full border border-gold/25 bg-[#2c2010] px-5 py-2 text-lg text-[#efc467]">
+                    <div className="inline-flex max-w-full rounded-full border border-gold/25 bg-[#2c2010] px-4 py-2 text-base text-[#efc467] sm:px-5 sm:text-lg">
                       PHLEX Score: {example.score}
                     </div>
                   </div>
@@ -320,7 +320,7 @@ export default function Page() {
                       {example.topFlexes.map((flex) => (
                         <div
                           key={flex}
-                          className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-xl text-white/92"
+                          className="max-w-full rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-base text-white/92 sm:text-xl"
                         >
                           {flex}
                         </div>
@@ -328,7 +328,7 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-base text-white/62">
+                  <div className="mt-auto flex flex-col gap-3 pt-5 text-sm text-white/62 sm:flex-row sm:items-center sm:justify-between sm:text-base">
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full bg-[#7ad267]" />
                       <span>{example.scanned}</span>
@@ -342,9 +342,9 @@ export default function Page() {
             ))}
           </div>
 
-          <div className="mt-10 flex flex-col gap-6 rounded-[2rem] border border-gold/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] px-6 py-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-            <div className="flex items-center gap-5">
-              <div className="flex -space-x-4">
+          <div className="mt-10 flex flex-col items-center gap-5 rounded-[2rem] border border-gold/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] px-4 py-6 text-center sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:text-left">
+            <div className="flex flex-col items-center gap-4 lg:flex-row lg:items-center lg:gap-5">
+              <div className="flex justify-center -space-x-4">
                 {[
                   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
                   "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
@@ -360,11 +360,11 @@ export default function Page() {
                 ))}
               </div>
               <div>
-                <p className="text-3xl font-semibold text-white">10,247+ profiles scanned today</p>
+                <p className="text-3xl font-semibold text-white sm:text-4xl">10,247+ profiles scanned today</p>
               </div>
             </div>
 
-            <div className="inline-flex items-center rounded-full border border-[#2b7b47] bg-[linear-gradient(180deg,#12341c,#0b2414)] px-6 py-3 text-xl font-medium text-[#d4ffe0]">
+            <div className="inline-flex w-full items-center justify-center rounded-full border border-[#2b7b47] bg-[linear-gradient(180deg,#12341c,#0b2414)] px-6 py-3 text-lg font-medium text-[#d4ffe0] sm:w-auto sm:text-xl">
               <span className="mr-3 text-[#7beb83]">⚡</span>
               Live Feed Active
             </div>
@@ -372,15 +372,15 @@ export default function Page() {
         </div>
       </section>
 
-      <section id="reserve" className="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-12 lg:py-28">
-        <div className="overflow-hidden rounded-[2rem] border border-gold/18 bg-[linear-gradient(135deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-8 sm:p-10 lg:p-12">
+      <section id="reserve" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-12 lg:py-28">
+        <div className="overflow-hidden rounded-[2rem] border border-gold/18 bg-[linear-gradient(135deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-6 sm:p-10 lg:p-12">
           <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-gold/80">Early access</p>
-              <h2 className="mt-4 font-display text-4xl text-white sm:text-5xl">
+              <h2 className="mt-4 text-balance font-display text-3xl text-white sm:text-5xl">
                 Reserve your PHLEXR username before the drop.
               </h2>
-              <p className="mt-5 max-w-xl text-base leading-8 text-white/65 sm:text-lg">
+              <p className="mt-5 max-w-xl text-base leading-7 text-white/65 sm:leading-8 sm:text-lg">
                 Keep it simple: collect interest, claim names early, and send the strongest early
                 users straight into launch.
               </p>
@@ -422,7 +422,7 @@ export default function Page() {
       </section>
 
       <footer className="border-t border-gold/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.015),rgba(0,0,0,0))]">
-        <div className="mx-auto max-w-7xl px-6 py-10 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-12">
           <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="font-display text-2xl tracking-[0.22em] text-gold">PHLEXR</p>
