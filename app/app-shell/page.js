@@ -1795,7 +1795,11 @@ export default function AppShellPage() {
                   type="button"
                   key={entry.username}
                   onClick={() => openProfile(entry.username)}
-                  className="flex flex-col gap-4 rounded-[1.5rem] border border-white/8 bg-black/35 p-4 text-left transition hover:border-gold/20 sm:flex-row sm:items-center sm:justify-between"
+                  className={`flex flex-col gap-4 rounded-[1.5rem] border bg-black/35 p-4 text-left transition sm:flex-row sm:items-center sm:justify-between ${
+                    index === 0
+                      ? "translate-y-[-1px] border-[#d8b25a]/85 shadow-[0_0_20px_rgba(216,178,90,0.25)] hover:border-[#d8b25a]"
+                      : "border-white/8 hover:border-gold/20"
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/25 bg-white/[0.03] text-lg font-semibold text-gold">
