@@ -595,7 +595,7 @@ export default function AppShellPage() {
                       <button
                         type="button"
                         onClick={() => setIsCategoryOpen((currentValue) => !currentValue)}
-                        className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-gold outline-none transition hover:border-gold/35 focus:border-gold/35"
+                        className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-gold outline-none transition"
                         aria-haspopup="listbox"
                         aria-expanded={isCategoryOpen}
                       >
