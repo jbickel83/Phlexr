@@ -149,8 +149,7 @@ function SectionCard({ id, eyebrow, title, copy, children }) {
       id={id}
       className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.95)] sm:p-6"
     >
-      <p className="text-xs uppercase tracking-[0.24em] text-gold/75">{eyebrow}</p>
-      <h2 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">{title}</h2>
+      <h2 className="text-3xl font-semibold text-white sm:text-4xl">{title}</h2>
       <p className="mt-4 max-w-3xl text-base leading-7 text-white/62">{copy}</p>
       <div className="mt-8">{children}</div>
     </section>
