@@ -484,8 +484,16 @@ export default function AppShellPage() {
                           key={label}
                           className="flex h-full flex-col rounded-2xl border border-white/8 bg-white/[0.03] p-4"
                         >
-                          <p className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</p>
-                          <p className="mt-2 text-2xl font-semibold text-gold">{value}</p>
+                          <div className="flex h-12 items-start">
+                            <p className="text-xs uppercase tracking-[0.18em] text-white/40">
+                              {label}
+                            </p>
+                          </div>
+                          <div className="flex flex-1 items-start">
+                            <p className="text-2xl font-semibold leading-none text-gold">
+                              {value}
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -573,7 +581,12 @@ export default function AppShellPage() {
                       className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none"
                     >
                       {categories.map((category) => (
-                        <option key={category}>{category}</option>
+                        <option
+                          key={category}
+                          className="bg-[#f4e8cb] text-black hover:bg-gold hover:text-obsidian"
+                        >
+                          {category}
+                        </option>
                       ))}
                     </select>
                   </label>
