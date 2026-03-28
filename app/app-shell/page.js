@@ -910,6 +910,7 @@ export default function AppShellPage() {
             eyebrow="03. Post"
             title="Post page"
             copy="A clean creation flow for local uploads, captions, categories, and live preview before publish."
+            hideHeader
           >
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <form
@@ -1087,6 +1088,7 @@ export default function AppShellPage() {
             eyebrow="04. Profile"
             title="Profile page"
             copy="Score-rich profile layout with premium badge visibility, live stats, and a grid of locally seeded posts."
+            hideHeader
           >
             <div className="grid gap-6">
               <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-5">
@@ -1167,6 +1169,7 @@ export default function AppShellPage() {
             eyebrow="05. Edit"
             title="Edit profile"
             copy="Update your visible identity in the shell and keep it stored locally across refreshes."
+            hideHeader
           >
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <form
@@ -1308,6 +1311,7 @@ export default function AppShellPage() {
             eyebrow="06. Leaderboard"
             title="Leaderboard"
             copy="High-status ranking view built live from the same local dataset that powers the feed and profile."
+            hideHeader
           >
             <div className="grid gap-4">
               {profiles.map((entry, index) => (
