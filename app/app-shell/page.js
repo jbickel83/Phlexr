@@ -25,6 +25,8 @@ const categories = [
   "Misc",
 ];
 
+const POSTS_STORAGE_KEY = "phlexr-app-shell-posts";
+
 const seededPosts = [
   {
     id: "post-1",
@@ -167,13 +169,14 @@ export default function AppShellPage() {
   const [selectedProfileUsername, setSelectedProfileUsername] = useState("phlexrfounder");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [draft, setDraft] = useState({
-    image:
-      "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200&auto=format&fit=crop",
-    caption: "Midnight delivery. Camera flash. Storyline locked before the first vote.",
+    image: "",
     category: "Cars",
-    story: "Tell the story behind the flex.",
+    caption: "",
+    story: "",
   });
+  const [draftImageName, setDraftImageName] = useState("");
   const categoryMenuRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
@@ -237,6 +240,32 @@ export default function AppShellPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const savedPosts = window.localStorage.getItem(POSTS_STORAGE_KEY);
+      if (savedPosts) {
+        const parsedPosts = JSON.parse(savedPosts);
+        if (Array.isArray(parsedPosts) && parsedPosts.length > 0) {
+          setPosts(parsedPosts);
+        }
+      }
+    } catch {
+      window.localStorage.removeItem(POSTS_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
+  }, [posts]);
+
   function enterShell(targetId = "feed") {
     setHasEnteredApp(true);
     if (typeof window !== "undefined") {
@@ -283,9 +312,44 @@ export default function AppShellPage() {
     );
   }
 
+  function handleImageUrlChange(event) {
+    setDraftImageName("");
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      image: event.target.value,
+    }));
+  }
+
+  function handleImageFileChange(event) {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!selectedFile.type.startsWith("image/")) {
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      setDraft((currentDraft) => ({
+        ...currentDraft,
+        image: result,
+      }));
+      setDraftImageName(selectedFile.name);
+    };
+    reader.readAsDataURL(selectedFile);
+  }
+
   function handlePostSubmit(event) {
     event.preventDefault();
     setHasEnteredApp(true);
+
+    if (!draft.image) {
+      return;
+    }
 
     const newPost = {
       id: `post-${Date.now()}`,
@@ -304,11 +368,16 @@ export default function AppShellPage() {
 
     setPosts((currentPosts) => [newPost, ...currentPosts]);
     setSelectedProfileUsername(currentUser.username);
-    setDraft((currentDraft) => ({
-      ...currentDraft,
+    setDraft({
+      image: "",
+      category: currentUser.posts[0]?.category || "Cars",
       caption: "",
       story: "",
-    }));
+    });
+    setDraftImageName("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
 
     if (typeof window !== "undefined") {
       window.location.hash = "feed";
@@ -548,7 +617,7 @@ export default function AppShellPage() {
             id="post"
             eyebrow="03. Post"
             title="Post page"
-            copy="A clean creation flow for image URLs, captions, categories, and live preview before publish."
+            copy="A clean creation flow for local uploads, captions, categories, and live preview before publish."
           >
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <form
@@ -557,23 +626,37 @@ export default function AppShellPage() {
               >
                 <div className="grid gap-4">
                   <label className="grid gap-2">
-                    <span className="text-sm font-medium text-white/72">Image URL</span>
+                    <span className="text-sm font-medium text-white/72">Upload image</span>
+                    <div className="rounded-[1.5rem] border border-dashed border-gold/28 bg-white/[0.02] p-4">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                        onChange={handleImageFileChange}
+                        className="hidden"
+                        id="post-image-upload"
+                      />
+                      <label
+                        htmlFor="post-image-upload"
+                        className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-[1.25rem] border border-white/15 bg-black/30 px-4 text-center transition hover:border-gold/35"
+                      >
+                        <span className="text-sm font-semibold text-gold">Choose image</span>
+                        <span className="mt-2 text-sm text-white/55">
+                          {draftImageName || "PNG, JPG, WEBP, GIF, or AVIF"}
+                        </span>
+                      </label>
+                    </div>
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-white/72">Image URL fallback</span>
                     <input
                       type="url"
-                      value={draft.image}
-                      onChange={(event) =>
-                        setDraft((currentDraft) => ({
-                          ...currentDraft,
-                          image: event.target.value,
-                        }))
-                      }
+                      value={draft.image.startsWith("data:") ? "" : draft.image}
+                      onChange={handleImageUrlChange}
                       placeholder="https://..."
                       className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/28"
                     />
                   </label>
-                  <div className="grid min-h-28 place-items-center rounded-[1.5rem] border border-dashed border-gold/28 bg-white/[0.02] text-center text-white/55">
-                    Upload placeholder only
-                  </div>
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-white/72">Caption</span>
                     <input
@@ -656,6 +739,7 @@ export default function AppShellPage() {
 
                 <button
                   type="submit"
+                  disabled={!draft.image}
                   className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
                 >
                   Post to local feed
@@ -665,11 +749,28 @@ export default function AppShellPage() {
               <div className="rounded-[1.6rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-4 sm:p-5">
                 <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Live preview</p>
                 <div className="mt-5 overflow-hidden rounded-[1.6rem] border border-white/8 bg-black/35">
-                  <img
-                    src={draft.image}
-                    alt="Post preview"
-                    className="h-72 w-full object-cover"
-                  />
+                  {draft.image ? (
+                    <img
+                      src={draft.image}
+                      alt="Post preview"
+                      className="h-72 w-full object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-72 place-items-center bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] px-6 text-center">
+                      <div>
+                        <p className="text-sm uppercase tracking-[0.28em] text-gold/70">
+                          Image preview
+                        </p>
+                        <p className="mt-4 text-xl font-semibold text-white">
+                          Your upload will appear here instantly
+                        </p>
+                        <p className="mt-3 text-sm leading-6 text-white/50">
+                          Choose a photo from your device or paste an image URL to build a local
+                          PHLEXR post preview.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className="grid gap-4 p-5">
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-2xl font-semibold text-white">@{currentUser.username}</p>
