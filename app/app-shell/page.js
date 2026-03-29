@@ -30,6 +30,7 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const FOLLOWING_STORAGE_KEY = "phlexr-app-shell-following";
+const NOTIFICATIONS_STORAGE_KEY = "phlexr-app-shell-notifications";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
 const APP_SHELL_SEED_VERSION = "2026-03-28-josh-james-v11";
 
@@ -97,6 +98,36 @@ const boostPriority = {
 function minutesAgoIso(minutes) {
   return new Date(Date.now() - minutes * 60 * 1000).toISOString();
 }
+
+const seededNotifications = [
+  {
+    id: "notification-seed-1",
+    type: "follow",
+    message: "Layla Rivera followed you",
+    relatedUserId: "laylariv",
+    relatedPostId: null,
+    createdAt: minutesAgoIso(9),
+    read: false,
+  },
+  {
+    id: "notification-seed-2",
+    type: "comment",
+    message: "Zay Cole commented on your post",
+    relatedUserId: "zaycole",
+    relatedPostId: "post-5",
+    createdAt: minutesAgoIso(27),
+    read: false,
+  },
+  {
+    id: "notification-seed-3",
+    type: "rating",
+    message: "Marcus Lane rated your post",
+    relatedUserId: "marcuslane",
+    relatedPostId: "post-5",
+    createdAt: minutesAgoIso(58),
+    read: true,
+  },
+];
 
 const seededPosts = [
   {
@@ -639,6 +670,7 @@ export default function AppShellPage() {
   const [boostMenuPostId, setBoostMenuPostId] = useState(null);
   const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
+  const [notifications, setNotifications] = useState(seededNotifications);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
@@ -740,6 +772,7 @@ export default function AppShellPage() {
     : getSeededSocialCount(selectedProfile.username, 140, 780);
   const leaderboardPreview = profiles.slice(0, 5);
   const currentUserPostCount = posts.filter((post) => post.username === currentUser.username).length;
+  const notificationActors = profiles.filter((profile) => profile.username !== currentUser.username);
   const sortedFeedPosts = useMemo(() => {
     return [...posts].sort((left, right) => {
       const leftBoosted = left.boosted ? 1 : 0;
@@ -782,6 +815,13 @@ export default function AppShellPage() {
       })
       .slice(0, 6);
   }, [profiles, searchQuery]);
+  const sortedNotifications = useMemo(() => {
+    return [...notifications].sort(
+      (left, right) =>
+        new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime()
+    );
+  }, [notifications]);
+  const unreadNotificationCount = notifications.filter((notification) => !notification.read).length;
   const viewMeta = {
     feed: {
       eyebrow: "Main Feed",
@@ -807,6 +847,11 @@ export default function AppShellPage() {
       eyebrow: "Membership",
       title: "Membership",
       copy: "Choose the PHLEXR tier that controls your visible status and local boost pricing.",
+    },
+    notifications: {
+      eyebrow: "Activity",
+      title: "Notifications",
+      copy: "Local PHLEXR activity powered by follows, comments, votes, and boosts.",
     },
     leaderboard: {
       eyebrow: "Rankings",
@@ -923,6 +968,16 @@ export default function AppShellPage() {
         }
       }
 
+      const savedNotifications = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      if (savedNotifications) {
+        const parsedNotifications = JSON.parse(savedNotifications);
+        if (Array.isArray(parsedNotifications)) {
+          setNotifications(parsedNotifications);
+        }
+      } else {
+        setNotifications(seededNotifications);
+      }
+
       window.localStorage.setItem(SEED_VERSION_STORAGE_KEY, APP_SHELL_SEED_VERSION);
     } catch {
       window.localStorage.removeItem(POSTS_STORAGE_KEY);
@@ -932,6 +987,7 @@ export default function AppShellPage() {
       window.localStorage.removeItem(SAFETY_STORAGE_KEY);
       window.localStorage.removeItem(MEMBERSHIP_STORAGE_KEY);
       window.localStorage.removeItem(FOLLOWING_STORAGE_KEY);
+      window.localStorage.removeItem(NOTIFICATIONS_STORAGE_KEY);
       window.localStorage.removeItem(SEED_VERSION_STORAGE_KEY);
     }
   }, []);
@@ -994,6 +1050,14 @@ export default function AppShellPage() {
   }, [currentUserFollowing]);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
     setCurrentUserProfile((currentProfile) => ({
       ...currentProfile,
       badge: selectedMembership.badge,
@@ -1026,16 +1090,81 @@ export default function AppShellPage() {
     setCurrentView("leaderboard");
   }
 
+  function addNotification(notification) {
+    setNotifications((currentNotifications) => [
+      {
+        id: `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        ...notification,
+      },
+      ...currentNotifications,
+    ]);
+  }
+
+  function getSimulatedActor(seed) {
+    if (!notificationActors.length) {
+      return null;
+    }
+
+    const numericSeed = String(seed || "")
+      .split("")
+      .reduce((sum, char) => sum + char.charCodeAt(0), 0);
+
+    return notificationActors[numericSeed % notificationActors.length];
+  }
+
+  function markNotificationRead(notificationId) {
+    setNotifications((currentNotifications) =>
+      currentNotifications.map((notification) =>
+        notification.id === notificationId ? { ...notification, read: true } : notification
+      )
+    );
+  }
+
+  function markAllNotificationsRead() {
+    setNotifications((currentNotifications) =>
+      currentNotifications.map((notification) => ({ ...notification, read: true }))
+    );
+  }
+
+  function handleNotificationOpen(notification) {
+    markNotificationRead(notification.id);
+
+    if (notification.relatedUserId) {
+      openProfile(notification.relatedUserId);
+      return;
+    }
+
+    navigateTo("feed");
+  }
+
   function handleToggleFollow(username) {
     if (username === currentUser.username) {
       return;
     }
 
-    setCurrentUserFollowing((currentFollowing) =>
-      currentFollowing.includes(username)
-        ? currentFollowing.filter((entry) => entry !== username)
-        : [...currentFollowing, username]
-    );
+    const targetProfile =
+      profiles.find((profile) => profile.username === username) ||
+      profileDirectory[username] || {
+        username,
+        displayName: username,
+      };
+
+    setCurrentUserFollowing((currentFollowing) => {
+      if (currentFollowing.includes(username)) {
+        return currentFollowing.filter((entry) => entry !== username);
+      }
+
+      addNotification({
+        type: "follow",
+        message: `${targetProfile.displayName || username} followed you`,
+        relatedUserId: username,
+        relatedPostId: null,
+      });
+
+      return [...currentFollowing, username];
+    });
   }
 
   function navigateTo(view) {
@@ -1047,6 +1176,8 @@ export default function AppShellPage() {
     if (votedPosts[postId]) {
       return;
     }
+
+    const targetPost = posts.find((post) => post.id === postId);
 
     setPosts((currentPosts) =>
       currentPosts.map((post) => {
@@ -1080,6 +1211,19 @@ export default function AppShellPage() {
       ...currentVotes,
       [postId]: voteType,
     }));
+
+    if (targetPost?.username === currentUser.username) {
+      const actor = getSimulatedActor(`${postId}-${voteType}`);
+      addNotification({
+        type: voteType === "fakeAi" ? "fake-ai" : "rating",
+        message:
+          voteType === "fakeAi"
+            ? `${actor?.displayName || "Someone"} marked your post Fake / AI`
+            : `${actor?.displayName || "Someone"} rated your post`,
+        relatedUserId: actor?.username || null,
+        relatedPostId: postId,
+      });
+    }
   }
 
   function handleBirthdateChange(event) {
@@ -1135,6 +1279,17 @@ export default function AppShellPage() {
       ...currentErrors,
       [postId]: "",
     }));
+
+    const targetPost = posts.find((post) => post.id === postId);
+    if (targetPost?.username === currentUser.username) {
+      const actor = getSimulatedActor(`comment-${postId}-${nextText.length}`);
+      addNotification({
+        type: "comment",
+        message: `${actor?.displayName || "Someone"} commented on your post`,
+        relatedUserId: actor?.username || null,
+        relatedPostId: postId,
+      });
+    }
   }
 
   function handleDeleteComment(commentId) {
@@ -1297,6 +1452,12 @@ export default function AppShellPage() {
           : post
       )
     );
+    addNotification({
+      type: "boost",
+      message: `Your post was boosted for ${boostLevel}`,
+      relatedUserId: currentUser.username,
+      relatedPostId: postId,
+    });
     setBoostMenuPostId(null);
   }
 
@@ -1443,6 +1604,22 @@ export default function AppShellPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => navigateTo("notifications")}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-3 text-sm font-semibold transition ${
+                        currentView === "notifications"
+                          ? "border-gold/45 bg-[linear-gradient(180deg,rgba(230,179,58,0.16),rgba(255,255,255,0.03))] text-gold"
+                          : "border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                      }`}
+                    >
+                      <span>Notifications</span>
+                      {unreadNotificationCount > 0 ? (
+                        <span className="inline-flex min-w-6 items-center justify-center rounded-full border border-gold/30 bg-[#2b200f] px-2 py-0.5 text-[11px] uppercase tracking-[0.12em] text-gold">
+                          {unreadNotificationCount}
+                        </span>
+                      ) : null}
+                    </button>
                     <button
                       type="button"
                       onClick={() => openProfile(currentUser.username)}
@@ -2530,6 +2707,92 @@ export default function AppShellPage() {
               setSelectedMembershipId={setSelectedMembershipId}
               currentUser={currentUser}
             />
+          </SectionCard>
+          ) : null}
+
+          {hasEnteredApp && currentView === "notifications" ? (
+          <SectionCard
+            id="notifications"
+            eyebrow="06. Notifications"
+            title="Notifications"
+            copy="Local PHLEXR activity powered by follows, comments, ratings, and boosts."
+            hideHeader
+          >
+            <div className="grid gap-4">
+              <div className="flex flex-col gap-3 rounded-[1.5rem] border border-white/10 bg-black/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-lg font-semibold text-white">Notifications</p>
+                  <p className="mt-1 text-sm text-white/55">
+                    {unreadNotificationCount > 0
+                      ? `${unreadNotificationCount} unread`
+                      : "All caught up"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={markAllNotificationsRead}
+                  className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                >
+                  Mark all as read
+                </button>
+              </div>
+
+              {sortedNotifications.length ? (
+                <div className="grid gap-3">
+                  {sortedNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`rounded-[1.5rem] border p-4 transition ${
+                        notification.read
+                          ? "border-white/8 bg-black/25"
+                          : "border-gold/20 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))]"
+                      }`}
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <button
+                          type="button"
+                          onClick={() => handleNotificationOpen(notification)}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <p
+                            className={`text-sm sm:text-base ${
+                              notification.read ? "text-white/68" : "font-semibold text-white"
+                            }`}
+                          >
+                            {notification.message}
+                          </p>
+                          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-gold/75">
+                            {formatRelativeTime(notification.createdAt)}
+                          </p>
+                        </button>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`text-xs uppercase tracking-[0.16em] ${
+                              notification.read ? "text-white/35" : "text-gold"
+                            }`}
+                          >
+                            {notification.read ? "Read" : "Unread"}
+                          </span>
+                          {!notification.read ? (
+                            <button
+                              type="button"
+                              onClick={() => markNotificationRead(notification.id)}
+                              className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                            >
+                              Mark read
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-[1.5rem] border border-white/8 bg-black/25 px-5 py-8 text-center text-sm text-white/48">
+                  No notifications yet.
+                </div>
+              )}
+            </div>
           </SectionCard>
           ) : null}
 
