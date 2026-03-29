@@ -30,14 +30,14 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-unique-images-v1";
+const APP_SHELL_SEED_VERSION = "2026-03-28-casual-avatars-v2";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
   displayName: "Jordan Hale",
   badge: "Elite",
   avatar:
-    "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=300",
+    "https://images.unsplash.com/photo-1521119989659-a83eee488004?q=80&w=300&auto=format&fit=crop",
   location: "Miami, FL",
   bio: "building phlexr. mostly cars, watches, and clean spots.",
 };
@@ -183,22 +183,22 @@ const seededPosts = [
 const profileDirectory = {
   marcuslane: {
     avatar:
-      "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=300",
+      "https://images.unsplash.com/photo-1504593811423-6dd665756598?q=80&w=300&auto=format&fit=crop",
     location: "Miami, FL",
   },
   laylariv: {
     avatar:
-      "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=300",
+      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=300&auto=format&fit=crop",
     location: "Los Angeles, CA",
   },
   zaycole: {
     avatar:
-      "https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=300",
+      "https://images.unsplash.com/photo-1519058082700-08a0b56da9b4?q=80&w=300&auto=format&fit=crop",
     location: "Dubai, UAE",
   },
   dantewest: {
     avatar:
-      "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=300",
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
     location: "Aspen, CO",
   },
 };
