@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   canUseSupabaseAuth,
@@ -2204,6 +2205,12 @@ export default function AppShellPage() {
                         >
                           Continue with Apple
                         </button>
+                        <Link
+                          href="/reset-password"
+                          className="px-1 text-sm text-white/58 transition hover:text-gold"
+                        >
+                          Forgot Password?
+                        </Link>
                         {authError ? (
                           <p className="px-1 text-sm text-[#f0b4b4]">{authError}</p>
                         ) : null}
