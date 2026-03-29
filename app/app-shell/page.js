@@ -1540,7 +1540,7 @@ export default function AppShellPage() {
           {hasEnteredApp ? (
             <>
               <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-5 py-4 sm:px-6">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <button
                     type="button"
                     onClick={() => navigateTo("feed")}
@@ -1548,6 +1548,37 @@ export default function AppShellPage() {
                   >
                     PHLEXR
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo("notifications")}
+                    aria-label="Open notifications"
+                    className={`relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition ${
+                      currentView === "notifications"
+                        ? "border-gold/45 bg-[linear-gradient(180deg,rgba(230,179,58,0.16),rgba(255,255,255,0.03))] text-gold"
+                        : "border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                    }`}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5 text-gold"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.85"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M6.5 9.5a5.5 5.5 0 1 1 11 0c0 5.12 2.25 6.08 2.25 7H4.25c0-.92 2.25-1.88 2.25-7Z" />
+                      <path d="M10 19.25a2.25 2.25 0 0 0 4 0" />
+                    </svg>
+                    {unreadNotificationCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border border-gold/45 bg-[#241a0a] px-1.5 text-[10px] font-semibold leading-none text-gold shadow-[0_0_10px_rgba(216,178,90,0.18)]">
+                        {unreadNotificationCount}
+                      </span>
+                    ) : null}
+                  </button>
+                </div>
+                <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div className="w-full lg:flex lg:flex-1 lg:justify-center lg:px-6">
                     <div ref={searchRef} className="relative w-full max-w-xl">
                       <input
@@ -1604,35 +1635,6 @@ export default function AppShellPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => navigateTo("notifications")}
-                      aria-label="Open notifications"
-                      className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border transition ${
-                        currentView === "notifications"
-                          ? "border-gold/45 bg-[linear-gradient(180deg,rgba(230,179,58,0.16),rgba(255,255,255,0.03))] text-gold"
-                          : "border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
-                      }`}
-                    >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        className="h-5 w-5 text-gold"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.85"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M6.5 9.5a5.5 5.5 0 1 1 11 0c0 5.12 2.25 6.08 2.25 7H4.25c0-.92 2.25-1.88 2.25-7Z" />
-                        <path d="M10 19.25a2.25 2.25 0 0 0 4 0" />
-                      </svg>
-                      {unreadNotificationCount > 0 ? (
-                        <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border border-gold/45 bg-[#241a0a] px-1.5 text-[10px] font-semibold leading-none text-gold shadow-[0_0_10px_rgba(216,178,90,0.18)]">
-                          {unreadNotificationCount}
-                        </span>
-                      ) : null}
-                    </button>
                     <button
                       type="button"
                       onClick={() => openProfile(currentUser.username)}
