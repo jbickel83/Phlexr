@@ -29,6 +29,8 @@ const PROFILE_STORAGE_KEY = "phlexr-app-shell-current-profile";
 const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
+const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
+const APP_SHELL_SEED_VERSION = "2026-03-28-unique-images-v1";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -198,11 +200,6 @@ const profileDirectory = {
     avatar:
       "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=300",
     location: "Aspen, CO",
-  },
-  phlexrfounder: {
-    avatar:
-      "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=300",
-    location: "Miami, FL",
   },
 };
 
@@ -637,6 +634,16 @@ export default function AppShellPage() {
     }
 
     try {
+      const savedSeedVersion = window.localStorage.getItem(SEED_VERSION_STORAGE_KEY);
+      const shouldRefreshSeedData = savedSeedVersion !== APP_SHELL_SEED_VERSION;
+
+      if (shouldRefreshSeedData) {
+        window.localStorage.removeItem(POSTS_STORAGE_KEY);
+        window.localStorage.removeItem(VOTED_POSTS_STORAGE_KEY);
+        window.localStorage.removeItem(COMMENTS_STORAGE_KEY);
+        window.localStorage.removeItem(PROFILE_STORAGE_KEY);
+      }
+
       const savedPosts = window.localStorage.getItem(POSTS_STORAGE_KEY);
       if (savedPosts) {
         const parsedPosts = JSON.parse(savedPosts);
@@ -680,7 +687,9 @@ export default function AppShellPage() {
           setSelectedProfileUsername(mergedProfile.username);
         }
       } else {
+        setCurrentUserProfile(defaultCurrentUserProfile);
         setProfileDraft(defaultCurrentUserProfile);
+        setSelectedProfileUsername(defaultCurrentUserProfile.username);
       }
 
       const savedSafety = window.localStorage.getItem(SAFETY_STORAGE_KEY);
@@ -699,6 +708,8 @@ export default function AppShellPage() {
       if (savedMembership && membershipTiers.some((tier) => tier.id === savedMembership)) {
         setSelectedMembershipId(savedMembership);
       }
+
+      window.localStorage.setItem(SEED_VERSION_STORAGE_KEY, APP_SHELL_SEED_VERSION);
     } catch {
       window.localStorage.removeItem(POSTS_STORAGE_KEY);
       window.localStorage.removeItem(VOTED_POSTS_STORAGE_KEY);
@@ -706,6 +717,7 @@ export default function AppShellPage() {
       window.localStorage.removeItem(PROFILE_STORAGE_KEY);
       window.localStorage.removeItem(SAFETY_STORAGE_KEY);
       window.localStorage.removeItem(MEMBERSHIP_STORAGE_KEY);
+      window.localStorage.removeItem(SEED_VERSION_STORAGE_KEY);
     }
   }, []);
 
