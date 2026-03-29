@@ -1133,6 +1133,7 @@ export default function AppShellPage() {
         setSelectedProfileUsername(defaultCurrentUserProfile.username);
         setCurrentUserProfile(defaultCurrentUserProfile);
         setProfileDraft(defaultCurrentUserProfile);
+        setAuthMode("signup");
       }
 
       setAuthReady(true);
@@ -1499,7 +1500,8 @@ export default function AppShellPage() {
     }
 
     setAuthLoading(false);
-    setAuthMessage("Account created. Check your email, then sign in.");
+    setAuthMode("check-email");
+    setAuthMessage("We sent you a confirmation link to finish creating your account.");
   }
 
   async function handleSignIn() {
@@ -2031,98 +2033,139 @@ export default function AppShellPage() {
             >
               <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5">
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-sm font-medium text-white/72">Username</span>
-                      <input
-                        type="text"
-                        value={authForm.username}
-                        onChange={(event) => handleAuthFieldChange("username", event.target.value)}
-                        placeholder="@phlexrname"
-                        className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
-                      />
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-sm font-medium text-white/72">Email</span>
-                      <input
-                        type="email"
-                        value={authForm.email}
-                        onChange={(event) => handleAuthFieldChange("email", event.target.value)}
-                        placeholder="you@example.com"
-                        className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
-                      />
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-sm font-medium text-white/72">Password</span>
-                      <input
-                        type="password"
-                        value={authForm.password}
-                        onChange={(event) => handleAuthFieldChange("password", event.target.value)}
-                        placeholder="........"
-                        className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
-                      />
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-sm font-medium text-white/72">Birthdate</span>
-                      <input
-                        type="date"
-                        value={safetyProfile.birthdate}
-                        onChange={handleBirthdateChange}
-                        className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition focus:border-gold/35"
-                      />
-                      <span className="text-xs text-white/45">
-                        {safetyProfile.isAdult === null
-                          ? "Stored locally for safety checks only."
-                          : safetyProfile.isAdult
-                            ? "Adult flag saved locally."
-                            : "Under-18 flag saved locally."}
-                      </span>
-                    </label>
-                  </div>
+                  {authMode === "check-email" ? (
+                    <div className="flex min-h-[27rem] flex-col justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.22em] text-gold/75">
+                          Check your email
+                        </p>
+                        <h3 className="mt-4 text-3xl font-semibold text-white">
+                          Check your email
+                        </h3>
+                        <p className="mt-4 max-w-lg text-base leading-7 text-white/62">
+                          We sent you a confirmation link to finish creating your account.
+                        </p>
+                        {authForm.email ? (
+                          <p className="mt-4 text-sm text-gold/85">{authForm.email}</p>
+                        ) : null}
+                        {authError ? (
+                          <p className="mt-4 text-sm text-[#f0b4b4]">{authError}</p>
+                        ) : null}
+                      </div>
 
-                  <div className="mt-5 grid gap-3">
-                    <button
-                      type="button"
-                      onClick={handleCreateAccount}
-                      disabled={authLoading || !authReady || !supabaseReady}
-                      className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
-                    >
-                      {authLoading && authMode === "signup" ? "Creating..." : "Create account"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSignIn}
-                      disabled={authLoading || !authReady || !supabaseReady}
-                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold disabled:cursor-not-allowed disabled:opacity-55"
-                    >
-                      {authLoading && authMode === "signin" ? "Signing in..." : "Sign in"}
-                    </button>
-                    <button
-                      type="button"
-                      disabled
-                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white/55"
-                    >
-                      Continue with Google
-                    </button>
-                    <button
-                      type="button"
-                      disabled
-                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white/55"
-                    >
-                      Continue with Apple
-                    </button>
-                    {authError ? (
-                      <p className="px-1 text-sm text-[#f0b4b4]">{authError}</p>
-                    ) : null}
-                    {authMessage ? (
-                      <p className="px-1 text-sm text-gold/85">{authMessage}</p>
-                    ) : null}
-                    <p className="px-1 text-xs text-white/45">
-                      {supabaseReady
-                        ? "Supabase auth is connected. Google and Apple stay disabled until configured."
-                        : "Supabase foundation added. Paste env keys to activate live auth."}
-                    </p>
-                  </div>
+                      <div className="grid gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthMode("signin");
+                            setAuthMessage("");
+                            setAuthError("");
+                          }}
+                          className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                        >
+                          Back to sign in
+                        </button>
+                        <p className="px-1 text-xs text-white/45">
+                          After you confirm, the link will send you to `phlexr.com/app-shell` and the session will be picked up automatically.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid gap-4">
+                        <label className="grid gap-2">
+                          <span className="text-sm font-medium text-white/72">Username</span>
+                          <input
+                            type="text"
+                            value={authForm.username}
+                            onChange={(event) => handleAuthFieldChange("username", event.target.value)}
+                            placeholder="@phlexrname"
+                            className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                          />
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-medium text-white/72">Email</span>
+                          <input
+                            type="email"
+                            value={authForm.email}
+                            onChange={(event) => handleAuthFieldChange("email", event.target.value)}
+                            placeholder="you@example.com"
+                            className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                          />
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-medium text-white/72">Password</span>
+                          <input
+                            type="password"
+                            value={authForm.password}
+                            onChange={(event) => handleAuthFieldChange("password", event.target.value)}
+                            placeholder="........"
+                            className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                          />
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-medium text-white/72">Birthdate</span>
+                          <input
+                            type="date"
+                            value={safetyProfile.birthdate}
+                            onChange={handleBirthdateChange}
+                            className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition focus:border-gold/35"
+                          />
+                          <span className="text-xs text-white/45">
+                            {safetyProfile.isAdult === null
+                              ? "Stored locally for safety checks only."
+                              : safetyProfile.isAdult
+                                ? "Adult flag saved locally."
+                                : "Under-18 flag saved locally."}
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="mt-5 grid gap-3">
+                        <button
+                          type="button"
+                          onClick={handleCreateAccount}
+                          disabled={authLoading || !authReady || !supabaseReady}
+                          className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian disabled:cursor-not-allowed disabled:opacity-55"
+                        >
+                          {authLoading && authMode === "signup" ? "Creating..." : "Create account"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSignIn}
+                          disabled={authLoading || !authReady || !supabaseReady}
+                          className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold disabled:cursor-not-allowed disabled:opacity-55"
+                        >
+                          {authLoading && authMode === "signin" ? "Signing in..." : "Sign in"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled
+                          className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white/55"
+                        >
+                          Continue with Google
+                        </button>
+                        <button
+                          type="button"
+                          disabled
+                          className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white/55"
+                        >
+                          Continue with Apple
+                        </button>
+                        {authError ? (
+                          <p className="px-1 text-sm text-[#f0b4b4]">{authError}</p>
+                        ) : null}
+                        {authMessage ? (
+                          <p className="px-1 text-sm text-gold/85">{authMessage}</p>
+                        ) : null}
+                        <p className="px-1 text-xs text-white/45">
+                          {supabaseReady
+                            ? "Supabase auth is connected. Google and Apple stay disabled until configured."
+                            : "Supabase foundation added. Paste env keys to activate live auth."}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <MembershipPlansPanel
