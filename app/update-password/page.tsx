@@ -2,13 +2,11 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { getSupabaseBrowserClient } from "@/lib/supabase";
-import { updateSupabasePassword } from "@/lib/supabase-auth";
-
-function readHashParams(hash: string) {
-  const value = hash.startsWith("#") ? hash.slice(1) : hash;
-  return new URLSearchParams(value);
-}
+import {
+  getCurrentSupabaseSession,
+  initializeSupabaseSessionFromUrl,
+  updateSupabasePassword,
+} from "@/lib/supabase-auth";
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
@@ -22,42 +20,31 @@ export default function UpdatePasswordPage() {
 
     async function prepareRecoverySession() {
       try {
-        const supabase = getSupabaseBrowserClient();
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get("code");
+        const { data: initializedData, error: initializedError } =
+          await initializeSupabaseSessionFromUrl();
 
-        if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) {
-            throw exchangeError;
-          }
-        } else if (window.location.hash) {
-          const hashParams = readHashParams(window.location.hash);
-          const accessToken = hashParams.get("access_token");
-          const refreshToken = hashParams.get("refresh_token");
-
-          if (accessToken && refreshToken) {
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-
-            if (sessionError) {
-              throw sessionError;
-            }
-          }
+        if (initializedError) {
+          throw initializedError;
         }
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        let session = initializedData?.session || null;
+
+        if (!session) {
+          const { data: currentSessionData, error: currentSessionError } =
+            await getCurrentSupabaseSession();
+
+          if (currentSessionError) {
+            throw currentSessionError;
+          }
+
+          session = currentSessionData?.session || null;
+        }
 
         if (!session) {
           throw new Error("Reset link is invalid or expired.");
         }
 
         if (active) {
-          window.history.replaceState({}, "", "/update-password");
           setReady(true);
         }
       } catch (sessionError) {

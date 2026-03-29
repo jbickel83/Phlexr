@@ -6,6 +6,7 @@ import {
   canUseSupabaseAuth,
   fetchProfileRow,
   getCurrentSupabaseSession,
+  initializeSupabaseSessionFromUrl,
   signInWithEmail,
   signOutFromSupabase,
   signUpWithEmail,
@@ -1111,7 +1112,18 @@ export default function AppShellPage() {
     let isMounted = true;
 
     async function initializeAuth() {
-      const { data, error } = await getCurrentSupabaseSession();
+      const { data: initializedData, error: initializedError } =
+        await initializeSupabaseSessionFromUrl();
+
+      let data = initializedData;
+      let error = initializedError;
+
+      if (!data?.session && !error) {
+        const currentSessionResult = await getCurrentSupabaseSession();
+        data = currentSessionResult.data;
+        error = currentSessionResult.error;
+      }
+
       if (!isMounted) {
         return;
       }
