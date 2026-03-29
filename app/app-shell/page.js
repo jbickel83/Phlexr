@@ -30,7 +30,7 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-handbag-fix-v3";
+const APP_SHELL_SEED_VERSION = "2026-03-28-layla-avatar-v4";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -187,8 +187,7 @@ const profileDirectory = {
     location: "Miami, FL",
   },
   laylariv: {
-    avatar:
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=300&auto=format&fit=crop",
+    avatar: "/layla-avatar.jpg",
     location: "Los Angeles, CA",
   },
   zaycole: {
