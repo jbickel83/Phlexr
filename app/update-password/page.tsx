@@ -5,6 +5,11 @@ import { FormEvent, useEffect, useState } from "react";
 import { getCurrentSupabaseSession, updateSupabasePassword } from "@/lib/supabase-auth";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 
+function getHashParams(hash: string) {
+  const value = hash.startsWith("#") ? hash.slice(1) : hash;
+  return new URLSearchParams(value);
+}
+
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,6 +22,64 @@ export default function UpdatePasswordPage() {
     const supabase = getSupabaseClient();
 
     async function prepareRecoverySession() {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      const queryAccessToken = url.searchParams.get("access_token");
+      const queryRefreshToken = url.searchParams.get("refresh_token");
+
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (!active) {
+          return;
+        }
+
+        if (exchangeError) {
+          setError(exchangeError.message);
+          return;
+        }
+      }
+
+      if (queryAccessToken && queryRefreshToken) {
+        const { error: querySessionError } = await supabase.auth.setSession({
+          access_token: queryAccessToken,
+          refresh_token: queryRefreshToken,
+        });
+
+        if (!active) {
+          return;
+        }
+
+        if (querySessionError) {
+          setError(querySessionError.message);
+          return;
+        }
+      }
+
+      if (window.location.hash) {
+        const hashParams = getHashParams(window.location.hash);
+        const hashAccessToken = hashParams.get("access_token");
+        const hashRefreshToken = hashParams.get("refresh_token");
+
+        if (hashAccessToken && hashRefreshToken) {
+          const { error: hashSessionError } = await supabase.auth.setSession({
+            access_token: hashAccessToken,
+            refresh_token: hashRefreshToken,
+          });
+
+          if (!active) {
+            return;
+          }
+
+          if (hashSessionError) {
+            setError(hashSessionError.message);
+            return;
+          }
+        }
+      }
+
+      window.history.replaceState({}, "", "/update-password");
+
       const { data, error: sessionError } = await getCurrentSupabaseSession();
 
       if (!active) {
