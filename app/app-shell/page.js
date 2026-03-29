@@ -9,7 +9,6 @@ import {
   signOutFromSupabase,
   signUpWithEmail,
   subscribeToSupabaseAuthChanges,
-  upsertProfileRow,
 } from "@/lib/supabase-auth";
 
 const shellNav = [
@@ -1485,32 +1484,15 @@ export default function AppShellPage() {
       password,
       username,
       displayName: username,
+      emailRedirectTo:
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined,
     });
 
     if (error) {
       setAuthLoading(false);
       setAuthError(error.message);
-      return;
-    }
-
-    try {
-      if (data?.user) {
-        const profileResult = await upsertProfileRow({
-          id: data.user.id,
-          username,
-          displayName: username,
-          membershipTier: "Free",
-        });
-
-        if (profileResult.error) {
-          setAuthLoading(false);
-          setAuthError(profileResult.error.message);
-          return;
-        }
-      }
-    } catch (profileError) {
-      setAuthLoading(false);
-      setAuthError(profileError.message || "Could not create profile row.");
       return;
     }
 
