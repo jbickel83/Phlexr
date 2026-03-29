@@ -30,7 +30,7 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-seeded-comments-v7";
+const APP_SHELL_SEED_VERSION = "2026-03-28-biscuit-avatar-shape-v8";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -184,7 +184,7 @@ const seededPosts = [
     displayName: "Captain Biscuit",
     badge: "Elite",
     image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
+      "https://images.pexels.com/photos/163236/sailboat-boat-water-nature-163236.jpeg?auto=compress&cs=tinysrgb&w=1600",
     caption: "dock side. easy.",
     category: "Boats",
     score: 9.5,
@@ -340,7 +340,7 @@ const profileDirectory = {
     location: "Aspen, CO",
   },
   captainbiscuit: {
-    avatar: "/biscuit-avatar.jpg",
+    avatar: "/biscuit-avatar-square.jpg",
     location: "Newport Beach, CA",
   },
 };
