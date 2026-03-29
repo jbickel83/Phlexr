@@ -33,7 +33,7 @@ const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
   displayName: "PHLEXR Founder",
-  badge: "PHLEXR ELITE",
+  badge: "Elite",
   avatar:
     "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
   location: "Miami, FL",
@@ -46,7 +46,7 @@ const membershipTiers = [
     name: "FREE",
     price: "Free",
     cta: "Choose Free",
-    badge: "FREE",
+    badge: "Basic",
     features: ["2 posts", "pays full boost price"],
     accent: "border-white/10 bg-black/30",
   },
@@ -55,7 +55,7 @@ const membershipTiers = [
     name: "BASIC",
     price: "$4.99/month",
     cta: "Choose Basic",
-    badge: "BASIC",
+    badge: "Basic",
     features: ["paid membership tier", "pays full boost price"],
     accent: "border-white/10 bg-black/30",
   },
@@ -64,7 +64,7 @@ const membershipTiers = [
     name: "PREMIUM",
     price: "$9.99/month",
     cta: "Upgrade to Premium",
-    badge: "PREMIUM STATUS",
+    badge: "Premium",
     features: ["Premium status", "10% off boosts"],
     accent: "border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))]",
   },
@@ -73,7 +73,7 @@ const membershipTiers = [
     name: "ELITE",
     price: "$14.99/month",
     cta: "Upgrade to Elite",
-    badge: "ELITE STATUS",
+    badge: "Elite",
     features: ["Elite status", "25% off boosts"],
     accent:
       "border-[#d8b25a]/75 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.03))] shadow-[0_0_26px_rgba(216,178,90,0.14)]",
@@ -95,7 +95,7 @@ const seededPosts = [
     id: "post-1",
     username: "marcusprime",
     displayName: "Marcus Prime",
-    badge: "PHLEXR ELITE",
+    badge: "Elite",
     image:
       "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop",
     caption: "Midnight delivery. Mansion lights. No explanation needed.",
@@ -112,7 +112,7 @@ const seededPosts = [
     id: "post-2",
     username: "laylaroyale",
     displayName: "Layla Royale",
-    badge: "VERIFIED PREMIUM",
+    badge: "Premium",
     image:
       "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1600&auto=format&fit=crop",
     caption: "Diamond flap. Soft launch. Real pressure only.",
@@ -129,7 +129,7 @@ const seededPosts = [
     id: "post-3",
     username: "zayk",
     displayName: "Zay K.",
-    badge: "GOLD VERIFIED",
+    badge: "Premium",
     image:
       "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1600&auto=format&fit=crop",
     caption: "18k pressure with skyline energy behind it.",
@@ -146,7 +146,7 @@ const seededPosts = [
     id: "post-4",
     username: "danteog",
     displayName: 'Dante "OG"',
-    badge: "OG STATUS",
+    badge: "Basic",
     image:
       "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1600&auto=format&fit=crop",
     caption: "Classic body. Mountain air. No replica energy anywhere near it.",
@@ -163,7 +163,7 @@ const seededPosts = [
     id: "post-5",
     username: "phlexrfounder",
     displayName: "PHLEXR Founder",
-    badge: "PHLEXR ELITE",
+    badge: "Elite",
     image:
       "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1600&auto=format&fit=crop",
     caption: "Camera flash. Midnight energy. Clean proof only.",
@@ -223,9 +223,36 @@ function SectionCard({ id, eyebrow, title, copy, children, hideHeader = false })
   );
 }
 
-function PremiumBadge({ children }) {
+function normalizeStatus(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (!normalized) {
+    return "Basic";
+  }
+
+  if (normalized.includes("elite")) {
+    return "Elite";
+  }
+
+  if (normalized.includes("premium") || normalized.includes("gold verified")) {
+    return "Premium";
+  }
+
+  return "Basic";
+}
+
+function PremiumBadge({ children, tone = "premium" }) {
+  const toneClass =
+    tone === "basic"
+      ? "border-white/15 bg-white/[0.03] text-white/78"
+      : tone === "elite"
+        ? "border-[#d8b25a]/45 bg-[#2b200f] text-gold shadow-[0_0_16px_rgba(216,178,90,0.12)]"
+        : "border-gold/30 bg-[#2b200f] text-gold";
+
   return (
-    <span className="inline-flex h-9 w-fit items-center justify-center whitespace-nowrap rounded-full border border-gold/30 bg-[#2b200f] px-3 py-0 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] text-gold sm:h-auto sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.16em]">
+    <span
+      className={`inline-flex h-9 w-fit items-center justify-center whitespace-nowrap rounded-full border px-3 py-0 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] sm:h-auto sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.16em] ${toneClass}`}
+    >
       {children}
     </span>
   );
@@ -302,6 +329,34 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
       </div>
     </div>
   );
+}
+
+function getStatusTone(status) {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "Elite") {
+    return "elite";
+  }
+
+  if (normalized === "Premium") {
+    return "premium";
+  }
+
+  return "basic";
+}
+
+function getStatusTextClass(status) {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "Elite") {
+    return "text-gold";
+  }
+
+  if (normalized === "Premium") {
+    return "text-gold/85";
+  }
+
+  return "text-white/50";
 }
 
 function formatPercent(value) {
@@ -578,7 +633,12 @@ export default function AppShellPage() {
       if (savedPosts) {
         const parsedPosts = JSON.parse(savedPosts);
         if (Array.isArray(parsedPosts) && parsedPosts.length > 0) {
-          setPosts(parsedPosts);
+          setPosts(
+            parsedPosts.map((post) => ({
+              ...post,
+              badge: normalizeStatus(post.badge),
+            }))
+          );
         }
       }
 
@@ -605,6 +665,7 @@ export default function AppShellPage() {
           const mergedProfile = {
             ...defaultCurrentUserProfile,
             ...parsedProfile,
+            badge: normalizeStatus(parsedProfile.badge),
           };
           setCurrentUserProfile(mergedProfile);
           setProfileDraft(mergedProfile);
@@ -1261,8 +1322,10 @@ export default function AppShellPage() {
                       </p>
                     </div>
                   </div>
-                  <p className="mt-3 truncate text-xs uppercase tracking-[0.16em] text-white/45">
-                    {entry.badge}
+                  <p
+                    className={`mt-3 truncate text-xs uppercase tracking-[0.16em] ${getStatusTextClass(entry.badge)}`}
+                  >
+                    {normalizeStatus(entry.badge)}
                   </p>
                 </button>
               ))}
@@ -1294,8 +1357,14 @@ export default function AppShellPage() {
                     <div className="relative pr-32">
                       <div className="min-w-0">
                         <p className="text-2xl font-semibold text-white">{post.displayName}</p>
-                        <p className="mt-2 text-sm text-gold">
-                          @{post.username} | {post.badge} | {formatRelativeTime(post.createdAt || post.timestamp)}
+                        <p className="mt-2 text-sm text-white/55">
+                          <span className="text-gold">@{post.username}</span>
+                          <span className="text-white/35"> | </span>
+                          <span className={getStatusTextClass(post.badge)}>
+                            {normalizeStatus(post.badge)}
+                          </span>
+                          <span className="text-white/35"> | </span>
+                          <span>{formatRelativeTime(post.createdAt || post.timestamp)}</span>
                         </p>
                         {post.boosted ? (
                           <p className="mt-2 text-xs uppercase tracking-[0.16em] text-gold/78">
@@ -1760,7 +1829,9 @@ export default function AppShellPage() {
                   <div className="grid gap-4 p-5">
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-2xl font-semibold text-white">@{currentUser.username}</p>
-                      <PremiumBadge>{currentUser.badge}</PremiumBadge>
+                      <PremiumBadge tone={getStatusTone(currentUser.badge)}>
+                        {currentUser.badge}
+                      </PremiumBadge>
                     </div>
                     <p className="text-base leading-7 text-white/65">
                       {draft.caption || "What makes this flex undeniable?"}
@@ -1802,7 +1873,9 @@ export default function AppShellPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <PremiumBadge>{selectedProfile.badge}</PremiumBadge>
+                    <PremiumBadge tone={getStatusTone(selectedProfile.badge)}>
+                      {selectedProfile.badge}
+                    </PremiumBadge>
                     {selectedProfile.username === currentUser.username ? (
                       <>
                         {selectedMembershipId === "elite" ? (
@@ -1836,16 +1909,28 @@ export default function AppShellPage() {
 
                 <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                   {[
-                    ["Total Posts", selectedProfile.totalPosts],
-                    ["Average Score", formatScore(selectedProfile.averageScore || 0)],
-                    ["Badge", selectedProfile.badge],
-                  ].map(([label, value]) => (
+                    {
+                      label: "Total Posts",
+                      value: selectedProfile.totalPosts,
+                      valueClass: "text-gold",
+                    },
+                    {
+                      label: "Average Score",
+                      value: formatScore(selectedProfile.averageScore || 0),
+                      valueClass: "text-gold",
+                    },
+                    {
+                      label: "Badge",
+                      value: normalizeStatus(selectedProfile.badge),
+                      valueClass: getStatusTextClass(selectedProfile.badge),
+                    },
+                  ].map(({ label, value, valueClass }) => (
                     <div
                       key={label}
                       className="rounded-2xl border border-white/8 bg-white/[0.03] p-4"
                     >
                       <p className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</p>
-                      <p className="mt-2 text-3xl font-semibold text-gold">{value}</p>
+                      <p className={`mt-2 text-3xl font-semibold ${valueClass}`}>{value}</p>
                     </div>
                   ))}
                 </div>
@@ -2006,7 +2091,9 @@ export default function AppShellPage() {
                     </div>
                   </div>
                   <div className="mt-5">
-                    <PremiumBadge>{currentUserProfile.badge}</PremiumBadge>
+                    <PremiumBadge tone={getStatusTone(currentUserProfile.badge)}>
+                      {currentUserProfile.badge}
+                    </PremiumBadge>
                   </div>
                   <p className="mt-5 text-sm leading-6 text-white/60">
                     {profileDraft.bio || "Write a short line that tells people what kind of flexes you post."}
@@ -2077,7 +2164,9 @@ export default function AppShellPage() {
                     </div>
                     <div>
                       <p className="text-2xl font-semibold text-white">{entry.displayName}</p>
-                      <p className="mt-2 text-sm text-gold">{entry.badge}</p>
+                      <p className={`mt-2 text-sm ${getStatusTextClass(entry.badge)}`}>
+                        {normalizeStatus(entry.badge)}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
