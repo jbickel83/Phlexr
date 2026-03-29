@@ -397,6 +397,20 @@ function PremiumBadge({ children, tone = "premium" }) {
   );
 }
 
+function Avatar({ src, alt, sizeClass, borderClass = "border-gold/45", imageClass = "" }) {
+  return (
+    <div
+      className={`overflow-hidden rounded-full border ${borderClass} ${sizeClass}`}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className={`h-full w-full object-cover object-center ${imageClass}`}
+      />
+    </div>
+  );
+}
+
 function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, currentUser }) {
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
@@ -452,10 +466,11 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
 
       <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/40 p-4">
         <div className="flex items-center gap-4">
-          <img
+          <Avatar
             src={currentUser.avatar}
             alt={currentUser.displayName}
-            className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
+            sizeClass="h-16 w-16"
+            borderClass="border-2 border-gold/55"
           />
           <div>
             <p className="text-2xl font-semibold text-white">{currentUser.displayName}</p>
@@ -1312,10 +1327,11 @@ export default function AppShellPage() {
                                   onClick={() => openProfile(result.username)}
                                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
                                 >
-                                  <img
+                                  <Avatar
                                     src={result.avatar}
                                     alt={result.displayName}
-                                    className="h-11 w-11 rounded-full border border-gold/35 object-cover"
+                                    sizeClass="h-11 w-11"
+                                    borderClass="border-gold/35"
                                   />
                                   <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-semibold text-white">
@@ -1348,10 +1364,11 @@ export default function AppShellPage() {
                       onClick={() => openProfile(currentUser.username)}
                       className="flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.03] px-2.5 py-2 transition hover:border-gold/30"
                     >
-                      <img
+                      <Avatar
                         src={currentUser.avatar}
                         alt={currentUser.displayName}
-                        className="h-10 w-10 rounded-full border border-gold/40 object-cover"
+                        sizeClass="h-10 w-10"
+                        borderClass="border-gold/40"
                       />
                       <div className="hidden text-left sm:block">
                         <p className="text-sm font-semibold text-white">{currentUser.displayName}</p>
@@ -1521,10 +1538,11 @@ export default function AppShellPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <img
+                      <Avatar
                         src={entry.avatar}
                         alt={entry.displayName}
-                        className="h-12 w-12 rounded-full border border-gold/45 object-cover"
+                        sizeClass="h-12 w-12"
+                        borderClass="border-gold/45"
                       />
                       {index === 0 ? (
                         <span className="pointer-events-none absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#d8b25a]/55 bg-[#241a0a]/95 shadow-[0_0_10px_rgba(216,178,90,0.22)]">
@@ -2081,10 +2099,11 @@ export default function AppShellPage() {
               <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-5">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">
-                    <img
+                    <Avatar
                       src={selectedProfile.avatar}
                       alt={selectedProfile.displayName}
-                      className="h-20 w-20 rounded-full border-2 border-gold/55 object-cover"
+                      sizeClass="h-20 w-20"
+                      borderClass="border-2 border-gold/55"
                     />
                     <div>
                       <p className="text-3xl font-semibold text-white">{selectedProfile.displayName}</p>
@@ -2302,10 +2321,11 @@ export default function AppShellPage() {
                 <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Profile preview</p>
                 <div className="mt-5 rounded-[1.6rem] border border-white/8 bg-black/35 p-5">
                   <div className="flex items-center gap-4">
-                    <img
+                    <Avatar
                       src={profileDraft.avatar}
                       alt={profileDraft.displayName}
-                      className="h-20 w-20 rounded-full border-2 border-gold/55 object-cover"
+                      sizeClass="h-20 w-20"
+                      borderClass="border-2 border-gold/55"
                     />
                     <div>
                       <p className="text-2xl font-semibold text-white">{profileDraft.displayName}</p>
@@ -2368,10 +2388,11 @@ export default function AppShellPage() {
                       {index + 1}
                     </div>
                     <div className="relative">
-                      <img
+                      <Avatar
                         src={entry.avatar}
                         alt={entry.displayName}
-                        className="h-14 w-14 rounded-full border-2 border-gold/45 object-cover"
+                        sizeClass="h-14 w-14"
+                        borderClass="border-2 border-gold/45"
                       />
                       {index === 0 ? (
                         <span className="pointer-events-none absolute -right-1 -top-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#d8b25a]/55 bg-[#241a0a]/95 shadow-[0_0_10px_rgba(216,178,90,0.22)]">
