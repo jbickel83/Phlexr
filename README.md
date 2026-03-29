@@ -33,7 +33,7 @@ npm run build
 
 ## Supabase setup
 
-1. Copy `.env.example` to `.env.local`.
+1. Copy `.env.local.example` to `.env.local`.
 2. Paste your Supabase values:
 
 ```bash
@@ -45,6 +45,7 @@ Supabase foundation files:
 
 - `lib/supabase.js`
 - `lib/supabase-auth.js`
+- `.env.local.example`
 
 ## Deploy on Vercel
 
@@ -54,4 +55,5 @@ Supabase foundation files:
 4. Keep the detected framework as `Next.js`.
 5. Click `Deploy`.
 
-If you want live Supabase auth later, add the same env vars in Vercel Project Settings.
+If you want live Supabase auth later, add the same env vars in Vercel at:
+`Project -> Settings -> Environment Variables`
