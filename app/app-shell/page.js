@@ -97,7 +97,7 @@ const seededPosts = [
     displayName: "Marcus Lane",
     badge: "Elite",
     image:
-      "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?q=80&w=1600&auto=format&fit=crop",
     caption: "late pickup. no talk.",
     category: "Cars",
     score: 9.8,
@@ -114,7 +114,7 @@ const seededPosts = [
     displayName: "Layla Rivera",
     badge: "Premium",
     image:
-      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1600&auto=format&fit=crop",
     caption: "soft flex",
     category: "Handbags",
     score: 9.4,
@@ -131,7 +131,7 @@ const seededPosts = [
     displayName: "Zay Cole",
     badge: "Premium",
     image:
-      "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1600&auto=format&fit=crop",
     caption: "daily",
     category: "Watches",
     score: 9.7,
@@ -148,7 +148,7 @@ const seededPosts = [
     displayName: "Dante West",
     badge: "Basic",
     image:
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1600&auto=format&fit=crop",
     caption: "nothing crazy just clean",
     category: "Houses",
     score: 9.3,
@@ -165,7 +165,7 @@ const seededPosts = [
     displayName: "Jordan Hale",
     badge: "Elite",
     image:
-      "https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop",
     caption: "clean enough",
     category: "Cars",
     score: 9.1,
@@ -181,22 +181,22 @@ const seededPosts = [
 const profileDirectory = {
   marcuslane: {
     avatar:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
     location: "Miami, FL",
   },
   laylariv: {
     avatar:
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?q=80&w=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
     location: "Los Angeles, CA",
   },
   zaycole: {
     avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=300&auto=format&fit=crop",
     location: "Dubai, UAE",
   },
   dantewest: {
     avatar:
-      "https://images.unsplash.com/photo-1504257432389-52343af06ae3?q=80&w=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?q=80&w=300&auto=format&fit=crop",
     location: "Aspen, CO",
   },
   phlexrfounder: {
