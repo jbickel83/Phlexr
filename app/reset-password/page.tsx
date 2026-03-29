@@ -31,7 +31,7 @@ export default function ResetPasswordPage() {
 
     const { error: resetError } = await sendPasswordResetEmail({
       email: email.trim(),
-      redirectTo: `${window.location.origin}/update-password`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
     });
 
     if (resetError) {
