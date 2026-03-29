@@ -29,6 +29,7 @@ const PROFILE_STORAGE_KEY = "phlexr-app-shell-current-profile";
 const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
+const FOLLOWING_STORAGE_KEY = "phlexr-app-shell-following";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
 const APP_SHELL_SEED_VERSION = "2026-03-28-josh-james-v11";
 
@@ -637,6 +638,7 @@ export default function AppShellPage() {
   const [commentReportReasons, setCommentReportReasons] = useState({});
   const [boostMenuPostId, setBoostMenuPostId] = useState(null);
   const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
+  const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
@@ -728,8 +730,14 @@ export default function AppShellPage() {
     selectedProfile.posts.length > 0
       ? [...selectedProfile.posts].sort((left, right) => right.score - left.score)[0]
       : null;
-  const selectedProfileFollowers = getSeededSocialCount(selectedProfile.username, 1240, 6200);
-  const selectedProfileFollowing = getSeededSocialCount(selectedProfile.username, 140, 780);
+  const isOwnProfile = selectedProfile.username === currentUser.username;
+  const isFollowingSelectedProfile = currentUserFollowing.includes(selectedProfile.username);
+  const selectedProfileFollowers =
+    getSeededSocialCount(selectedProfile.username, 1240, 6200) +
+    (isFollowingSelectedProfile && !isOwnProfile ? 1 : 0);
+  const selectedProfileFollowing = isOwnProfile
+    ? getSeededSocialCount(selectedProfile.username, 140, 780) + currentUserFollowing.length
+    : getSeededSocialCount(selectedProfile.username, 140, 780);
   const leaderboardPreview = profiles.slice(0, 5);
   const currentUserPostCount = posts.filter((post) => post.username === currentUser.username).length;
   const sortedFeedPosts = useMemo(() => {
@@ -907,6 +915,14 @@ export default function AppShellPage() {
         setSelectedMembershipId(savedMembership);
       }
 
+      const savedFollowing = window.localStorage.getItem(FOLLOWING_STORAGE_KEY);
+      if (savedFollowing) {
+        const parsedFollowing = JSON.parse(savedFollowing);
+        if (Array.isArray(parsedFollowing)) {
+          setCurrentUserFollowing(parsedFollowing);
+        }
+      }
+
       window.localStorage.setItem(SEED_VERSION_STORAGE_KEY, APP_SHELL_SEED_VERSION);
     } catch {
       window.localStorage.removeItem(POSTS_STORAGE_KEY);
@@ -915,6 +931,7 @@ export default function AppShellPage() {
       window.localStorage.removeItem(PROFILE_STORAGE_KEY);
       window.localStorage.removeItem(SAFETY_STORAGE_KEY);
       window.localStorage.removeItem(MEMBERSHIP_STORAGE_KEY);
+      window.localStorage.removeItem(FOLLOWING_STORAGE_KEY);
       window.localStorage.removeItem(SEED_VERSION_STORAGE_KEY);
     }
   }, []);
@@ -969,6 +986,14 @@ export default function AppShellPage() {
   }, [selectedMembershipId]);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(FOLLOWING_STORAGE_KEY, JSON.stringify(currentUserFollowing));
+  }, [currentUserFollowing]);
+
+  useEffect(() => {
     setCurrentUserProfile((currentProfile) => ({
       ...currentProfile,
       badge: selectedMembership.badge,
@@ -999,6 +1024,18 @@ export default function AppShellPage() {
   function openLeaderboard() {
     setHasEnteredApp(true);
     setCurrentView("leaderboard");
+  }
+
+  function handleToggleFollow(username) {
+    if (username === currentUser.username) {
+      return;
+    }
+
+    setCurrentUserFollowing((currentFollowing) =>
+      currentFollowing.includes(username)
+        ? currentFollowing.filter((entry) => entry !== username)
+        : [...currentFollowing, username]
+    );
   }
 
   function navigateTo(view) {
@@ -2186,7 +2223,20 @@ export default function AppShellPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    {selectedProfile.username === currentUser.username ? (
+                    {!isOwnProfile ? (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFollow(selectedProfile.username)}
+                        className={`inline-flex items-center rounded-full px-5 py-3 text-sm font-semibold transition ${
+                          isFollowingSelectedProfile
+                            ? "border border-gold/30 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold"
+                            : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                        }`}
+                      >
+                        {isFollowingSelectedProfile ? "Following" : "Follow"}
+                      </button>
+                    ) : null}
+                    {isOwnProfile ? (
                       <>
                         {selectedMembershipId === "elite" ? (
                           <button
