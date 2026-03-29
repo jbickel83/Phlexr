@@ -1112,37 +1112,48 @@ export default function AppShellPage() {
     let isMounted = true;
 
     async function initializeAuth() {
-      const { data: initializedData, error: initializedError } =
-        await initializeSupabaseSessionFromUrl();
+      try {
+        const { data: initializedData, error: initializedError } =
+          await initializeSupabaseSessionFromUrl();
 
-      let data = initializedData;
-      let error = initializedError;
+        let data = initializedData;
+        let error = initializedError;
 
-      if (!data?.session && !error) {
-        const currentSessionResult = await getCurrentSupabaseSession();
-        data = currentSessionResult.data;
-        error = currentSessionResult.error;
-      }
+        if (!data?.session && !error) {
+          const currentSessionResult = await getCurrentSupabaseSession();
+          data = currentSessionResult.data;
+          error = currentSessionResult.error;
+        }
 
-      if (!isMounted) {
-        return;
-      }
-
-      if (error) {
-        setAuthError(error.message);
-      }
-
-      if (data?.session) {
-        await hydrateCurrentUserFromSession(data.session);
         if (!isMounted) {
           return;
         }
-        setHasEnteredApp(true);
-      } else {
-        setHasEnteredApp(false);
-      }
 
-      setAuthReady(true);
+        if (error) {
+          setAuthError(error.message);
+        }
+
+        if (data?.session) {
+          await hydrateCurrentUserFromSession(data.session);
+          if (!isMounted) {
+            return;
+          }
+          setHasEnteredApp(true);
+        } else {
+          setHasEnteredApp(false);
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setHasEnteredApp(false);
+        setAuthError(error instanceof Error ? error.message : "Unable to initialize auth.");
+      } finally {
+        if (isMounted) {
+          setAuthReady(true);
+        }
+      }
     }
 
     initializeAuth();
@@ -2194,7 +2205,7 @@ export default function AppShellPage() {
                         <button
                           type="button"
                           onClick={handleCreateAccount}
-                          disabled={authLoading || !authReady || !supabaseReady}
+                          disabled={authLoading || !supabaseReady}
                           className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian disabled:cursor-not-allowed disabled:opacity-55"
                         >
                           {authLoading && authMode === "signup" ? "Creating..." : "Create account"}
@@ -2202,7 +2213,7 @@ export default function AppShellPage() {
                         <button
                           type="button"
                           onClick={handleSignIn}
-                          disabled={authLoading || !authReady || !supabaseReady}
+                          disabled={authLoading || !supabaseReady}
                           className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold disabled:cursor-not-allowed disabled:opacity-55"
                         >
                           {authLoading && authMode === "signin" ? "Signing in..." : "Sign in"}

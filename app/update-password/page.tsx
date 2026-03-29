@@ -164,14 +164,14 @@ export default function UpdatePasswordPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="........"
-                disabled={!ready || Boolean(successMessage)}
+                disabled={Boolean(successMessage)}
                 className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35 disabled:cursor-not-allowed disabled:opacity-55"
               />
             </label>
 
             <button
               type="submit"
-              disabled={!ready || loading || Boolean(successMessage)}
+              disabled={loading || Boolean(successMessage)}
               className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian disabled:cursor-not-allowed disabled:opacity-55"
             >
               {loading ? "Updating..." : "Update Password"}
