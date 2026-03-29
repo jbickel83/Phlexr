@@ -349,7 +349,7 @@ function getStatusTextClass(status) {
   const normalized = normalizeStatus(status);
 
   if (normalized === "Elite") {
-    return "text-gold";
+    return "font-semibold text-gold";
   }
 
   if (normalized === "Premium") {
