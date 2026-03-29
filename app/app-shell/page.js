@@ -244,10 +244,10 @@ function normalizeStatus(value) {
 function PremiumBadge({ children, tone = "premium" }) {
   const toneClass =
     tone === "basic"
-      ? "border-white/15 bg-white/[0.03] text-white/78"
+      ? "border-white/15 bg-white/[0.03] text-white"
       : tone === "elite"
-        ? "border-[#d8b25a]/45 bg-[#2b200f] text-gold shadow-[0_0_16px_rgba(216,178,90,0.12)]"
-        : "border-gold/30 bg-[#2b200f] text-gold";
+        ? "border-gold/30 bg-[#2b200f] font-semibold text-gold"
+        : "border-white/18 bg-white/[0.03] text-white/70";
 
   return (
     <span
@@ -353,10 +353,10 @@ function getStatusTextClass(status) {
   }
 
   if (normalized === "Premium") {
-    return "text-gold/85";
+    return "text-white/70";
   }
 
-  return "text-white/50";
+  return "text-white";
 }
 
 function formatPercent(value) {
