@@ -462,7 +462,7 @@ function moderateComment(text, isAdult) {
 
 export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
-  const [hasEnteredApp, setHasEnteredApp] = useState(false);
+  const [hasEnteredApp, setHasEnteredApp] = useState(true);
   const [currentView, setCurrentView] = useState("feed");
   const [selectedProfileUsername, setSelectedProfileUsername] = useState(
     defaultCurrentUserProfile.username
@@ -629,23 +629,6 @@ export default function AppShellPage() {
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
     };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const hashView = window.location.hash.replace("#", "");
-    if (!hashView) {
-      return;
-    }
-
-    const validViews = new Set(["feed", "post", "profile", "edit-profile", "membership", "leaderboard"]);
-    if (validViews.has(hashView)) {
-      setHasEnteredApp(true);
-      setCurrentView(hashView);
-    }
   }, []);
 
   useEffect(() => {
