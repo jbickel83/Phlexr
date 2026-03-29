@@ -84,7 +84,7 @@ const metrics = [
   { label: "Fake / AI", value: "06%" },
 ];
 
-export default function Page() {
+export default async function Page() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-obsidian text-ivory">
       <a
@@ -263,10 +263,10 @@ export default function Page() {
         <div className="mt-16 rounded-[2rem] border border-gold/18 bg-[radial-gradient(circle_at_top,rgba(230,179,58,0.09),rgba(255,255,255,0.015)_42%,rgba(0,0,0,0)_72%)] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           <div className="text-center">
             <h3 className="text-4xl font-semibold text-white sm:text-5xl">
-              🔥 Real Flex Examples
+              ðŸ”¥ Real Flex Examples
             </h3>
             <p className="mx-auto mt-4 max-w-4xl text-lg leading-8 text-white/62">
-              Verified profiles from the PHLEXR community — this is what getting scanned looks
+              Verified profiles from the PHLEXR community â€” this is what getting scanned looks
               like.
             </p>
           </div>
@@ -365,7 +365,7 @@ export default function Page() {
             </div>
 
             <div className="inline-flex w-full items-center justify-center rounded-full border border-[#2b7b47] bg-[linear-gradient(180deg,#12341c,#0b2414)] px-6 py-3 text-lg font-medium text-[#d4ffe0] sm:w-auto sm:text-xl">
-              <span className="mr-3 text-[#7beb83]">⚡</span>
+              <span className="mr-3 text-[#7beb83]">âš¡</span>
               Live Feed Active
             </div>
           </div>
@@ -461,7 +461,7 @@ export default function Page() {
           </div>
 
           <div className="mt-8 border-t border-white/8 pt-6 text-center text-sm text-white/45">
-            © 2026 PHLEXR. All rights reserved.
+            Â© 2026 PHLEXR. All rights reserved.
           </div>
         </div>
       </footer>

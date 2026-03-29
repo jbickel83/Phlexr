@@ -28,6 +28,7 @@ export default function UpdatePasswordPage() {
         }
 
         let session = initializedData?.session || null;
+        console.log("[PHLEXR auth] session on update-password load", session);
 
         if (!session) {
           const { data: currentSessionData, error: currentSessionError } =
@@ -38,6 +39,7 @@ export default function UpdatePasswordPage() {
           }
 
           session = currentSessionData?.session || null;
+          console.log("[PHLEXR auth] current session fallback", session);
         }
 
         if (!session) {

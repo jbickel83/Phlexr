@@ -1,4 +1,5 @@
 import "./globals.css";
+import SupabaseAuthSync from "@/components/SupabaseAuthSync";
 
 export const metadata = {
   metadataBase: new URL("https://phlexr.com"),
@@ -33,7 +34,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SupabaseAuthSync />
+        {children}
+      </body>
     </html>
   );
 }
