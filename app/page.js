@@ -94,10 +94,10 @@ export default async function Page() {
   ) {
     const supabase = await getSupabaseServerClient();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (session?.user) {
+    if (user) {
       redirect("/feed");
     }
   }
