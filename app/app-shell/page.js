@@ -1159,7 +1159,7 @@ export default function AppShellPage() {
                           setIsSearchOpen(true);
                         }}
                         onFocus={() => setIsSearchOpen(true)}
-                        placeholder="Search users"
+                        placeholder="Search"
                         className="w-full rounded-full border border-white/15 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                       />
                       {isSearchOpen && searchQuery.trim() ? (
