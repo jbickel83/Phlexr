@@ -30,14 +30,13 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-dante-avatar-v10";
+const APP_SHELL_SEED_VERSION = "2026-03-28-josh-james-v11";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
-  displayName: "Jordan Hale",
+  displayName: "Josh James",
   badge: "Elite",
-  avatar:
-    "https://images.unsplash.com/photo-1521119989659-a83eee488004?q=80&w=300&auto=format&fit=crop",
+  avatar: "/josh-james-avatar.png",
   location: "Miami, FL",
   bio: "building phlexr. mostly cars, watches, and clean spots.",
 };
@@ -170,7 +169,7 @@ const seededPosts = [
   {
     id: "post-5",
     username: "phlexrfounder",
-    displayName: "Jordan Hale",
+    displayName: "Josh James",
     badge: "Elite",
     image:
       "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop",
@@ -317,7 +316,7 @@ const seededComments = [
     id: "comment-seed-12",
     postId: "post-6",
     username: "phlexrfounder",
-    displayName: "Jordan Hale",
+    displayName: "Josh James",
     text: "boat hard",
     createdAt: minutesAgoIso(69),
     isReported: false,
