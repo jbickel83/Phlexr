@@ -30,7 +30,7 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-biscuit-profile-v6";
+const APP_SHELL_SEED_VERSION = "2026-03-28-seeded-comments-v7";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -194,6 +194,129 @@ const seededPosts = [
     owner: false,
     boosted: false,
     boostLevel: null,
+  },
+];
+
+const seededComments = [
+  {
+    id: "comment-seed-1",
+    postId: "post-1",
+    username: "zaycole",
+    displayName: "Zay Cole",
+    text: "engine?",
+    createdAt: minutesAgoIso(18),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-2",
+    postId: "post-1",
+    username: "dantewest",
+    displayName: "Dante West",
+    text: "clean",
+    createdAt: minutesAgoIso(12),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-3",
+    postId: "post-2",
+    username: "marcuslane",
+    displayName: "Marcus Lane",
+    text: "hard",
+    createdAt: minutesAgoIso(48),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-4",
+    postId: "post-2",
+    username: "captainbiscuit",
+    displayName: "Captain Biscuit",
+    text: "color crazy",
+    createdAt: minutesAgoIso(36),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-5",
+    postId: "post-3",
+    username: "laylariv",
+    displayName: "Layla Rivera",
+    text: "daily",
+    createdAt: minutesAgoIso(150),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-6",
+    postId: "post-3",
+    username: "marcuslane",
+    displayName: "Marcus Lane",
+    text: "what year?",
+    createdAt: minutesAgoIso(142),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-7",
+    postId: "post-4",
+    username: "zaycole",
+    displayName: "Zay Cole",
+    text: "not it",
+    createdAt: minutesAgoIso(262),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-8",
+    postId: "post-4",
+    username: "laylariv",
+    displayName: "Layla Rivera",
+    text: "clean yard tho",
+    createdAt: minutesAgoIso(255),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-9",
+    postId: "post-5",
+    username: "dantewest",
+    displayName: "Dante West",
+    text: "cap",
+    createdAt: minutesAgoIso(8),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-10",
+    postId: "post-5",
+    username: "marcuslane",
+    displayName: "Marcus Lane",
+    text: "hard",
+    createdAt: minutesAgoIso(6),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-11",
+    postId: "post-6",
+    username: "laylariv",
+    displayName: "Layla Rivera",
+    text: "soft flex",
+    createdAt: minutesAgoIso(74),
+    isReported: false,
+    hidden: false,
+  },
+  {
+    id: "comment-seed-12",
+    postId: "post-6",
+    username: "phlexrfounder",
+    displayName: "Jordan Hale",
+    text: "boat hard",
+    createdAt: minutesAgoIso(69),
+    isReported: false,
+    hidden: false,
   },
 ];
 
@@ -486,7 +609,7 @@ export default function AppShellPage() {
   const [editingPostId, setEditingPostId] = useState(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [votedPosts, setVotedPosts] = useState({});
-  const [comments, setComments] = useState([]);
+  const [comments, setComments] = useState(seededComments);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [commentErrors, setCommentErrors] = useState({});
   const [commentReportReasons, setCommentReportReasons] = useState({});
@@ -690,6 +813,8 @@ export default function AppShellPage() {
         if (Array.isArray(parsedComments)) {
           setComments(parsedComments);
         }
+      } else {
+        setComments(seededComments);
       }
 
       const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
