@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { canUseSupabaseAuth } from "@/lib/supabase-auth";
 
 const shellNav = [
   { label: "Feed", view: "feed" },
@@ -822,6 +823,7 @@ export default function AppShellPage() {
     );
   }, [notifications]);
   const unreadNotificationCount = notifications.filter((notification) => !notification.read).length;
+  const supabaseReady = canUseSupabaseAuth();
   const viewMeta = {
     feed: {
       eyebrow: "Main Feed",
@@ -1775,6 +1777,11 @@ export default function AppShellPage() {
                     >
                       Continue with Apple
                     </button>
+                    <p className="px-1 text-xs text-white/45">
+                      {supabaseReady
+                        ? "Supabase auth keys detected. Live auth wiring can start next."
+                        : "Supabase foundation added. Paste env keys to activate live auth."}
+                    </p>
                   </div>
                 </div>
 

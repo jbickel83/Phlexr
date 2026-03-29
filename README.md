@@ -31,6 +31,21 @@ Open [http://localhost:3000](http://localhost:3000).
 npm run build
 ```
 
+## Supabase setup
+
+1. Copy `.env.example` to `.env.local`.
+2. Paste your Supabase values:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Supabase foundation files:
+
+- `lib/supabase.js`
+- `lib/supabase-auth.js`
+
 ## Deploy on Vercel
 
 1. Push the repository to GitHub.
@@ -39,4 +54,4 @@ npm run build
 4. Keep the detected framework as `Next.js`.
 5. Click `Deploy`.
 
-No extra environment variables are required for the current landing page.
+If you want live Supabase auth later, add the same env vars in Vercel Project Settings.
