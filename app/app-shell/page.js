@@ -30,7 +30,7 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-layla-avatar-v4";
+const APP_SHELL_SEED_VERSION = "2026-03-28-marcus-avatar-v5";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -182,8 +182,7 @@ const seededPosts = [
 
 const profileDirectory = {
   marcuslane: {
-    avatar:
-      "https://images.unsplash.com/photo-1504593811423-6dd665756598?q=80&w=300&auto=format&fit=crop",
+    avatar: "/marcus-avatar.jpg",
     location: "Miami, FL",
   },
   laylariv: {
