@@ -300,7 +300,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
                   isSelected
                     ? "bg-gold text-obsidian"
                     : isElite
-                      ? "border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] text-[#efc467] hover:border-gold/55"
+                      ? "border border-gold/55 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold shadow-[0_0_18px_rgba(216,178,90,0.12)] hover:border-gold/80 hover:text-[#f1cf7b]"
                       : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
                 }`}
               >
