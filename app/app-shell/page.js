@@ -476,6 +476,8 @@ export default function AppShellPage() {
   const [commentReportReasons, setCommentReportReasons] = useState({});
   const [boostMenuPostId, setBoostMenuPostId] = useState(null);
   const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
   const [safetyProfile, setSafetyProfile] = useState({
     birthdate: "",
@@ -495,6 +497,7 @@ export default function AppShellPage() {
   const categoryMenuRef = useRef(null);
   const fileInputRef = useRef(null);
   const profileImageInputRef = useRef(null);
+  const searchRef = useRef(null);
 
   const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
@@ -560,6 +563,24 @@ export default function AppShellPage() {
   const selectedProfile =
     profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
   const leaderboardPreview = profiles.slice(0, 5);
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return [];
+    }
+
+    return profiles
+      .filter((profile) => {
+        const profileMatch =
+          profile.username.toLowerCase().includes(query) ||
+          profile.displayName.toLowerCase().includes(query);
+        const captionMatch = profile.posts.some((post) => post.caption.toLowerCase().includes(query));
+
+        return profileMatch || captionMatch;
+      })
+      .slice(0, 6);
+  }, [profiles, searchQuery]);
   const viewMeta = {
     feed: {
       eyebrow: "Main Feed",
@@ -597,6 +618,10 @@ export default function AppShellPage() {
     function handlePointerDown(event) {
       if (!categoryMenuRef.current?.contains(event.target)) {
         setIsCategoryOpen(false);
+      }
+
+      if (!searchRef.current?.contains(event.target)) {
+        setIsSearchOpen(false);
       }
     }
 
@@ -774,6 +799,8 @@ export default function AppShellPage() {
     setHasEnteredApp(true);
     setSelectedProfileUsername(username);
     setCurrentView("profile");
+    setSearchQuery("");
+    setIsSearchOpen(false);
   }
 
   function openLeaderboard() {
@@ -1114,7 +1141,7 @@ export default function AppShellPage() {
           {hasEnteredApp ? (
             <>
               <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-5 py-4 sm:px-6">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <button
                     type="button"
                     onClick={() => navigateTo("feed")}
@@ -1122,8 +1149,61 @@ export default function AppShellPage() {
                   >
                     PHLEXR
                   </button>
-                  <div className="hidden flex-1 lg:block" aria-hidden="true" />
-                  <div className="flex items-center gap-3">
+                  <div className="w-full lg:flex lg:flex-1 lg:justify-center lg:px-6">
+                    <div ref={searchRef} className="relative w-full max-w-xl">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(event) => {
+                          setSearchQuery(event.target.value);
+                          setIsSearchOpen(true);
+                        }}
+                        onFocus={() => setIsSearchOpen(true)}
+                        placeholder="Search users"
+                        className="w-full rounded-full border border-white/15 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                      />
+                      {isSearchOpen && searchQuery.trim() ? (
+                        <div className="absolute left-0 right-0 top-[calc(100%+0.65rem)] z-30 overflow-hidden rounded-[1.4rem] border border-white/10 bg-obsidian/95 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)] backdrop-blur">
+                          {searchResults.length ? (
+                            <div className="divide-y divide-white/8">
+                              {searchResults.map((result) => (
+                                <button
+                                  key={result.username}
+                                  type="button"
+                                  onClick={() => openProfile(result.username)}
+                                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
+                                >
+                                  <img
+                                    src={result.avatar}
+                                    alt={result.displayName}
+                                    className="h-11 w-11 rounded-full border border-gold/35 object-cover"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold text-white">
+                                      {result.displayName}
+                                    </p>
+                                    <p className="mt-1 truncate text-xs text-gold">
+                                      @{result.username}
+                                    </p>
+                                  </div>
+                                  <p
+                                    className={`shrink-0 text-xs uppercase tracking-[0.16em] ${getStatusTextClass(
+                                      result.badge
+                                    )}`}
+                                  >
+                                    {normalizeStatus(result.badge)}
+                                  </p>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-4 py-4 text-sm text-white/50">No results</div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-3">
                     <button
                       type="button"
                       onClick={() => openProfile(currentUser.username)}
