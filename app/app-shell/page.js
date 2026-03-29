@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { canUseSupabaseAuth } from "@/lib/supabase-auth";
+import {
+  canUseSupabaseAuth,
+  fetchProfileRow,
+  getCurrentSupabaseSession,
+  signInWithEmail,
+  signOutFromSupabase,
+  signUpWithEmail,
+  subscribeToSupabaseAuthChanges,
+  upsertProfileRow,
+} from "@/lib/supabase-auth";
 
 const shellNav = [
   { label: "Feed", view: "feed" },
@@ -549,6 +558,24 @@ function getStatusTextClass(status) {
   return "text-white/90";
 }
 
+function getMembershipIdFromTier(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "elite") {
+    return "elite";
+  }
+
+  if (normalized === "premium") {
+    return "premium";
+  }
+
+  if (normalized === "basic") {
+    return "basic";
+  }
+
+  return "free";
+}
+
 function getSeededSocialCount(username, base, range) {
   return username.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % range + base;
 }
@@ -656,7 +683,7 @@ function moderateComment(text, isAdult) {
 
 export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
-  const [hasEnteredApp, setHasEnteredApp] = useState(true);
+  const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [currentView, setCurrentView] = useState("feed");
   const [selectedProfileUsername, setSelectedProfileUsername] = useState(
     defaultCurrentUserProfile.username
@@ -672,6 +699,16 @@ export default function AppShellPage() {
   const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [notifications, setNotifications] = useState(seededNotifications);
+  const [authForm, setAuthForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [authMode, setAuthMode] = useState("signup");
+  const [authError, setAuthError] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
@@ -862,6 +899,53 @@ export default function AppShellPage() {
     },
   };
 
+  async function hydrateCurrentUserFromSession(session) {
+    const authUser = session?.user;
+    if (!authUser) {
+      return;
+    }
+
+    let profileRow = null;
+
+    try {
+      const { data } = await fetchProfileRow(authUser.id);
+      profileRow = data || null;
+    } catch {
+      profileRow = null;
+    }
+
+    const metadata = authUser.user_metadata || {};
+    const fallbackUsername =
+      metadata.username ||
+      authUser.email?.split("@")[0]?.toLowerCase().replace(/[^a-z0-9_]/g, "") ||
+      `member${authUser.id.slice(0, 6)}`;
+    const membershipId = getMembershipIdFromTier(profileRow?.membership_tier);
+    const membershipBadge =
+      membershipTiers.find((tier) => tier.id === membershipId)?.badge || defaultCurrentUserProfile.badge;
+
+    const nextProfile = {
+      ...defaultCurrentUserProfile,
+      username: profileRow?.username || fallbackUsername,
+      displayName:
+        profileRow?.display_name || metadata.display_name || metadata.username || fallbackUsername,
+      bio: profileRow?.bio || defaultCurrentUserProfile.bio,
+      location: profileRow?.location || defaultCurrentUserProfile.location,
+      avatar: profileRow?.avatar_url || defaultCurrentUserProfile.avatar,
+      badge: membershipBadge,
+    };
+
+    setSelectedMembershipId(membershipId);
+    setCurrentUserProfile(nextProfile);
+    setProfileDraft(nextProfile);
+    setSelectedProfileUsername(nextProfile.username);
+    setAuthForm((currentForm) => ({
+      ...currentForm,
+      username: nextProfile.username,
+      email: authUser.email || currentForm.email,
+      password: "",
+    }));
+  }
+
   useEffect(() => {
     function handlePointerDown(event) {
       if (!categoryMenuRef.current?.contains(event.target)) {
@@ -995,6 +1079,72 @@ export default function AppShellPage() {
   }, []);
 
   useEffect(() => {
+    if (!supabaseReady) {
+      setHasEnteredApp(false);
+      setAuthReady(true);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function initializeAuth() {
+      const { data, error } = await getCurrentSupabaseSession();
+      if (!isMounted) {
+        return;
+      }
+
+      if (error) {
+        setAuthError(error.message);
+      }
+
+      if (data?.session) {
+        await hydrateCurrentUserFromSession(data.session);
+        if (!isMounted) {
+          return;
+        }
+        setHasEnteredApp(true);
+      } else {
+        setHasEnteredApp(false);
+      }
+
+      setAuthReady(true);
+    }
+
+    initializeAuth();
+
+    const {
+      data: { subscription },
+    } = subscribeToSupabaseAuthChanges(async (_event, session) => {
+      if (!isMounted) {
+        return;
+      }
+
+      if (session) {
+        await hydrateCurrentUserFromSession(session);
+        if (!isMounted) {
+          return;
+        }
+        setHasEnteredApp(true);
+        setAuthError("");
+      } else {
+        setHasEnteredApp(false);
+        setCurrentView("feed");
+        setSelectedMembershipId("free");
+        setSelectedProfileUsername(defaultCurrentUserProfile.username);
+        setCurrentUserProfile(defaultCurrentUserProfile);
+        setProfileDraft(defaultCurrentUserProfile);
+      }
+
+      setAuthReady(true);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabaseReady]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
@@ -1065,6 +1215,36 @@ export default function AppShellPage() {
       badge: selectedMembership.badge,
     }));
   }, [selectedMembership.badge]);
+
+  useEffect(() => {
+    setPosts((currentPosts) => {
+      let changed = false;
+
+      const nextPosts = currentPosts.map((post) => {
+        if (!post.owner) {
+          return post;
+        }
+
+        if (
+          post.username === currentUserProfile.username &&
+          post.displayName === currentUserProfile.displayName &&
+          post.badge === currentUserProfile.badge
+        ) {
+          return post;
+        }
+
+        changed = true;
+        return {
+          ...post,
+          username: currentUserProfile.username,
+          displayName: currentUserProfile.displayName,
+          badge: currentUserProfile.badge,
+        };
+      });
+
+      return changed ? nextPosts : currentPosts;
+    });
+  }, [currentUserProfile.badge, currentUserProfile.displayName, currentUserProfile.username]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !hasEnteredApp) {
@@ -1245,6 +1425,145 @@ export default function AppShellPage() {
       ...currentErrors,
       [postId]: "",
     }));
+  }
+
+  function handleAuthFieldChange(field, value) {
+    setAuthForm((currentForm) => ({
+      ...currentForm,
+      [field]: field === "username" ? value.toLowerCase().replace(/\s+/g, "") : value,
+    }));
+    setAuthError("");
+    setAuthMessage("");
+  }
+
+  async function handleCreateAccount() {
+    const username = authForm.username.trim().toLowerCase();
+    const email = authForm.email.trim();
+    const password = authForm.password;
+
+    if (!username || !email || !password) {
+      setAuthError("Username, email, and password are required.");
+      return;
+    }
+
+    if (!supabaseReady) {
+      setAuthError("Supabase keys are missing.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthMode("signup");
+    setAuthError("");
+    setAuthMessage("");
+
+    const { data, error } = await signUpWithEmail({
+      email,
+      password,
+      username,
+      displayName: username,
+    });
+
+    if (error) {
+      setAuthLoading(false);
+      setAuthError(error.message);
+      return;
+    }
+
+    try {
+      if (data?.user) {
+        const profileResult = await upsertProfileRow({
+          id: data.user.id,
+          username,
+          displayName: username,
+          membershipTier: "Free",
+        });
+
+        if (profileResult.error) {
+          setAuthLoading(false);
+          setAuthError(profileResult.error.message);
+          return;
+        }
+      }
+    } catch (profileError) {
+      setAuthLoading(false);
+      setAuthError(profileError.message || "Could not create profile row.");
+      return;
+    }
+
+    if (data?.session) {
+      await hydrateCurrentUserFromSession(data.session);
+      setHasEnteredApp(true);
+      setCurrentView("feed");
+      setAuthLoading(false);
+      return;
+    }
+
+    setAuthLoading(false);
+    setAuthMessage("Account created. Check your email, then sign in.");
+  }
+
+  async function handleSignIn() {
+    const email = authForm.email.trim();
+    const password = authForm.password;
+
+    if (!email || !password) {
+      setAuthError("Email and password are required.");
+      return;
+    }
+
+    if (!supabaseReady) {
+      setAuthError("Supabase keys are missing.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthMode("signin");
+    setAuthError("");
+    setAuthMessage("");
+
+    const { data, error } = await signInWithEmail({
+      email,
+      password,
+    });
+
+    if (error) {
+      setAuthLoading(false);
+      setAuthError(error.message);
+      return;
+    }
+
+    if (data?.session) {
+      await hydrateCurrentUserFromSession(data.session);
+      setHasEnteredApp(true);
+      setCurrentView("feed");
+    }
+
+    setAuthLoading(false);
+  }
+
+  async function handleSignOut() {
+    setAuthLoading(true);
+    setAuthError("");
+    setAuthMessage("");
+
+    const { error } = await signOutFromSupabase();
+
+    if (error) {
+      setAuthLoading(false);
+      setAuthError(error.message);
+      return;
+    }
+
+    setHasEnteredApp(false);
+    setCurrentView("feed");
+    setSelectedMembershipId("free");
+    setCurrentUserProfile(defaultCurrentUserProfile);
+    setProfileDraft(defaultCurrentUserProfile);
+    setAuthForm((currentForm) => ({
+      ...currentForm,
+      password: "",
+    }));
+    setAuthLoading(false);
   }
 
   function handleAddComment(postId) {
@@ -1717,6 +2036,8 @@ export default function AppShellPage() {
                       <span className="text-sm font-medium text-white/72">Username</span>
                       <input
                         type="text"
+                        value={authForm.username}
+                        onChange={(event) => handleAuthFieldChange("username", event.target.value)}
                         placeholder="@phlexrname"
                         className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                       />
@@ -1725,6 +2046,8 @@ export default function AppShellPage() {
                       <span className="text-sm font-medium text-white/72">Email</span>
                       <input
                         type="email"
+                        value={authForm.email}
+                        onChange={(event) => handleAuthFieldChange("email", event.target.value)}
                         placeholder="you@example.com"
                         className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                       />
@@ -1733,6 +2056,8 @@ export default function AppShellPage() {
                       <span className="text-sm font-medium text-white/72">Password</span>
                       <input
                         type="password"
+                        value={authForm.password}
+                        onChange={(event) => handleAuthFieldChange("password", event.target.value)}
                         placeholder="........"
                         className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                       />
@@ -1758,28 +2083,43 @@ export default function AppShellPage() {
                   <div className="mt-5 grid gap-3">
                     <button
                       type="button"
-                      onClick={() => enterShell("feed")}
+                      onClick={handleCreateAccount}
+                      disabled={authLoading || !authReady || !supabaseReady}
                       className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
                     >
-                      Create account
+                      {authLoading && authMode === "signup" ? "Creating..." : "Create account"}
                     </button>
                     <button
                       type="button"
-                      onClick={() => enterShell("feed")}
-                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
+                      onClick={handleSignIn}
+                      disabled={authLoading || !authReady || !supabaseReady}
+                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      {authLoading && authMode === "signin" ? "Signing in..." : "Sign in"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white/55"
                     >
                       Continue with Google
                     </button>
                     <button
                       type="button"
-                      onClick={() => enterShell("feed")}
-                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white"
+                      disabled
+                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white/55"
                     >
                       Continue with Apple
                     </button>
+                    {authError ? (
+                      <p className="px-1 text-sm text-[#f0b4b4]">{authError}</p>
+                    ) : null}
+                    {authMessage ? (
+                      <p className="px-1 text-sm text-gold/85">{authMessage}</p>
+                    ) : null}
                     <p className="px-1 text-xs text-white/45">
                       {supabaseReady
-                        ? "Supabase auth keys detected. Live auth wiring can start next."
+                        ? "Supabase auth is connected. Google and Apple stay disabled until configured."
                         : "Supabase foundation added. Paste env keys to activate live auth."}
                     </p>
                   </div>
@@ -2455,6 +2795,13 @@ export default function AppShellPage() {
                           className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
                         >
                           Edit profile
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSignOut}
+                          className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                        >
+                          Sign out
                         </button>
                       </>
                     ) : null}
