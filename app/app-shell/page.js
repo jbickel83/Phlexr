@@ -1160,7 +1160,9 @@ export default function AppShellPage() {
                     {item.label}
                   </button>
                 ))}
-                <PremiumBadge>{selectedMembership.name} membership</PremiumBadge>
+                <PremiumBadge tone={getStatusTone(selectedMembership.badge)}>
+                  {selectedMembership.name} membership
+                </PremiumBadge>
               </div>
             </>
           ) : (
@@ -1178,7 +1180,9 @@ export default function AppShellPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <PremiumBadge>{selectedMembership.name} membership</PremiumBadge>
+                  <PremiumBadge tone={getStatusTone(selectedMembership.badge)}>
+                    {selectedMembership.name} membership
+                  </PremiumBadge>
                   <a
                     href="/"
                     className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
