@@ -2170,7 +2170,6 @@ export default function AppShellPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <PremiumBadge>{selectedMembership.name} visible</PremiumBadge>
                     <div className="rounded-full border border-gold/25 bg-[#2c2010] px-4 py-2 text-lg text-[#efc467]">
                       {formatScore(entry.averageScore)}
                     </div>
