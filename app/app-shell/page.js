@@ -651,6 +651,7 @@ export default function AppShellPage() {
   const [profileDraft, setProfileDraft] = useState(defaultCurrentUserProfile);
   const [profileImageName, setProfileImageName] = useState("");
   const [postSafetyError, setPostSafetyError] = useState("");
+  const [postLimitError, setPostLimitError] = useState("");
   const categoryMenuRef = useRef(null);
   const fileInputRef = useRef(null);
   const profileImageInputRef = useRef(null);
@@ -720,6 +721,7 @@ export default function AppShellPage() {
   const selectedProfile =
     profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
   const leaderboardPreview = profiles.slice(0, 5);
+  const currentUserPostCount = posts.filter((post) => post.username === currentUser.username).length;
   const sortedFeedPosts = useMemo(() => {
     return [...posts].sort((left, right) => {
       const leftBoosted = left.boosted ? 1 : 0;
@@ -1254,6 +1256,7 @@ export default function AppShellPage() {
   function handlePostSubmit(event) {
     event.preventDefault();
     setHasEnteredApp(true);
+    setPostLimitError("");
 
     if (!draft.image) {
       return;
@@ -1261,6 +1264,11 @@ export default function AppShellPage() {
 
     if (!draft.confirmSafe) {
       setPostSafetyError("Please confirm the image contains no nudity or explicit content.");
+      return;
+    }
+
+    if (!editingPostId && selectedMembershipId === "free" && currentUserPostCount >= 2) {
+      setPostLimitError("Free accounts can post up to 2 times. Upgrade to post more.");
       return;
     }
 
@@ -1298,6 +1306,7 @@ export default function AppShellPage() {
       setPosts((currentPosts) => [newPost, ...currentPosts]);
     }
     setPostSafetyError("");
+    setPostLimitError("");
     setSelectedProfileUsername(currentUser.username);
     setDraft({
       image: "",
@@ -2049,6 +2058,7 @@ export default function AppShellPage() {
                           confirmSafe: event.target.checked,
                         }));
                         setPostSafetyError("");
+                        setPostLimitError("");
                       }}
                       className="mt-1 h-4 w-4 accent-[#e6b33a]"
                     />
@@ -2058,6 +2068,18 @@ export default function AppShellPage() {
                   </label>
                   {postSafetyError ? (
                     <p className="text-sm text-gold">{postSafetyError}</p>
+                  ) : null}
+                  {postLimitError ? (
+                    <div className="rounded-[1.2rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-3">
+                      <p className="text-sm text-gold">{postLimitError}</p>
+                      <button
+                        type="button"
+                        onClick={() => navigateTo("membership")}
+                        className="mt-3 inline-flex items-center rounded-full border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#efc467] transition hover:border-gold/55"
+                      >
+                        Upgrade Status
+                      </button>
+                    </div>
                   ) : null}
                 </div>
 
@@ -2102,6 +2124,9 @@ export default function AppShellPage() {
                         {currentUser.badge}
                       </PremiumBadge>
                     </div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/42">
+                      {selectedMembership.name} plan · {currentUserPostCount} posts
+                    </p>
                     <p className="text-base leading-7 text-white/65">
                       {draft.caption || "What makes this flex undeniable?"}
                     </p>
