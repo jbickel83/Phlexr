@@ -231,6 +231,79 @@ function PremiumBadge({ children }) {
   );
 }
 
+function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, currentUser }) {
+  const selectedMembership =
+    membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
+
+  return (
+    <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
+      <PremiumBadge>PHLEXR membership tiers</PremiumBadge>
+      <h3 className="mt-5 text-2xl font-semibold text-white">Membership</h3>
+      <p className="mt-3 text-base leading-7 text-white/62">
+        Choose the local shell plan that controls your visible PHLEXR status and boost pricing.
+      </p>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {membershipTiers.map((tier) => {
+          const isSelected = selectedMembershipId === tier.id;
+          const isElite = tier.id === "elite";
+          const isStatusTier = tier.id === "premium" || tier.id === "elite";
+
+          return (
+            <div key={tier.id} className={`rounded-[1.45rem] border p-4 ${tier.accent}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-gold/75">{tier.name}</p>
+                  <p className="mt-3 text-2xl font-semibold text-white">{tier.price}</p>
+                </div>
+                {isElite ? <PremiumBadge>Top tier</PremiumBadge> : null}
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm leading-6 text-white/68">
+                {tier.features.map((feature) => (
+                  <p key={feature}>{feature}</p>
+                ))}
+                {isStatusTier ? <p className="text-gold/85">{tier.badge}</p> : null}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedMembershipId(tier.id)}
+                className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
+                  isSelected
+                    ? "bg-gold text-obsidian"
+                    : isElite
+                      ? "border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] text-[#efc467] hover:border-gold/55"
+                      : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                }`}
+              >
+                {isSelected ? `${tier.name} selected` : tier.cta}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/40 p-4">
+        <div className="flex items-center gap-4">
+          <img
+            src={currentUser.avatar}
+            alt={currentUser.displayName}
+            className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
+          />
+          <div>
+            <p className="text-2xl font-semibold text-white">{currentUser.displayName}</p>
+            <p className="mt-2 text-sm text-gold">
+              Current plan: {selectedMembership.name} · {selectedMembership.badge}
+            </p>
+            <p className="mt-2 text-sm text-white/55">Shell mode only. Checkout coming soon.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function formatPercent(value) {
   return `${Math.max(0, Math.min(99, Math.round(value)))}%`;
 }
@@ -422,6 +495,12 @@ export default function AppShellPage() {
 
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
+  const profileUpgradeLabel =
+    selectedMembershipId === "premium"
+      ? "Upgrade to Elite"
+      : selectedMembershipId === "elite"
+        ? "Elite Active"
+        : "Upgrade Status";
 
   const selectedProfile =
     profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
@@ -446,6 +525,11 @@ export default function AppShellPage() {
       eyebrow: "Profile Edit",
       title: "Edit profile",
       copy: "Refine your visible PHLEXR identity and keep it saved locally.",
+    },
+    membership: {
+      eyebrow: "Membership",
+      title: "Membership",
+      copy: "Choose the PHLEXR tier that controls your visible status and local boost pricing.",
     },
     leaderboard: {
       eyebrow: "Rankings",
@@ -477,7 +561,7 @@ export default function AppShellPage() {
       return;
     }
 
-    const validViews = new Set(["feed", "post", "profile", "edit-profile", "leaderboard"]);
+    const validViews = new Set(["feed", "post", "profile", "edit-profile", "membership", "leaderboard"]);
     if (validViews.has(hashView)) {
       setHasEnteredApp(true);
       setCurrentView(hashView);
@@ -1122,82 +1206,11 @@ export default function AppShellPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
-                  <PremiumBadge>PHLEXR membership tiers</PremiumBadge>
-                  <h3 className="mt-5 text-2xl font-semibold text-white">Membership</h3>
-                  <p className="mt-3 text-base leading-7 text-white/62">
-                    Choose the local shell plan that controls your visible PHLEXR status and boost pricing.
-                  </p>
-
-                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                    {membershipTiers.map((tier) => {
-                      const isSelected = selectedMembershipId === tier.id;
-                      const isElite = tier.id === "elite";
-                      const isStatusTier = tier.id === "premium" || tier.id === "elite";
-
-                      return (
-                        <div
-                          key={tier.id}
-                          className={`rounded-[1.45rem] border p-4 ${tier.accent}`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-xs uppercase tracking-[0.22em] text-gold/75">
-                                {tier.name}
-                              </p>
-                              <p className="mt-3 text-2xl font-semibold text-white">{tier.price}</p>
-                            </div>
-                            {isElite ? <PremiumBadge>Top tier</PremiumBadge> : null}
-                          </div>
-
-                          <div className="mt-4 space-y-2 text-sm leading-6 text-white/68">
-                            {tier.features.map((feature) => (
-                              <p key={feature}>{feature}</p>
-                            ))}
-                            {isStatusTier ? (
-                              <p className="text-gold/85">{tier.badge}</p>
-                            ) : null}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setSelectedMembershipId(tier.id)}
-                            className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
-                              isSelected
-                                ? "bg-gold text-obsidian"
-                                : isElite
-                                  ? "border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] text-[#efc467] hover:border-gold/55"
-                                  : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
-                            }`}
-                          >
-                            {isSelected ? `${tier.name} selected` : tier.cta}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/40 p-4">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={currentUser.avatar}
-                        alt={currentUser.displayName}
-                        className="h-16 w-16 rounded-full border-2 border-gold/55 object-cover"
-                      />
-                      <div>
-                        <p className="text-2xl font-semibold text-white">
-                          {currentUser.displayName}
-                        </p>
-                        <p className="mt-2 text-sm text-gold">
-                          Current plan: {selectedMembership.name} · {selectedMembership.badge}
-                        </p>
-                        <p className="mt-2 text-sm text-white/55">
-                          Shell mode only. Checkout coming soon.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <MembershipPlansPanel
+                  selectedMembershipId={selectedMembershipId}
+                  setSelectedMembershipId={setSelectedMembershipId}
+                  currentUser={currentUser}
+                />
               </div>
             </SectionCard>
           ) : null}
@@ -1791,13 +1804,32 @@ export default function AppShellPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <PremiumBadge>{selectedProfile.badge}</PremiumBadge>
                     {selectedProfile.username === currentUser.username ? (
-                      <button
-                        type="button"
-                        onClick={() => navigateTo("edit-profile")}
-                        className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
-                      >
-                        Edit profile
-                      </button>
+                      <>
+                        {selectedMembershipId === "elite" ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="inline-flex items-center rounded-full border border-gold/28 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] px-5 py-3 text-sm font-semibold text-gold/85"
+                          >
+                            {profileUpgradeLabel}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => navigateTo("membership")}
+                            className="inline-flex items-center rounded-full border border-gold/35 bg-[linear-gradient(180deg,rgba(230,179,58,0.14),rgba(255,255,255,0.02))] px-5 py-3 text-sm font-semibold text-[#efc467] transition hover:border-gold/55"
+                          >
+                            {profileUpgradeLabel}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigateTo("edit-profile")}
+                          className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                        >
+                          Edit profile
+                        </button>
+                      </>
                     ) : null}
                   </div>
                 </div>
@@ -1982,6 +2014,22 @@ export default function AppShellPage() {
                 </div>
               </div>
             </div>
+          </SectionCard>
+          ) : null}
+
+          {hasEnteredApp && currentView === "membership" ? (
+          <SectionCard
+            id="membership"
+            eyebrow="06. Membership"
+            title="Membership"
+            copy="Choose the PHLEXR tier that controls your visible status and local boost pricing."
+            hideHeader
+          >
+            <MembershipPlansPanel
+              selectedMembershipId={selectedMembershipId}
+              setSelectedMembershipId={setSelectedMembershipId}
+              currentUser={currentUser}
+            />
           </SectionCard>
           ) : null}
 
