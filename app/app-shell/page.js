@@ -30,7 +30,7 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-marcus-avatar-v5";
+const APP_SHELL_SEED_VERSION = "2026-03-28-biscuit-profile-v6";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -178,6 +178,23 @@ const seededPosts = [
     boosted: false,
     boostLevel: null,
   },
+  {
+    id: "post-6",
+    username: "captainbiscuit",
+    displayName: "Captain Biscuit",
+    badge: "Elite",
+    image:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop",
+    caption: "dock side. easy.",
+    category: "Boats",
+    score: 9.5,
+    wouldFlexPercent: 90,
+    fakeAiPercent: 4,
+    createdAt: minutesAgoIso(95),
+    owner: false,
+    boosted: false,
+    boostLevel: null,
+  },
 ];
 
 const profileDirectory = {
@@ -198,6 +215,10 @@ const profileDirectory = {
     avatar:
       "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
     location: "Aspen, CO",
+  },
+  captainbiscuit: {
+    avatar: "/biscuit-avatar.jpg",
+    location: "Newport Beach, CA",
   },
 };
 
