@@ -32,12 +32,12 @@ const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
-  displayName: "PHLEXR Founder",
+  displayName: "Jordan Hale",
   badge: "Elite",
   avatar:
-    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1504593811423-6dd665756598?q=80&w=300&auto=format&fit=crop",
   location: "Miami, FL",
-  bio: "Building the cleanest flex-rating platform on the internet.",
+  bio: "building phlexr. mostly cars, watches, and clean spots.",
 };
 
 const membershipTiers = [
@@ -93,12 +93,12 @@ function minutesAgoIso(minutes) {
 const seededPosts = [
   {
     id: "post-1",
-    username: "marcusprime",
-    displayName: "Marcus Prime",
+    username: "marcuslane",
+    displayName: "Marcus Lane",
     badge: "Elite",
     image:
-      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop",
-    caption: "Midnight delivery. Mansion lights. No explanation needed.",
+      "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?q=80&w=1600&auto=format&fit=crop",
+    caption: "late pickup. no talk.",
     category: "Cars",
     score: 9.8,
     wouldFlexPercent: 94,
@@ -110,12 +110,12 @@ const seededPosts = [
   },
   {
     id: "post-2",
-    username: "laylaroyale",
-    displayName: "Layla Royale",
+    username: "laylariv",
+    displayName: "Layla Rivera",
     badge: "Premium",
     image:
-      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1600&auto=format&fit=crop",
-    caption: "Diamond flap. Soft launch. Real pressure only.",
+      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1600&auto=format&fit=crop",
+    caption: "soft flex",
     category: "Handbags",
     score: 9.4,
     wouldFlexPercent: 88,
@@ -127,12 +127,12 @@ const seededPosts = [
   },
   {
     id: "post-3",
-    username: "zayk",
-    displayName: "Zay K.",
+    username: "zaycole",
+    displayName: "Zay Cole",
     badge: "Premium",
     image:
-      "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1600&auto=format&fit=crop",
-    caption: "18k pressure with skyline energy behind it.",
+      "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=1600&auto=format&fit=crop",
+    caption: "daily",
     category: "Watches",
     score: 9.7,
     wouldFlexPercent: 91,
@@ -144,13 +144,13 @@ const seededPosts = [
   },
   {
     id: "post-4",
-    username: "danteog",
-    displayName: 'Dante "OG"',
+    username: "dantewest",
+    displayName: "Dante West",
     badge: "Basic",
     image:
-      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1600&auto=format&fit=crop",
-    caption: "Classic body. Mountain air. No replica energy anywhere near it.",
-    category: "Cars",
+      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=1600&auto=format&fit=crop",
+    caption: "nothing crazy just clean",
+    category: "Houses",
     score: 9.3,
     wouldFlexPercent: 86,
     fakeAiPercent: 5,
@@ -162,11 +162,11 @@ const seededPosts = [
   {
     id: "post-5",
     username: "phlexrfounder",
-    displayName: "PHLEXR Founder",
+    displayName: "Jordan Hale",
     badge: "Elite",
     image:
-      "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1600&auto=format&fit=crop",
-    caption: "Camera flash. Midnight energy. Clean proof only.",
+      "https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?q=80&w=1600&auto=format&fit=crop",
+    caption: "clean enough",
     category: "Cars",
     score: 9.1,
     wouldFlexPercent: 85,
@@ -179,29 +179,29 @@ const seededPosts = [
 ];
 
 const profileDirectory = {
-  marcusprime: {
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
-    location: "Miami, FL",
-  },
-  laylaroyale: {
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop",
-    location: "Los Angeles, CA",
-  },
-  zayk: {
+  marcuslane: {
     avatar:
       "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=300&auto=format&fit=crop",
+    location: "Miami, FL",
+  },
+  laylariv: {
+    avatar:
+      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?q=80&w=300&auto=format&fit=crop",
+    location: "Los Angeles, CA",
+  },
+  zaycole: {
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
     location: "Dubai, UAE",
   },
-  danteog: {
+  dantewest: {
     avatar:
-      "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?q=80&w=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1504257432389-52343af06ae3?q=80&w=300&auto=format&fit=crop",
     location: "Aspen, CO",
   },
   phlexrfounder: {
     avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1504593811423-6dd665756598?q=80&w=300&auto=format&fit=crop",
     location: "Miami, FL",
   },
 };
