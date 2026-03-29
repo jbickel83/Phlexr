@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import {
-  getCurrentSupabaseSession,
-  initializeSupabaseSessionFromUrl,
-  updateSupabasePassword,
-} from "@/lib/supabase-auth";
+import { getCurrentSupabaseSession, updateSupabasePassword } from "@/lib/supabase-auth";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState("");
@@ -17,51 +14,43 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     let active = true;
+    const supabase = getSupabaseClient();
 
     async function prepareRecoverySession() {
-      try {
-        const { data: initializedData, error: initializedError } =
-          await initializeSupabaseSessionFromUrl();
+      const { data, error: sessionError } = await getCurrentSupabaseSession();
 
-        if (initializedError) {
-          throw initializedError;
-        }
+      if (!active) {
+        return;
+      }
 
-        let session = initializedData?.session || null;
-        console.log("[PHLEXR auth] session on update-password load", session);
+      if (sessionError) {
+        setError(sessionError.message);
+        return;
+      }
 
-        if (!session) {
-          const { data: currentSessionData, error: currentSessionError } =
-            await getCurrentSupabaseSession();
-
-          if (currentSessionError) {
-            throw currentSessionError;
-          }
-
-          session = currentSessionData?.session || null;
-          console.log("[PHLEXR auth] current session fallback", session);
-        }
-
-        if (!session) {
-          throw new Error("Reset link is invalid or expired.");
-        }
-
-        if (active) {
-          setReady(true);
-        }
-      } catch (sessionError) {
-        if (active) {
-          setError(
-            sessionError instanceof Error ? sessionError.message : "Reset link is invalid or expired."
-          );
-        }
+      if (data?.session) {
+        setReady(true);
       }
     }
 
     prepareRecoverySession();
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
+      if (!active) {
+        return;
+      }
+
+      if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session) {
+        setError("");
+        setReady(true);
+      }
+    });
+
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -70,6 +59,11 @@ export default function UpdatePasswordPage() {
 
     if (!password.trim()) {
       setError("Enter a new password.");
+      return;
+    }
+
+    if (!ready) {
+      setError("Reset link is invalid or expired.");
       return;
     }
 

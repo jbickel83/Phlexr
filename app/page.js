@@ -1,3 +1,6 @@
+import { redirect } from "next/navigation";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+
 const featureCards = [
   {
     title: "Proof-first scoring",
@@ -85,6 +88,20 @@ const metrics = [
 ];
 
 export default async function Page() {
+  if (
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    const supabase = await getSupabaseServerClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      redirect("/feed");
+    }
+  }
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-obsidian text-ivory">
       <a

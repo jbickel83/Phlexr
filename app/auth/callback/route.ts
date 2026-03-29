@@ -1,15 +1,34 @@
-import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { createServerClient } from "@supabase/ssr";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const origin = requestUrl.origin;
+  const redirectUrl = new URL("/feed", requestUrl.origin);
+  let response = NextResponse.redirect(redirectUrl);
 
-  if (code) {
-    const supabase = await getSupabaseServerClient();
-    await supabase.auth.exchangeCodeForSession(code);
+  if (!code) {
+    return response;
   }
 
-  return NextResponse.redirect(new URL("/", origin));
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  await supabase.auth.exchangeCodeForSession(code);
+
+  return response;
 }
