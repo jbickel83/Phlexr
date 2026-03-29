@@ -30,7 +30,7 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-kyle-walters-v9";
+const APP_SHELL_SEED_VERSION = "2026-03-28-dante-avatar-v10";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -334,8 +334,7 @@ const profileDirectory = {
     location: "Dubai, UAE",
   },
   dantewest: {
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop",
+    avatar: "/dante-avatar.jpg",
     location: "Aspen, CO",
   },
   captainbiscuit: {
