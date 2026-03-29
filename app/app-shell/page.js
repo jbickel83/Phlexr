@@ -516,6 +516,10 @@ function getStatusTextClass(status) {
   return "text-white/90";
 }
 
+function getSeededSocialCount(username, base, range) {
+  return username.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % range + base;
+}
+
 function formatPercent(value) {
   return `${Math.max(0, Math.min(99, Math.round(value)))}%`;
 }
@@ -720,6 +724,12 @@ export default function AppShellPage() {
 
   const selectedProfile =
     profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
+  const selectedProfileTopFlex =
+    selectedProfile.posts.length > 0
+      ? [...selectedProfile.posts].sort((left, right) => right.score - left.score)[0]
+      : null;
+  const selectedProfileFollowers = getSeededSocialCount(selectedProfile.username, 1240, 6200);
+  const selectedProfileFollowing = getSeededSocialCount(selectedProfile.username, 140, 780);
   const leaderboardPreview = profiles.slice(0, 5);
   const currentUserPostCount = posts.filter((post) => post.username === currentUser.username).length;
   const sortedFeedPosts = useMemo(() => {
@@ -2161,6 +2171,14 @@ export default function AppShellPage() {
                     <div>
                       <p className="text-3xl font-semibold text-white">{selectedProfile.displayName}</p>
                       <p className="mt-2 text-sm text-gold">@{selectedProfile.username}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <PremiumBadge tone={getStatusTone(selectedProfile.badge)}>
+                          {selectedProfile.badge}
+                        </PremiumBadge>
+                        <p className="text-xs uppercase tracking-[0.16em] text-white/40">
+                          Member since 2026
+                        </p>
+                      </div>
                       <p className="mt-2 text-base text-white/55">{selectedProfile.location}</p>
                       <p className="mt-3 max-w-2xl text-sm leading-6 text-white/52">
                         {selectedProfile.bio || "No bio added yet."}
@@ -2168,9 +2186,6 @@ export default function AppShellPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <PremiumBadge tone={getStatusTone(selectedProfile.badge)}>
-                      {selectedProfile.badge}
-                    </PremiumBadge>
                     {selectedProfile.username === currentUser.username ? (
                       <>
                         {selectedMembershipId === "elite" ? (
@@ -2202,7 +2217,7 @@ export default function AppShellPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
                   {[
                     {
                       label: "Total Posts",
@@ -2215,9 +2230,19 @@ export default function AppShellPage() {
                       valueClass: "text-gold",
                     },
                     {
-                      label: "Badge",
+                      label: "Tier",
                       value: normalizeStatus(selectedProfile.badge),
                       valueClass: getStatusTextClass(selectedProfile.badge),
+                    },
+                    {
+                      label: "Followers",
+                      value: selectedProfileFollowers.toLocaleString(),
+                      valueClass: "text-gold",
+                    },
+                    {
+                      label: "Following",
+                      value: selectedProfileFollowing.toLocaleString(),
+                      valueClass: "text-white",
                     },
                   ].map(({ label, value, valueClass }) => (
                     <div
@@ -2230,6 +2255,48 @@ export default function AppShellPage() {
                   ))}
                 </div>
               </div>
+
+              {selectedProfileTopFlex ? (
+                <div className="overflow-hidden rounded-[1.6rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))]">
+                  <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+                    <img
+                      src={selectedProfileTopFlex.image}
+                      alt={selectedProfileTopFlex.caption}
+                      className="h-72 w-full object-cover"
+                    />
+                    <div className="p-5 sm:p-6">
+                      <p className="text-xs uppercase tracking-[0.2em] text-gold/75">Top Flex</p>
+                      <div className="mt-4 flex items-center gap-3">
+                        <PremiumBadge>Score {formatScore(selectedProfileTopFlex.score)}</PremiumBadge>
+                        <p className="text-xs uppercase tracking-[0.16em] text-white/45">
+                          {selectedProfileTopFlex.category}
+                        </p>
+                      </div>
+                      <p className="mt-5 text-2xl font-semibold text-white">
+                        {selectedProfileTopFlex.caption || "Highest-scoring flex"}
+                      </p>
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl border border-white/8 bg-black/25 p-4">
+                          <p className="text-xs uppercase tracking-[0.16em] text-white/40">
+                            Would-Flex
+                          </p>
+                          <p className="mt-2 text-2xl font-semibold text-gold">
+                            {formatPercent(selectedProfileTopFlex.wouldFlexPercent)}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-white/8 bg-black/25 p-4">
+                          <p className="text-xs uppercase tracking-[0.16em] text-white/40">
+                            Fake / AI
+                          </p>
+                          <p className="mt-2 text-2xl font-semibold text-gold">
+                            {formatPercent(selectedProfileTopFlex.fakeAiPercent)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {selectedProfile.posts.length ? (
@@ -2247,7 +2314,7 @@ export default function AppShellPage() {
                   ))
                 ) : (
                   <div className="rounded-[1.5rem] border border-white/8 bg-black/35 p-5 text-sm text-white/55">
-                    No posts yet. Upload a flex to populate this profile.
+                    No flex posts yet.
                   </div>
                 )}
               </div>
