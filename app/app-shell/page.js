@@ -88,6 +88,12 @@ const boostOptions = [
   { value: "7d", label: "Boost 7 days" },
 ];
 
+const boostPriority = {
+  "24h": 1,
+  "3d": 2,
+  "7d": 3,
+};
+
 function minutesAgoIso(minutes) {
   return new Date(Date.now() - minutes * 60 * 1000).toISOString();
 }
@@ -715,6 +721,30 @@ export default function AppShellPage() {
   const selectedProfile =
     profiles.find((profile) => profile.username === selectedProfileUsername) || currentUser;
   const leaderboardPreview = profiles.slice(0, 5);
+  const sortedFeedPosts = useMemo(() => {
+    return [...posts].sort((left, right) => {
+      const leftBoosted = left.boosted ? 1 : 0;
+      const rightBoosted = right.boosted ? 1 : 0;
+
+      if (leftBoosted !== rightBoosted) {
+        return rightBoosted - leftBoosted;
+      }
+
+      const leftBoostPriority = boostPriority[left.boostLevel] || 0;
+      const rightBoostPriority = boostPriority[right.boostLevel] || 0;
+      if (leftBoostPriority !== rightBoostPriority) {
+        return rightBoostPriority - leftBoostPriority;
+      }
+
+      const leftBoostedAt = new Date(left.boostedAt || left.createdAt || 0).getTime();
+      const rightBoostedAt = new Date(right.boostedAt || right.createdAt || 0).getTime();
+      if (leftBoostedAt !== rightBoostedAt) {
+        return rightBoostedAt - leftBoostedAt;
+      }
+
+      return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+    });
+  }, [posts]);
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -1214,6 +1244,7 @@ export default function AppShellPage() {
               ...post,
               boosted: true,
               boostLevel,
+              boostedAt: new Date().toISOString(),
             }
           : post
       )
@@ -1579,7 +1610,7 @@ export default function AppShellPage() {
               </button>
             </div>
             <div className="grid items-stretch gap-5 xl:grid-cols-2">
-              {posts.map((post) => {
+              {sortedFeedPosts.map((post) => {
                 const lockedVote = votedPosts[post.id];
                 const postComments = comments.filter((comment) => comment.postId === post.id);
                 return (
@@ -1606,9 +1637,9 @@ export default function AppShellPage() {
                           <span>{formatRelativeTime(post.createdAt || post.timestamp)}</span>
                         </p>
                         {post.boosted ? (
-                          <p className="mt-2 text-xs uppercase tracking-[0.16em] text-gold/78">
+                          <span className="mt-2 inline-flex w-fit items-center rounded-full border border-gold/25 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-gold/85">
                             Boosted {post.boostLevel}
-                          </p>
+                          </span>
                         ) : null}
                       </div>
                       <div className="absolute right-0 top-0 flex h-12 items-start">
