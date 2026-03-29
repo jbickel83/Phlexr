@@ -456,6 +456,28 @@ function Avatar({ src, alt, sizeClass, borderClass = "border-gold/45", imageClas
   );
 }
 
+function ShareIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M8 7.25h8.75l-2.5-2.5" />
+      <path d="M16.75 7.25l-2.5 2.5" />
+      <path d="M16 16.75H7.25l2.5 2.5" />
+      <path d="M7.25 16.75l2.5-2.5" />
+      <path d="M7.25 7.25c-1.85 1.2-3 3.02-3 4.75s1.15 3.55 3 4.75" />
+      <path d="M16.75 7.25c1.85 1.2 3 3.02 3 4.75s-1.15 3.55-3 4.75" />
+    </svg>
+  );
+}
+
 function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, currentUser }) {
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
@@ -696,6 +718,7 @@ export default function AppShellPage() {
   const [commentErrors, setCommentErrors] = useState({});
   const [commentReportReasons, setCommentReportReasons] = useState({});
   const [boostMenuPostId, setBoostMenuPostId] = useState(null);
+  const [shareFeedback, setShareFeedback] = useState({});
   const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [notifications, setNotifications] = useState(seededNotifications);
@@ -1784,6 +1807,53 @@ export default function AppShellPage() {
     setBoostMenuPostId(null);
   }
 
+  async function handleSharePost(post) {
+    const shareUrl = `https://phlexr.com/app-shell?post=${post.id}`;
+    const sharePayload = {
+      title: "PHLEXR",
+      text: `${post.displayName} · ${post.caption || "PHLEXR post"}`,
+      url: shareUrl,
+    };
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        await navigator.share(sharePayload);
+      } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        throw new Error("Sharing is not available.");
+      }
+
+      setShareFeedback((currentFeedback) => ({
+        ...currentFeedback,
+        [post.id]: "Link ready",
+      }));
+      window.setTimeout(() => {
+        setShareFeedback((currentFeedback) => {
+          const nextFeedback = { ...currentFeedback };
+          delete nextFeedback[post.id];
+          return nextFeedback;
+        });
+      }, 2400);
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+
+      setShareFeedback((currentFeedback) => ({
+        ...currentFeedback,
+        [post.id]: "Share unavailable",
+      }));
+      window.setTimeout(() => {
+        setShareFeedback((currentFeedback) => {
+          const nextFeedback = { ...currentFeedback };
+          delete nextFeedback[post.id];
+          return nextFeedback;
+        });
+      }, 2400);
+    }
+  }
+
   function handlePostSubmit(event) {
     event.preventDefault();
     setHasEnteredApp(true);
@@ -2373,7 +2443,7 @@ export default function AppShellPage() {
                       ))}
                     </div>
 
-                      <div className="mt-3 grid grid-cols-1 gap-3 sm:mt-0 sm:h-full sm:grid-cols-3 sm:items-end">
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-0 sm:h-full xl:grid-cols-4 xl:items-end">
                       {[
                         ["Flex", "flex"],
                         ["Not It", "notIt"],
@@ -2384,7 +2454,7 @@ export default function AppShellPage() {
                           type="button"
                           onClick={() => handleVote(post.id, action)}
                           disabled={Boolean(lockedVote)}
-                            className={`rounded-full px-4 py-3 text-sm font-semibold transition sm:h-full ${
+                          className={`rounded-full px-4 py-3 text-sm font-semibold transition xl:h-full ${
                             lockedVote === action
                               ? "bg-gold text-obsidian"
                               : index === 0
@@ -2399,9 +2469,21 @@ export default function AppShellPage() {
                           {label}
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => handleSharePost(post)}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-gold/30 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-3 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b] xl:h-full"
+                      >
+                        <ShareIcon />
+                        <span>Share</span>
+                      </button>
                     </div>
                     <div className="flex min-h-4 items-center">
-                      {lockedVote ? (
+                      {shareFeedback[post.id] ? (
+                        <p className="text-xs uppercase tracking-[0.18em] text-gold/70">
+                          {shareFeedback[post.id]}
+                        </p>
+                      ) : lockedVote ? (
                         <p className="text-xs uppercase tracking-[0.18em] text-gold/70">
                           Vote locked for this post
                         </p>
