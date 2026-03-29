@@ -30,7 +30,7 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
-const APP_SHELL_SEED_VERSION = "2026-03-28-biscuit-avatar-shape-v8";
+const APP_SHELL_SEED_VERSION = "2026-03-28-kyle-walters-v9";
 
 const defaultCurrentUserProfile = {
   username: "phlexrfounder",
@@ -181,10 +181,9 @@ const seededPosts = [
   {
     id: "post-6",
     username: "captainbiscuit",
-    displayName: "Captain Biscuit",
+    displayName: "Kyle Walters",
     badge: "Elite",
-    image:
-      "https://images.pexels.com/photos/163236/sailboat-boat-water-nature-163236.jpeg?auto=compress&cs=tinysrgb&w=1600",
+    image: "/kyle-sailboat.jpg",
     caption: "dock side. easy.",
     category: "Boats",
     score: 9.5,
@@ -232,7 +231,7 @@ const seededComments = [
     id: "comment-seed-4",
     postId: "post-2",
     username: "captainbiscuit",
-    displayName: "Captain Biscuit",
+    displayName: "Kyle Walters",
     text: "color crazy",
     createdAt: minutesAgoIso(36),
     isReported: false,
