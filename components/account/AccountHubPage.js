@@ -85,6 +85,34 @@ export default function AccountHubPage({ slug }) {
                 </form>
               </div>
             ) : null}
+
+            {page.sections?.length ? (
+              <div className="mt-6 grid gap-4 lg:grid-cols-3">
+                {page.sections.map((section) => (
+                  <section
+                    key={section.title}
+                    className="rounded-[1.6rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5 sm:p-6"
+                  >
+                    <p className="text-xs uppercase tracking-[0.22em] text-gold/76">
+                      {section.title}
+                    </p>
+                    <div className="mt-4 grid gap-3">
+                      {section.items.map((item) => (
+                        <div
+                          key={item.label}
+                          className="rounded-[1.1rem] border border-white/10 bg-black/25 p-4"
+                        >
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-white/42">
+                            {item.label}
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-white/82">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : null}
           </section>
 
           <aside className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.015))] p-6 sm:p-8">
