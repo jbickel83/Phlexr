@@ -9,6 +9,7 @@ import {
   canUseSupabaseAuth,
   clearSupabaseBrowserSession,
   createCommentRow,
+  castPostVote,
   createFollowRow,
   createNotification,
   createPostRow,
@@ -18,7 +19,6 @@ import {
   fetchCommentsForPosts,
   fetchFeedPosts,
   fetchNotifications,
-  fetchPostRow,
   fetchFollowingRows,
   fetchProfileByUsername,
   fetchProfileRow,
@@ -35,7 +35,6 @@ import {
   subscribeToSupabaseAuthChanges,
   updatePostRow,
   updateProfileRow,
-  upsertVoteRow,
 } from "@/lib/supabase-auth";
 
 const shellNav = [
@@ -881,6 +880,7 @@ export default function AppShellPage() {
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [shareSheetView, setShareSheetView] = useState("primary");
   const [pendingVotes, setPendingVotes] = useState({});
+  const [voteErrors, setVoteErrors] = useState({});
   const [selectedMembershipId, setSelectedMembershipId] = useState("free");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -2118,6 +2118,11 @@ export default function AppShellPage() {
       return;
     }
 
+    setVoteErrors((currentErrors) => ({
+      ...currentErrors,
+      [postId]: "",
+    }));
+
     triggerVoteHaptic(voteType);
 
     const adjustments = {
@@ -2142,22 +2147,22 @@ export default function AppShellPage() {
 
     try {
       if (currentUserProfile.id) {
-        const { error: voteError } = await upsertVoteRow({
-          post_id: postId,
-          voter_user_id: currentUserProfile.id,
-          vote_type: voteType,
-        });
+        const { data: updatedPostRows, error: voteError } = await castPostVote(postId, voteType);
 
         if (voteError) {
+          setVoteErrors((currentErrors) => ({
+            ...currentErrors,
+            [postId]: voteError.message || "Vote failed. Try again.",
+          }));
           return;
         }
+
+        const updatedPost = Array.isArray(updatedPostRows) ? updatedPostRows[0] : updatedPostRows;
 
         setVotedPosts((currentVotes) => ({
           ...currentVotes,
           [postId]: voteType,
         }));
-
-        const { data: updatedPost } = await fetchPostRow(postId);
 
         setPosts((currentPosts) =>
           currentPosts.map((post) =>
@@ -3840,7 +3845,11 @@ export default function AppShellPage() {
                       </button>
                     </div>
                     <div className="flex min-h-4 items-center">
-                      {shareFeedback[post.id] ? (
+                      {voteErrors[post.id] ? (
+                        <p className="text-xs uppercase tracking-[0.18em] text-[#f0b4b4]">
+                          {voteErrors[post.id]}
+                        </p>
+                      ) : shareFeedback[post.id] ? (
                         <p className="text-xs uppercase tracking-[0.18em] text-gold/70">
                           {shareFeedback[post.id]}
                         </p>
