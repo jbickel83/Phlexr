@@ -1601,8 +1601,28 @@ export default function AppShellPage() {
           }
         }
 
-        const { data, error } = await getCurrentSupabaseSession();
         const { data: userData, error: userError } = await getCurrentSupabaseUser();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (userError) {
+          setAuthError(userError.message);
+        }
+
+        if (!userData?.user) {
+          await clearSupabaseBrowserSession();
+          setSelectedMembershipId("free");
+          setSelectedProfileUsername("");
+          setCurrentUserProfile(emptyAuthenticatedUserProfile);
+          setProfileDraft(emptyAuthenticatedUserProfile);
+          setHasEnteredApp(false);
+          normalizeLoggedOutRoute();
+          return;
+        }
+
+        const { data, error } = await getCurrentSupabaseSession();
 
         if (!isMounted) {
           return;
@@ -1612,11 +1632,7 @@ export default function AppShellPage() {
           setAuthError(error.message);
         }
 
-        if (userError) {
-          setAuthError(userError.message);
-        }
-
-        if (data?.session && userData?.user) {
+        if (data?.session) {
           await hydrateCurrentUserFromSession(data.session);
           if (!isMounted) {
             return;
@@ -1650,12 +1666,38 @@ export default function AppShellPage() {
 
     const {
       data: { subscription },
-    } = subscribeToSupabaseAuthChanges(async (_event, session) => {
+    } = subscribeToSupabaseAuthChanges(async (event, session) => {
       if (!isMounted) {
         return;
       }
 
+      if (event === "INITIAL_SESSION") {
+        return;
+      }
+
       if (session) {
+        const { data: userData, error: userError } = await getCurrentSupabaseUser();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (userError) {
+          setAuthError(userError.message);
+          return;
+        }
+
+        if (!userData?.user) {
+          setHasEnteredApp(false);
+          setCurrentView("feed");
+          setSelectedMembershipId("free");
+          setSelectedProfileUsername("");
+          setCurrentUserProfile(emptyAuthenticatedUserProfile);
+          setProfileDraft(emptyAuthenticatedUserProfile);
+          normalizeLoggedOutRoute();
+          return;
+        }
+
         const optimisticProfile = buildOptimisticProfileFromAuthUser(session.user);
         setCurrentUserProfile(optimisticProfile);
         setProfileDraft(optimisticProfile);
@@ -2604,7 +2646,7 @@ export default function AppShellPage() {
     const previousUsername = currentUserProfile.username;
 
     if (currentUserProfile.id) {
-      const { data } = await updateProfileRow(currentUserProfile.id, {
+      const { data, error } = await updateProfileRow(currentUserProfile.id, {
         username: nextProfile.username,
         display_name: nextProfile.displayName,
         bio: nextProfile.bio,
@@ -2613,22 +2655,24 @@ export default function AppShellPage() {
         membership_tier: isFounderIdentity(currentUserProfile) ? "Elite" : selectedMembership.name,
       });
 
-      if (data) {
-        nextProfile.username = data.username;
-        nextProfile.displayName = data.display_name;
-        nextProfile.bio = data.bio || "";
-        nextProfile.location = data.location || "";
-        nextProfile.avatar = data.avatar_url || DEFAULT_PROFILE_AVATAR;
-        nextProfile.email = currentUserProfile.email;
-        nextProfile.isFounder = Boolean(data.is_founder);
-        nextProfile.badge = isFounderIdentity({
-          username: data.username,
-          email: currentUserProfile.email,
-          isFounder: data.is_founder,
-        })
-          ? "Elite"
-          : normalizeStatus(data.membership_tier);
+      if (error || !data) {
+        return;
       }
+
+      nextProfile.username = data.username;
+      nextProfile.displayName = data.display_name;
+      nextProfile.bio = data.bio || "";
+      nextProfile.location = data.location || "";
+      nextProfile.avatar = data.avatar_url || DEFAULT_PROFILE_AVATAR;
+      nextProfile.email = currentUserProfile.email;
+      nextProfile.isFounder = Boolean(data.is_founder);
+      nextProfile.badge = isFounderIdentity({
+        username: data.username,
+        email: currentUserProfile.email,
+        isFounder: data.is_founder,
+      })
+        ? "Elite"
+        : normalizeStatus(data.membership_tier);
     }
 
     setCurrentUserProfile(nextProfile);
