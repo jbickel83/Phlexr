@@ -479,6 +479,24 @@ function ShareIcon({ className = "h-4 w-4" }) {
   );
 }
 
+function CameraIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4.75 7.75h3.1l1.4-2h5.5l1.4 2h3.1a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2H4.75a2 2 0 0 1-2-2v-7.5a2 2 0 0 1 2-2Z" />
+      <circle cx="12" cy="13.25" r="3.25" />
+    </svg>
+  );
+}
+
 function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, currentUser }) {
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
@@ -761,10 +779,16 @@ export default function AppShellPage() {
   const [profileImageName, setProfileImageName] = useState("");
   const [postSafetyError, setPostSafetyError] = useState("");
   const [postLimitError, setPostLimitError] = useState("");
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const categoryMenuRef = useRef(null);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const profileImageInputRef = useRef(null);
   const searchRef = useRef(null);
+  const cameraVideoRef = useRef(null);
+  const cameraCanvasRef = useRef(null);
+  const cameraStreamRef = useRef(null);
 
   const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
@@ -1310,6 +1334,31 @@ export default function AppShellPage() {
     window.location.hash = currentView;
   }, [currentView, hasEnteredApp]);
 
+  useEffect(() => {
+    if (!isCameraOpen || !cameraVideoRef.current || !cameraStreamRef.current) {
+      return;
+    }
+
+    const videoElement = cameraVideoRef.current;
+    videoElement.srcObject = cameraStreamRef.current;
+    videoElement.play().catch(() => {});
+
+    return () => {
+      if (videoElement.srcObject) {
+        videoElement.srcObject = null;
+      }
+    };
+  }, [isCameraOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+        cameraStreamRef.current = null;
+      }
+    };
+  }, []);
+
   function enterShell(targetId = "feed") {
     setHasEnteredApp(true);
     setCurrentView(targetId);
@@ -1697,11 +1746,21 @@ export default function AppShellPage() {
   }
 
   function handleImageUrlChange(event) {
+    setCameraError("");
     setDraftImageName("");
     setDraft((currentDraft) => ({
       ...currentDraft,
       image: event.target.value,
     }));
+  }
+
+  function applyDraftImage(result, imageName) {
+    setCameraError("");
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      image: result,
+    }));
+    setDraftImageName(imageName);
   }
 
   function handleImageFileChange(event) {
@@ -1718,13 +1777,91 @@ export default function AppShellPage() {
     const reader = new FileReader();
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
-      setDraft((currentDraft) => ({
-        ...currentDraft,
-        image: result,
-      }));
-      setDraftImageName(selectedFile.name);
+      applyDraftImage(result, selectedFile.name);
     };
     reader.readAsDataURL(selectedFile);
+  }
+
+  function isMobileCameraDevice() {
+    if (typeof navigator === "undefined") {
+      return false;
+    }
+
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+  }
+
+  function closeCameraCapture() {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    }
+
+    if (cameraVideoRef.current?.srcObject) {
+      cameraVideoRef.current.srcObject = null;
+    }
+
+    setIsCameraOpen(false);
+  }
+
+  async function handleOpenCamera() {
+    setCameraError("");
+
+    if (isMobileCameraDevice() && cameraInputRef.current) {
+      cameraInputRef.current.click();
+      return;
+    }
+
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setCameraError("Camera unavailable on this device. Use upload from device instead.");
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+        audio: false,
+      });
+
+      cameraStreamRef.current = stream;
+      setIsCameraOpen(true);
+    } catch {
+      setCameraError("Camera access was denied or unavailable. Use upload from device instead.");
+    }
+  }
+
+  function handleCaptureFromCamera() {
+    if (!cameraVideoRef.current || !cameraCanvasRef.current) {
+      setCameraError("Camera capture is unavailable right now.");
+      return;
+    }
+
+    const videoElement = cameraVideoRef.current;
+    const canvasElement = cameraCanvasRef.current;
+    const width = videoElement.videoWidth;
+    const height = videoElement.videoHeight;
+
+    if (!width || !height) {
+      setCameraError("Camera preview is not ready yet.");
+      return;
+    }
+
+    canvasElement.width = width;
+    canvasElement.height = height;
+    const context = canvasElement.getContext("2d");
+
+    if (!context) {
+      setCameraError("Camera capture is unavailable right now.");
+      return;
+    }
+
+    context.drawImage(videoElement, 0, 0, width, height);
+    applyDraftImage(canvasElement.toDataURL("image/jpeg", 0.92), "Camera capture");
+    closeCameraCapture();
   }
 
   function handleProfileImageFileChange(event) {
@@ -2855,17 +2992,42 @@ export default function AppShellPage() {
                         className="hidden"
                         id="post-image-upload"
                       />
-                      <label
-                        htmlFor="post-image-upload"
-                        className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-[1.25rem] border border-white/15 bg-black/30 px-4 text-center transition hover:border-gold/35"
-                      >
-                        <span className="text-sm font-semibold text-gold">Choose image</span>
-                        <span className="mt-2 text-sm text-white/55">
-                          {draftImageName || "PNG, JPG, WEBP, GIF, or AVIF"}
-                        </span>
-                      </label>
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*,video/*"
+                        capture="environment"
+                        onChange={handleImageFileChange}
+                        className="hidden"
+                        id="post-camera-capture"
+                      />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label
+                          htmlFor="post-image-upload"
+                          className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-[1.25rem] border border-white/15 bg-black/30 px-4 text-center transition hover:border-gold/35"
+                        >
+                          <span className="text-sm font-semibold text-gold">Upload from device</span>
+                          <span className="mt-2 text-sm text-white/55">
+                            {draftImageName || "PNG, JPG, WEBP, GIF, or AVIF"}
+                          </span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleOpenCamera}
+                          className="flex min-h-28 flex-col items-center justify-center rounded-[1.25rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 text-center transition hover:border-gold/45 hover:text-[#f1cf7b]"
+                        >
+                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-gold">
+                            <CameraIcon />
+                            <span>Use Camera</span>
+                          </span>
+                          <span className="mt-2 text-sm text-white/55">
+                            Take a fresh shot without leaving PHLEXR
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </label>
+                  {cameraError ? <p className="text-sm text-gold">{cameraError}</p> : null}
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-white/72">Image URL fallback</span>
                     <input
@@ -3573,6 +3735,62 @@ export default function AppShellPage() {
           ))}
         </div>
       </nav>
+      {isCameraOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-4 pb-6 pt-20 backdrop-blur-sm sm:items-center">
+          <button
+            type="button"
+            aria-label="Close camera"
+            onClick={closeCameraCapture}
+            className="absolute inset-0"
+          />
+          <div className="relative z-10 w-full max-w-xl rounded-[2rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(20,20,20,0.96),rgba(12,12,12,0.94))] p-5 shadow-[0_30px_120px_-40px_rgba(0,0,0,0.95)] sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-gold/75">Camera</p>
+                <p className="mt-3 text-2xl font-semibold text-white">Capture your flex</p>
+                <p className="mt-3 text-sm leading-6 text-white/58">
+                  Take a shot and drop it straight into your PHLEXR post draft.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeCameraCapture}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white transition hover:border-gold/30 hover:text-gold"
+              >
+                <span className="text-lg leading-none">x</span>
+              </button>
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-[1.6rem] border border-white/10 bg-black/50">
+              <video
+                ref={cameraVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="aspect-[4/5] w-full object-cover sm:aspect-video"
+              />
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleCaptureFromCamera}
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
+              >
+                Capture photo
+              </button>
+              <button
+                type="button"
+                onClick={closeCameraCapture}
+                className="inline-flex flex-1 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+              >
+                Cancel
+              </button>
+            </div>
+            <canvas ref={cameraCanvasRef} className="hidden" />
+          </div>
+        </div>
+      ) : null}
       {activeSharePostId ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 pb-6 pt-20 backdrop-blur-sm sm:items-center">
           <button
