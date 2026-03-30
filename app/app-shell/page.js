@@ -23,6 +23,7 @@ import {
   fetchProfileRow,
   fetchVoteRows,
   getCurrentSupabaseSession,
+  getCurrentSupabaseUser,
   markAllNotificationsAsRead,
   markNotificationAsRead,
   reportCommentRow,
@@ -1120,8 +1121,31 @@ export default function AppShellPage() {
     let profileRow = null;
 
     try {
-      const { data } = await fetchProfileRow(authUser.id);
+      const { data, error } = await fetchProfileRow(authUser.id);
       profileRow = data || null;
+
+      if ((!profileRow || error) && authUser.id) {
+        const metadata = authUser.user_metadata || {};
+        const fallbackUsername =
+          metadata.username ||
+          authUser.email?.split("@")[0]?.toLowerCase().replace(/[^a-z0-9_]/g, "") ||
+          `member${authUser.id.slice(0, 6)}`;
+        const { data: upsertedProfile } = await updateProfileRow(authUser.id, {
+          username: fallbackUsername,
+          display_name:
+            metadata.display_name || metadata.username || fallbackUsername,
+          bio: "",
+          location: "",
+          avatar_url: "",
+          membership_tier: isFounderIdentity({
+            username: fallbackUsername,
+            email: authUser.email,
+          })
+            ? "Elite"
+            : "Free",
+        });
+        profileRow = upsertedProfile || null;
+      }
     } catch {
       profileRow = null;
     }
@@ -1554,6 +1578,7 @@ export default function AppShellPage() {
         }
 
         const { data, error } = await getCurrentSupabaseSession();
+        const { data: userData, error: userError } = await getCurrentSupabaseUser();
 
         if (!isMounted) {
           return;
@@ -1563,13 +1588,18 @@ export default function AppShellPage() {
           setAuthError(error.message);
         }
 
-        if (data?.session) {
+        if (userError) {
+          setAuthError(userError.message);
+        }
+
+        if (data?.session && userData?.user) {
           await hydrateCurrentUserFromSession(data.session);
           if (!isMounted) {
             return;
           }
           setHasEnteredApp(true);
         } else {
+          await clearSupabaseBrowserSession();
           setSelectedMembershipId("free");
           setSelectedProfileUsername("");
           setCurrentUserProfile(emptyAuthenticatedUserProfile);
