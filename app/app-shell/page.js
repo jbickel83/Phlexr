@@ -1622,17 +1622,17 @@ export default function AppShellPage({ initialHasAccess = false }) {
           setAuthError(error.message);
         }
 
-        if (data?.session) {
-          await hydrateCurrentUserFromSession(data.session);
-          if (!isMounted) {
-            return;
+          if (data?.session) {
+            await hydrateCurrentUserFromSession(data.session);
+            if (!isMounted) {
+              return;
+            }
+            setHasEnteredApp(initialHasAccess);
+            setIsAuthInitializing(false);
+          } else {
+            await resetToSignedOutState({ authMode: "signin" });
+            setIsAuthInitializing(false);
           }
-          setHasEnteredApp(true);
-          setIsAuthInitializing(false);
-        } else {
-          await resetToSignedOutState({ authMode: "signin" });
-          setIsAuthInitializing(false);
-        }
       } catch (error) {
         if (!isMounted) {
           return;
@@ -1662,7 +1662,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
           setCurrentUserProfile(optimisticProfile);
           setProfileDraft(optimisticProfile);
           setSelectedProfileUsername(optimisticProfile.username);
-          setHasEnteredApp(true);
+          setHasEnteredApp(initialHasAccess);
           setIsAuthInitializing(false);
           setAuthError("");
           void hydrateCurrentUserFromSession(session);
