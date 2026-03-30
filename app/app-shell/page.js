@@ -424,7 +424,11 @@ function normalizeStatus(value) {
   const normalized = String(value || "").trim().toLowerCase();
 
   if (!normalized) {
-    return "Basic";
+    return "Free";
+  }
+
+  if (normalized.includes("free")) {
+    return "Free";
   }
 
   if (normalized.includes("elite")) {
@@ -440,7 +444,7 @@ function normalizeStatus(value) {
 
 function PremiumBadge({ children, tone = "premium", className = "" }) {
   const toneClass =
-    tone === "basic"
+    tone === "free" || tone === "basic"
       ? "border-white/15 bg-white/[0.03] text-white"
       : tone === "elite"
         ? "border-gold/30 bg-[#2b200f] font-bold text-gold"
@@ -601,6 +605,10 @@ function getStatusTone(status) {
 
   if (normalized === "Premium") {
     return "premium";
+  }
+
+  if (normalized === "Free") {
+    return "free";
   }
 
   return "basic";

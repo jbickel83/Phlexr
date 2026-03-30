@@ -20,7 +20,7 @@ const featureCards = [
 
 const realFlexExamples = [
   {
-    label: "PREMIUM",
+    label: "Premium",
     labelClassName: "bg-[#3a2c12] text-gold border border-gold/35",
     image:
       "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop",
@@ -37,7 +37,7 @@ const realFlexExamples = [
     scanned: "Scanned 23 min ago",
   },
   {
-    label: "CERTIFIED",
+    label: "Basic",
     labelClassName: "bg-[#16365c] text-white border border-[#5f8dc8]/35",
     image:
       "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1600&auto=format&fit=crop",
@@ -51,7 +51,7 @@ const realFlexExamples = [
     scanned: "Scanned 1 hour ago",
   },
   {
-    label: "ELITE",
+    label: "Elite",
     labelClassName: "bg-[#3f2d14] text-gold border border-gold/35",
     image:
       "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1600&auto=format&fit=crop",
@@ -65,14 +65,14 @@ const realFlexExamples = [
     scanned: "Scanned 3 hours ago",
   },
   {
-    label: "OG",
+    label: "Free",
     labelClassName: "bg-[#103733] text-[#6af0d8] border border-[#2ad4b8]/35",
     image:
       "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=1600&auto=format&fit=crop",
     imageAlt: "Black classic lowrider parked outside a mountain luxury home at night",
     avatar:
       "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?q=80&w=300&auto=format&fit=crop",
-    name: 'Dante "OG" W.',
+    name: "Dante W.",
     location: "Aspen, CO",
     score: "9.3",
     topFlexes: ["Black 1964 Impala Lowrider $65K"],
