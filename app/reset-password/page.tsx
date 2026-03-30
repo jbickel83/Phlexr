@@ -2,14 +2,36 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import TurnstileWidget, { canUseTurnstile } from "@/components/auth/TurnstileWidget";
 import { canUseSupabaseAuth, sendPasswordResetEmail } from "@/lib/supabase-auth";
 import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
+
+async function verifyCaptchaToken(token: string) {
+  const response = await fetch("/api/captcha/verify", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ token }),
+  });
+
+  const result = await response.json().catch(() => ({
+    success: false,
+    message: "Verification failed. Try again.",
+  }));
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Verification failed. Try again.");
+  }
+}
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetCount, setCaptchaResetCount] = useState(0);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,9 +48,36 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    if (!canUseTurnstile()) {
+      setError("Verification is unavailable right now.");
+      setSuccessMessage("");
+      return;
+    }
+
+    if (!captchaToken) {
+      setError("Complete verification to continue.");
+      setSuccessMessage("");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccessMessage("");
+
+    try {
+      await verifyCaptchaToken(captchaToken);
+    } catch (verificationError) {
+      setError(
+        verificationError instanceof Error
+          ? verificationError.message
+          : "Verification failed. Try again."
+      );
+      setSuccessMessage("");
+      setCaptchaToken("");
+      setCaptchaResetCount((count) => count + 1);
+      setLoading(false);
+      return;
+    }
 
     const { error: resetError } = await sendPasswordResetEmail({
       email: email.trim(),
@@ -38,11 +87,15 @@ export default function ResetPasswordPage() {
     if (resetError) {
       setError(resetError.message);
       setSuccessMessage("");
+      setCaptchaToken("");
+      setCaptchaResetCount((count) => count + 1);
       setLoading(false);
       return;
     }
 
     setSuccessMessage("Reset link sent. Check your email.");
+    setCaptchaToken("");
+    setCaptchaResetCount((count) => count + 1);
     setLoading(false);
   }
 
@@ -75,6 +128,23 @@ export default function ResetPasswordPage() {
             >
               {loading ? "Sending..." : "Send Reset Link"}
             </button>
+
+            <TurnstileWidget
+              resetKey={captchaResetCount}
+              onVerify={(token: string) => {
+                setCaptchaToken(token);
+                setError("");
+              }}
+              onExpire={() => setCaptchaToken("")}
+              onError={() => {
+                setCaptchaToken("");
+                setError("Verification failed. Try again.");
+              }}
+            />
+
+            <p className="text-xs text-white/45">
+              Verification helps prevent reset-email abuse without slowing down real users.
+            </p>
 
             {error ? <p className="text-sm text-[#f0b4b4]">{error}</p> : null}
             {successMessage ? <p className="text-sm text-gold/85">{successMessage}</p> : null}

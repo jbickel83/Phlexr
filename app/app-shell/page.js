@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import TurnstileWidget, { canUseTurnstile } from "@/components/auth/TurnstileWidget";
 import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 import { accountMenuSections } from "@/lib/account-pages";
 import {
@@ -730,6 +731,25 @@ function formatBirthdateInput(value) {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
+async function verifyCaptchaToken(token) {
+  const response = await fetch("/api/captcha/verify", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ token }),
+  });
+
+  const result = await response.json().catch(() => ({
+    success: false,
+    message: "Verification failed. Try again.",
+  }));
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Verification failed. Try again.");
+  }
+}
+
 function moderateComment(text, isAdult) {
   const value = text.trim();
   const normalized = value.toLowerCase();
@@ -804,6 +824,8 @@ export default function AppShellPage() {
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [signupCaptchaToken, setSignupCaptchaToken] = useState("");
+  const [signupCaptchaResetCount, setSignupCaptchaResetCount] = useState(0);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -1779,10 +1801,30 @@ export default function AppShellPage() {
       return;
     }
 
+    if (!canUseTurnstile()) {
+      setAuthError("Verification is unavailable right now.");
+      return;
+    }
+
+    if (!signupCaptchaToken) {
+      setAuthError("Complete verification to create your account.");
+      return;
+    }
+
     setAuthLoading(true);
     setAuthMode("signup");
     setAuthError("");
     setAuthMessage("");
+
+    try {
+      await verifyCaptchaToken(signupCaptchaToken);
+    } catch (error) {
+      setAuthLoading(false);
+      setSignupCaptchaToken("");
+      setSignupCaptchaResetCount((count) => count + 1);
+      setAuthError(error instanceof Error ? error.message : "Verification failed. Try again.");
+      return;
+    }
 
     const { data, error } = await signUpWithEmail({
       email,
@@ -1797,6 +1839,8 @@ export default function AppShellPage() {
 
     if (error) {
       setAuthLoading(false);
+      setSignupCaptchaToken("");
+      setSignupCaptchaResetCount((count) => count + 1);
       setAuthError(error.message);
       return;
     }
@@ -1810,6 +1854,8 @@ export default function AppShellPage() {
     }
 
     setAuthLoading(false);
+    setSignupCaptchaToken("");
+    setSignupCaptchaResetCount((count) => count + 1);
     setAuthMode("check-email");
     setAuthMessage("We sent you a confirmation link to finish creating your account.");
   }
@@ -2837,6 +2883,25 @@ export default function AppShellPage() {
                         >
                           {authLoading && authMode === "signup" ? "Creating..." : "Create account"}
                         </button>
+                        {authMode === "signup" ? (
+                          <>
+                            <TurnstileWidget
+                              resetKey={signupCaptchaResetCount}
+                              onVerify={(token) => {
+                                setSignupCaptchaToken(token);
+                                setAuthError("");
+                              }}
+                              onExpire={() => setSignupCaptchaToken("")}
+                              onError={() => {
+                                setSignupCaptchaToken("");
+                                setAuthError("Verification failed. Try again.");
+                              }}
+                            />
+                            <p className="px-1 text-xs text-white/45">
+                              Quick verification helps keep PHLEXR signup clean and low-spam.
+                            </p>
+                          </>
+                        ) : null}
                         <button
                           type="button"
                           disabled
