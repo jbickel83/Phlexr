@@ -500,7 +500,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
           return (
             <div
               key={tier.id}
-              className={`relative rounded-[1.45rem] border p-4 ${isElite ? "pr-28 pt-16 sm:pr-32" : ""} ${tier.accent}`}
+              className={`relative flex h-full flex-col rounded-[1.45rem] border p-4 ${isElite ? "pr-28 pt-16 sm:pr-32" : ""} ${tier.accent}`}
             >
               <div className="flex items-start gap-3">
                 <div>
@@ -514,7 +514,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
                 </div>
               ) : null}
 
-              <div className="mt-4 space-y-2 text-sm leading-6 text-white/68">
+              <div className="mt-4 flex-1 space-y-2 text-sm leading-6 text-white/68">
                 {tier.features.map((feature) => (
                   <p key={feature}>{feature}</p>
                 ))}
@@ -524,7 +524,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
               <button
                 type="button"
                 onClick={() => setSelectedMembershipId(tier.id)}
-                className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
+                className={`mt-6 inline-flex min-h-[3.75rem] w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
                   isSelected
                     ? "bg-gold text-obsidian"
                     : isElite
@@ -2224,7 +2224,21 @@ export default function AppShellPage() {
             </header>
           )}
 
-          {authReady && !hasEnteredApp ? (
+          {!authReady ? (
+            <SectionCard
+              id="auth-loading"
+              eyebrow="01. Auth"
+              title="Loading"
+              copy=""
+            >
+              <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-6 sm:p-8">
+                <p className="text-sm uppercase tracking-[0.22em] text-gold/75">PHLEXR</p>
+                <p className="mt-4 text-base leading-7 text-white/62">
+                  Restoring your session.
+                </p>
+              </div>
+            </SectionCard>
+          ) : !hasEnteredApp ? (
             <SectionCard
               id="auth"
               eyebrow="01. Auth"
