@@ -1614,7 +1614,7 @@ export default function AppShellPage() {
         }
 
         if (!userData?.user) {
-          await resetToSignedOutState({ clearBrowserSession: true });
+          await resetToSignedOutState({ authMode: "signin" });
           setIsAuthInitializing(false);
           return;
         }
@@ -1637,7 +1637,7 @@ export default function AppShellPage() {
           setHasEnteredApp(true);
           setIsAuthInitializing(false);
         } else {
-          await resetToSignedOutState({ clearBrowserSession: true });
+          await resetToSignedOutState({ authMode: "signin" });
           setIsAuthInitializing(false);
         }
       } catch (error) {
@@ -1645,7 +1645,7 @@ export default function AppShellPage() {
           return;
         }
 
-        await resetToSignedOutState({ clearBrowserSession: true });
+        await resetToSignedOutState({ authMode: "signin" });
         setIsAuthInitializing(false);
         setAuthError(error instanceof Error ? error.message : "Unable to initialize auth.");
       }
@@ -1678,7 +1678,7 @@ export default function AppShellPage() {
         }
 
         if (!userData?.user) {
-          await resetToSignedOutState({ clearBrowserSession: true });
+          await resetToSignedOutState({ authMode: "signin" });
           setIsAuthInitializing(false);
           return;
         }
@@ -1692,7 +1692,7 @@ export default function AppShellPage() {
         setAuthError("");
         void hydrateCurrentUserFromSession(session);
       } else {
-        await resetToSignedOutState({ authMode: "signup" });
+        await resetToSignedOutState({ authMode: "signin" });
         setIsAuthInitializing(false);
       }
     });
