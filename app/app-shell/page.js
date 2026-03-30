@@ -2224,7 +2224,7 @@ export default function AppShellPage() {
             </header>
           )}
 
-          {!hasEnteredApp ? (
+          {authReady && !hasEnteredApp ? (
             <SectionCard
               id="auth"
               eyebrow="01. Auth"
