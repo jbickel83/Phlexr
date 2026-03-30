@@ -854,6 +854,7 @@ export default function AppShellPage() {
   const [shareFeedback, setShareFeedback] = useState({});
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [shareSheetView, setShareSheetView] = useState("primary");
+  const [pendingVotes, setPendingVotes] = useState({});
   const [selectedMembershipId, setSelectedMembershipId] = useState("free");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -2012,12 +2013,17 @@ export default function AppShellPage() {
   }
 
   async function handleVote(postId, voteType) {
-    if (votedPosts[postId]) {
+    if (pendingVotes[postId]) {
       return;
     }
 
     const targetPost = posts.find((post) => post.id === postId);
     if (!targetPost) {
+      return;
+    }
+
+    const previousVote = votedPosts[postId];
+    if (previousVote === voteType) {
       return;
     }
 
@@ -2028,79 +2034,100 @@ export default function AppShellPage() {
       notIt: { score: -0.18, wouldFlexPercent: -4, fakeAiPercent: 1 },
       fakeAi: { score: -0.26, wouldFlexPercent: -6, fakeAiPercent: 4 },
     };
-    const change = adjustments[voteType];
+    const previousChange = previousVote
+      ? adjustments[previousVote]
+      : { score: 0, wouldFlexPercent: 0, fakeAiPercent: 0 };
+    const nextChange = adjustments[voteType];
+    const change = {
+      score: nextChange.score - previousChange.score,
+      wouldFlexPercent: nextChange.wouldFlexPercent - previousChange.wouldFlexPercent,
+      fakeAiPercent: nextChange.fakeAiPercent - previousChange.fakeAiPercent,
+    };
 
-    if (currentUserProfile.id) {
-      const { error: voteError } = await upsertVoteRow({
-        post_id: postId,
-        voter_user_id: currentUserProfile.id,
-        vote_type: voteType,
-      });
+    setPendingVotes((currentPendingVotes) => ({
+      ...currentPendingVotes,
+      [postId]: true,
+    }));
 
-      if (voteError) {
-        return;
-      }
+    try {
+      if (currentUserProfile.id) {
+        const { error: voteError } = await upsertVoteRow({
+          post_id: postId,
+          voter_user_id: currentUserProfile.id,
+          vote_type: voteType,
+        });
 
-      const { data: updatedPost, error: updateError } = await updatePostRow(postId, {
-        score: Math.max(5.5, Math.min(10, Number((targetPost.score + change.score).toFixed(1)))),
-        would_flex_percent: Math.max(
-          35,
-          Math.min(99, Math.round(targetPost.wouldFlexPercent + change.wouldFlexPercent))
-        ),
-        fake_ai_percent: Math.max(
-          1,
-          Math.min(60, Math.round(targetPost.fakeAiPercent + change.fakeAiPercent))
-        ),
-      });
+        if (voteError) {
+          return;
+        }
 
-      if (updateError || !updatedPost) {
+        const { data: updatedPost, error: updateError } = await updatePostRow(postId, {
+          score: Math.max(5.5, Math.min(10, Number((targetPost.score + change.score).toFixed(1)))),
+          would_flex_percent: Math.max(
+            35,
+            Math.min(99, Math.round(targetPost.wouldFlexPercent + change.wouldFlexPercent))
+          ),
+          fake_ai_percent: Math.max(
+            1,
+            Math.min(60, Math.round(targetPost.fakeAiPercent + change.fakeAiPercent))
+          ),
+        });
+
+        if (updateError || !updatedPost) {
+          return;
+        }
+
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.id === postId ? mapPostRow(updatedPost, currentUserProfile.id) : post
+          )
+        );
+        setVotedPosts((currentVotes) => ({
+          ...currentVotes,
+          [postId]: voteType,
+        }));
+
+        if (!previousVote && targetPost.username && targetPost.username !== currentUser.username) {
+          await createRealtimeNotification({
+            recipientUsername: targetPost.username,
+            type: "vote",
+            postId,
+          });
+        }
         return;
       }
 
       setPosts((currentPosts) =>
-        currentPosts.map((post) =>
-          post.id === postId ? mapPostRow(updatedPost, currentUserProfile.id) : post
-        )
+        currentPosts.map((post) => {
+          if (post.id !== postId) {
+            return post;
+          }
+
+          return {
+            ...post,
+            score: Math.max(5.5, Math.min(10, Number((post.score + change.score).toFixed(1)))),
+            wouldFlexPercent: Math.max(
+              35,
+              Math.min(99, Math.round(post.wouldFlexPercent + change.wouldFlexPercent))
+            ),
+            fakeAiPercent: Math.max(
+              1,
+              Math.min(60, Math.round(post.fakeAiPercent + change.fakeAiPercent))
+            ),
+          };
+        })
       );
       setVotedPosts((currentVotes) => ({
         ...currentVotes,
         [postId]: voteType,
       }));
-
-      if (targetPost.username && targetPost.username !== currentUser.username) {
-        await createRealtimeNotification({
-          recipientUsername: targetPost.username,
-          type: "vote",
-          postId,
-        });
-      }
-      return;
+    } finally {
+      setPendingVotes((currentPendingVotes) => {
+        const nextPendingVotes = { ...currentPendingVotes };
+        delete nextPendingVotes[postId];
+        return nextPendingVotes;
+      });
     }
-
-    setPosts((currentPosts) =>
-      currentPosts.map((post) => {
-        if (post.id !== postId) {
-          return post;
-        }
-
-        return {
-          ...post,
-          score: Math.max(5.5, Math.min(10, Number((post.score + change.score).toFixed(1)))),
-          wouldFlexPercent: Math.max(
-            35,
-            Math.min(99, Math.round(post.wouldFlexPercent + change.wouldFlexPercent))
-          ),
-          fakeAiPercent: Math.max(
-            1,
-            Math.min(60, Math.round(post.fakeAiPercent + change.fakeAiPercent))
-          ),
-        };
-      })
-    );
-    setVotedPosts((currentVotes) => ({
-      ...currentVotes,
-      [postId]: voteType,
-    }));
   }
 
   function handleBirthdateChange(event) {
@@ -3661,7 +3688,7 @@ export default function AppShellPage() {
                           key={label}
                           type="button"
                           onClick={() => handleVote(post.id, action)}
-                          disabled={Boolean(lockedVote)}
+                          disabled={Boolean(pendingVotes[post.id])}
                           className={`rounded-full px-4 py-3 text-sm font-semibold transition xl:h-full ${
                             lockedVote === action
                               ? "bg-gold text-obsidian"
@@ -3669,8 +3696,14 @@ export default function AppShellPage() {
                                 ? "bg-gold text-obsidian"
                                 : "border border-white/15 bg-white/[0.03] text-white"
                           } ${
-                            lockedVote && lockedVote !== action
-                              ? "cursor-not-allowed border-white/10 bg-white/[0.02] text-white/35"
+                            pendingVotes[post.id]
+                              ? "cursor-wait opacity-75"
+                              : lockedVote && lockedVote !== action
+                                ? "border border-white/15 bg-white/[0.03] text-white"
+                                : ""
+                          } ${
+                            !pendingVotes[post.id] && index !== 0 && lockedVote !== action
+                              ? "hover:border-gold/30 hover:text-gold"
                               : ""
                           }`}
                         >
