@@ -3493,9 +3493,6 @@ export default function AppShellPage({ initialHasAccess = false }) {
                                 setAuthError("Verification failed. Try again.");
                               }}
                             />
-                            <p className="px-1 text-xs text-white/45">
-                              Quick verification helps keep PHLEXR signup clean and low-spam.
-                            </p>
                           </>
                         ) : null}
                         <button
