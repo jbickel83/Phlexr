@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PhlexrImageLogo, PhlexrWordmark } from "@/components/brand/PhlexrLogo";
+import { accountMenuSections } from "@/lib/account-pages";
 import {
   canUseSupabaseAuth,
   fetchProfileRow,
@@ -761,6 +762,7 @@ export default function AppShellPage() {
   const [authMessage, setAuthMessage] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
@@ -786,6 +788,7 @@ export default function AppShellPage() {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const profileImageInputRef = useRef(null);
+  const profileMenuRef = useRef(null);
   const searchRef = useRef(null);
   const cameraVideoRef = useRef(null);
   const cameraCanvasRef = useRef(null);
@@ -1334,6 +1337,26 @@ export default function AppShellPage() {
 
     window.location.hash = currentView;
   }, [currentView, hasEnteredApp]);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!profileMenuRef.current?.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("mousedown", handlePointerDown);
+      window.addEventListener("touchstart", handlePointerDown);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("mousedown", handlePointerDown);
+        window.removeEventListener("touchstart", handlePointerDown);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isCameraOpen || !cameraVideoRef.current || !cameraStreamRef.current) {
@@ -2292,19 +2315,104 @@ export default function AppShellPage() {
                           </span>
                         ) : null}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => openProfile(currentUser.username)}
-                        aria-label="Open profile"
-                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] transition hover:border-gold/30"
-                      >
-                        <Avatar
-                          src={currentUser.avatar}
-                          alt={currentUser.displayName}
-                          sizeClass="h-10 w-10"
-                          borderClass="border-gold/40"
-                        />
-                      </button>
+                      <div ref={profileMenuRef} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsProfileMenuOpen((currentValue) => !currentValue)}
+                          aria-label="Open account menu"
+                          aria-expanded={isProfileMenuOpen}
+                          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] transition hover:border-gold/30"
+                        >
+                          <Avatar
+                            src={currentUser.avatar}
+                            alt={currentUser.displayName}
+                            sizeClass="h-10 w-10"
+                            borderClass="border-gold/40"
+                          />
+                        </button>
+                        {isProfileMenuOpen ? (
+                          <div className="absolute right-0 top-[calc(100%+0.75rem)] z-40 w-[20rem] overflow-hidden rounded-[1.65rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(14,14,14,0.97),rgba(8,8,8,0.95))] p-3 shadow-[0_28px_80px_-34px_rgba(0,0,0,0.95)] backdrop-blur-xl">
+                            <div className="rounded-[1.3rem] border border-white/8 bg-white/[0.03] p-4">
+                              <div className="flex items-center gap-3">
+                                <Avatar
+                                  src={currentUser.avatar}
+                                  alt={currentUser.displayName}
+                                  sizeClass="h-12 w-12"
+                                  borderClass="border-gold/40"
+                                />
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-white">
+                                    {currentUser.displayName}
+                                  </p>
+                                  <p className="mt-1 truncate text-xs text-gold">
+                                    @{currentUser.username}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-4 grid gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsProfileMenuOpen(false);
+                                    openProfile(currentUser.username);
+                                  }}
+                                  className="rounded-[1rem] border border-white/10 bg-white/[0.03] px-3 py-3 text-left text-sm font-semibold text-white transition hover:border-gold/28 hover:text-gold"
+                                >
+                                  View Profile
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsProfileMenuOpen(false);
+                                    navigateTo("edit-profile");
+                                  }}
+                                  className="rounded-[1rem] border border-white/10 bg-white/[0.03] px-3 py-3 text-left text-sm font-semibold text-white transition hover:border-gold/28 hover:text-gold"
+                                >
+                                  Edit Profile
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 grid gap-3">
+                              {accountMenuSections.map((section) => (
+                                <div
+                                  key={section.title}
+                                  className="rounded-[1.2rem] border border-white/8 bg-black/30 p-3"
+                                >
+                                  <p className="px-1 text-[11px] uppercase tracking-[0.18em] text-white/38">
+                                    {section.title}
+                                  </p>
+                                  <div className="mt-2 grid gap-1">
+                                    {section.items.map((item) => (
+                                      <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="rounded-[0.95rem] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-white/[0.04] hover:text-gold"
+                                      >
+                                        {item.label}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="mt-3 grid gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsProfileMenuOpen(false);
+                                  handleSignOut();
+                                }}
+                                className="rounded-[1rem] border border-white/10 bg-white/[0.03] px-3 py-3 text-left text-sm font-semibold text-white transition hover:border-gold/28 hover:text-gold"
+                              >
+                                Sign out
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                   <div className="mt-3">
