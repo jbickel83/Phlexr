@@ -9,6 +9,7 @@ import {
   canUseSupabaseAuth,
   clearSupabaseBrowserSession,
   createCommentRow,
+  fetchAllFollowRows,
   castPostVote,
   createFollowRow,
   createNotification,
@@ -19,7 +20,6 @@ import {
   fetchCommentsForPosts,
   fetchFeedPosts,
   fetchNotifications,
-  fetchFollowingRows,
   fetchProfileByUsername,
   fetchProfileRow,
   fetchVoteRows,
@@ -32,6 +32,7 @@ import {
   signOutFromSupabase,
   signUpWithEmail,
   subscribeToNotifications,
+  subscribeToFollows,
   subscribeToSupabaseAuthChanges,
   updatePostRow,
   updateProfileRow,
@@ -919,6 +920,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const [voteErrors, setVoteErrors] = useState({});
   const [selectedMembershipId, setSelectedMembershipId] = useState("free");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
+  const [followRows, setFollowRows] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [authForm, setAuthForm] = useState({
     username: "",
@@ -1051,12 +1053,15 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const isOwnProfile = selectedProfile.username === currentUser.username;
   const isFounderProfile = isFounderIdentity(selectedProfile);
   const isFollowingSelectedProfile = currentUserFollowing.includes(selectedProfile.username);
-  const selectedProfileFollowers =
-    getSeededSocialCount(selectedProfile.username, 1240, 6200) +
-    (isFollowingSelectedProfile && !isOwnProfile ? 1 : 0);
-  const selectedProfileFollowing = isOwnProfile
-    ? getSeededSocialCount(selectedProfile.username, 140, 780) + currentUserFollowing.length
-    : getSeededSocialCount(selectedProfile.username, 140, 780);
+  const selectedProfileFollowerCount = currentUserProfile.id
+    ? followRows.filter((row) => row.following_username === selectedProfile.username).length
+    : getSeededSocialCount(selectedProfile.username, 1240, 6200) +
+      (isFollowingSelectedProfile && !isOwnProfile ? 1 : 0);
+  const selectedProfileFollowingCount = currentUserProfile.id
+    ? followRows.filter((row) => row.follower_username === selectedProfile.username).length
+    : isOwnProfile
+      ? getSeededSocialCount(selectedProfile.username, 140, 780) + currentUserFollowing.length
+      : getSeededSocialCount(selectedProfile.username, 140, 780);
   const leaderboardPreview = profiles.slice(0, 5);
   const currentUserPostCount = posts.filter((post) =>
     currentUserProfile.id ? post.userId === currentUserProfile.id : post.username === currentUser.username
@@ -1353,6 +1358,30 @@ export default function AppShellPage({ initialHasAccess = false }) {
     }
 
     setNotifications((data || []).map(mapNotificationRow));
+  }
+
+  async function loadFollowGraph(userId) {
+    if (!supabaseReady || !userId) {
+      setFollowRows([]);
+      setCurrentUserFollowing([]);
+      return { error: null };
+    }
+
+    const { data, error } = await fetchAllFollowRows();
+
+    if (error) {
+      return { error };
+    }
+
+    const nextFollowRows = data || [];
+    setFollowRows(nextFollowRows);
+    setCurrentUserFollowing(
+      nextFollowRows
+        .filter((row) => row.follower_user_id === userId)
+        .map((row) => row.following_username)
+    );
+
+    return { error: null };
   }
 
   async function reloadAuthenticatedFeedState(userId) {
@@ -1783,16 +1812,16 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
   useEffect(() => {
     if (!supabaseReady || !currentUserProfile.id) {
+      setFollowRows([]);
       return;
     }
 
     let active = true;
 
     async function loadAuthenticatedAppState() {
-      const [{ data: postRows, error: postsError }, { data: followingRows }, { data: voteRows }] =
+      const [{ data: postRows, error: postsError }, { data: voteRows }] =
         await Promise.all([
           fetchFeedPosts(),
-          fetchFollowingRows(currentUserProfile.id),
           fetchVoteRows(currentUserProfile.id),
         ]);
 
@@ -1810,13 +1839,14 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
       setPosts(mappedPosts);
       setComments((commentRows || []).map(mapCommentRow));
-      setCurrentUserFollowing((followingRows || []).map((row) => row.following_username));
       setVotedPosts(
         (voteRows || []).reduce((accumulator, voteRow) => {
           accumulator[voteRow.post_id] = voteRow.vote_type;
           return accumulator;
         }, {})
       );
+
+      await loadFollowGraph(currentUserProfile.id);
     }
 
     loadAuthenticatedAppState();
@@ -1825,6 +1855,67 @@ export default function AppShellPage({ initialHasAccess = false }) {
       active = false;
     };
   }, [currentUserProfile.id, supabaseReady]);
+
+  useEffect(() => {
+    if (!supabaseReady || !currentUserProfile.id) {
+      return;
+    }
+
+    let active = true;
+
+    const subscription = subscribeToFollows(async () => {
+      if (!active) {
+        return;
+      }
+
+      await loadFollowGraph(currentUserProfile.id);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [currentUserProfile.id, supabaseReady]);
+
+  useEffect(() => {
+    if (!supabaseReady || !currentUserProfile.id || isFounderIdentity(currentUserProfile)) {
+      return;
+    }
+
+    let active = true;
+
+    async function ensureFounderFollow() {
+      const founderProfileId = await resolveProfileIdByUsername(FOUNDER_USERNAME);
+
+      if (!active || !founderProfileId || founderProfileId === currentUserProfile.id) {
+        return;
+      }
+
+      const alreadyFollowingFounder = currentUserFollowing.includes(FOUNDER_USERNAME);
+      if (alreadyFollowingFounder) {
+        return;
+      }
+
+      const { error } = await createFollowRow({
+        follower_user_id: currentUserProfile.id,
+        follower_username: currentUser.username,
+        following_user_id: founderProfileId,
+        following_username: FOUNDER_USERNAME,
+      });
+
+      if (error && !String(error.message || "").toLowerCase().includes("duplicate")) {
+        return;
+      }
+
+      await loadFollowGraph(currentUserProfile.id);
+    }
+
+    void ensureFounderFollow();
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser.username, currentUserFollowing, currentUserProfile.id, supabaseReady]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -2104,9 +2195,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
       if (isAlreadyFollowing) {
         await deleteFollowRow(currentUserProfile.id, targetProfileId);
-        setCurrentUserFollowing((currentFollowing) =>
-          currentFollowing.filter((entry) => entry !== username)
-        );
+        await loadFollowGraph(currentUserProfile.id);
         return;
       }
 
@@ -2121,7 +2210,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
         return;
       }
 
-      setCurrentUserFollowing((currentFollowing) => [...currentFollowing, username]);
+      await loadFollowGraph(currentUserProfile.id);
       await createRealtimeNotification({
         recipientUsername: username,
         type: "follow",
@@ -4426,12 +4515,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
                     },
                     {
                       label: "Followers",
-                      value: selectedProfileFollowers.toLocaleString(),
+                      value: selectedProfileFollowerCount.toLocaleString(),
                       valueClass: "text-gold",
                     },
                     {
                       label: "Following",
-                      value: selectedProfileFollowing.toLocaleString(),
+                      value: selectedProfileFollowingCount.toLocaleString(),
                       valueClass: "text-white",
                     },
                   ].map(({ label, value, valueClass }) => (
