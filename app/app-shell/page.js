@@ -1582,7 +1582,11 @@ export default function AppShellPage() {
 
     if (error) {
       setAuthLoading(false);
-      setAuthError(error.message);
+      setAuthError(
+        error.message.toLowerCase().includes("invalid login credentials")
+          ? "Invalid email or password. If you just created your account, confirm your email first or reset your password."
+          : error.message
+      );
       return;
     }
 
@@ -2320,19 +2324,19 @@ export default function AppShellPage() {
                       <div className="mt-5 grid gap-3">
                         <button
                           type="button"
-                          onClick={handleCreateAccount}
+                          onClick={handleSignIn}
                           disabled={authLoading || !supabaseReady}
                           className="inline-flex items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian disabled:cursor-not-allowed disabled:opacity-55"
                         >
-                          {authLoading && authMode === "signup" ? "Creating..." : "Create account"}
+                          {authLoading && authMode === "signin" ? "Signing in..." : "Sign in"}
                         </button>
                         <button
                           type="button"
-                          onClick={handleSignIn}
+                          onClick={handleCreateAccount}
                           disabled={authLoading || !supabaseReady}
                           className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold disabled:cursor-not-allowed disabled:opacity-55"
                         >
-                          {authLoading && authMode === "signin" ? "Signing in..." : "Sign in"}
+                          {authLoading && authMode === "signup" ? "Creating..." : "Create account"}
                         </button>
                         <button
                           type="button"
@@ -2340,13 +2344,6 @@ export default function AppShellPage() {
                           className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white/55"
                         >
                           Continue with Google
-                        </button>
-                        <button
-                          type="button"
-                          disabled
-                          className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white/55"
-                        >
-                          Continue with Apple
                         </button>
                         <Link
                           href="/recover-account"
