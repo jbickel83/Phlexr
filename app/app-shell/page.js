@@ -11,7 +11,6 @@ import {
   fetchProfileByUsername,
   fetchProfileRow,
   getCurrentSupabaseSession,
-  initializeSupabaseSessionFromUrl,
   markAllNotificationsAsRead,
   markNotificationAsRead,
   signInWithEmail,
@@ -763,7 +762,6 @@ export default function AppShellPage() {
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -1204,11 +1202,13 @@ export default function AppShellPage() {
           setCurrentUserProfile(mergedProfile);
           setProfileDraft(mergedProfile);
           setSelectedProfileUsername(mergedProfile.username);
+          setHasEnteredApp(Boolean(mergedProfile.id));
         }
       } else {
         setCurrentUserProfile(defaultCurrentUserProfile);
         setProfileDraft(defaultCurrentUserProfile);
         setSelectedProfileUsername(defaultCurrentUserProfile.username);
+        setHasEnteredApp(false);
       }
 
       const savedSafety = window.localStorage.getItem(SAFETY_STORAGE_KEY);
@@ -1256,7 +1256,6 @@ export default function AppShellPage() {
   useEffect(() => {
     if (!supabaseReady) {
       setHasEnteredApp(false);
-      setAuthReady(true);
       return;
     }
 
@@ -1264,17 +1263,7 @@ export default function AppShellPage() {
 
     async function initializeAuth() {
       try {
-        const { data: initializedData, error: initializedError } =
-          await initializeSupabaseSessionFromUrl();
-
-        let data = initializedData;
-        let error = initializedError;
-
-        if (!data?.session && !error) {
-          const currentSessionResult = await getCurrentSupabaseSession();
-          data = currentSessionResult.data;
-          error = currentSessionResult.error;
-        }
+        const { data, error } = await getCurrentSupabaseSession();
 
         if (!isMounted) {
           return;
@@ -1300,10 +1289,6 @@ export default function AppShellPage() {
 
         setHasEnteredApp(false);
         setAuthError(error instanceof Error ? error.message : "Unable to initialize auth.");
-      } finally {
-        if (isMounted) {
-          setAuthReady(true);
-        }
       }
     }
 
@@ -1332,8 +1317,6 @@ export default function AppShellPage() {
         setProfileDraft(defaultCurrentUserProfile);
         setAuthMode("signup");
       }
-
-      setAuthReady(true);
     });
 
     return () => {
@@ -2633,21 +2616,7 @@ export default function AppShellPage() {
             </header>
           )}
 
-          {!authReady ? (
-            <SectionCard
-              id="auth-loading"
-              eyebrow="01. Auth"
-              title="Loading"
-              copy=""
-            >
-              <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-6 sm:p-8">
-                <p className="text-sm uppercase tracking-[0.22em] text-gold/75">PHLEXR</p>
-                <p className="mt-4 text-base leading-7 text-white/62">
-                  Restoring your session.
-                </p>
-              </div>
-            </SectionCard>
-          ) : !hasEnteredApp ? (
+          {!hasEnteredApp ? (
             <SectionCard
               id="auth"
               eyebrow="01. Auth"
