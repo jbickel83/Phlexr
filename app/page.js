@@ -261,7 +261,7 @@ export default async function Page() {
       <section id="features" className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-12">
         <div className="max-w-3xl">
           <h2 className="text-balance font-display text-3xl text-white sm:text-5xl">
-            Built to make the flex undeniable.
+            Where your flex actually matters.
           </h2>
           <p className="mt-5 text-base leading-7 text-white/62 sm:leading-8 sm:text-lg">
             PHLEXR stays focused: premium presentation, sharp scoring, and a username reserve
