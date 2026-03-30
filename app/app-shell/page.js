@@ -900,7 +900,7 @@ function moderateComment(text, isAdult) {
 }
 
 export default function AppShellPage({ initialHasAccess = false }) {
-  const [posts, setPosts] = useState(seededPosts);
+  const [posts, setPosts] = useState(initialHasAccess ? [] : seededPosts);
   const [hasEnteredApp, setHasEnteredApp] = useState(initialHasAccess);
   const [isAuthInitializing, setIsAuthInitializing] = useState(initialHasAccess);
   const [currentView, setCurrentView] = useState("feed");
@@ -908,7 +908,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const [editingPostId, setEditingPostId] = useState(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [votedPosts, setVotedPosts] = useState({});
-  const [comments, setComments] = useState(seededComments);
+  const [comments, setComments] = useState(initialHasAccess ? [] : seededComments);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [commentErrors, setCommentErrors] = useState({});
   const [commentReportReasons, setCommentReportReasons] = useState({});
@@ -999,7 +999,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
       return accumulator;
     }, {});
 
-    if (!grouped[currentUserProfile.username]) {
+    if (currentUserProfile.username && !grouped[currentUserProfile.username]) {
       grouped[currentUserProfile.username] = {
         ...currentUserProfile,
         posts: [],
@@ -1010,12 +1010,15 @@ export default function AppShellPage({ initialHasAccess = false }) {
       .map((entry) => ({
         ...entry,
         totalPosts: entry.posts.length,
-        averageScore:
-          entry.posts.reduce((sum, post) => sum + post.score, 0) / entry.posts.length,
-        wouldFlexAverage:
-          entry.posts.reduce((sum, post) => sum + post.wouldFlexPercent, 0) / entry.posts.length,
-        fakeAiAverage:
-          entry.posts.reduce((sum, post) => sum + post.fakeAiPercent, 0) / entry.posts.length,
+        averageScore: entry.posts.length
+          ? entry.posts.reduce((sum, post) => sum + post.score, 0) / entry.posts.length
+          : 0,
+        wouldFlexAverage: entry.posts.length
+          ? entry.posts.reduce((sum, post) => sum + post.wouldFlexPercent, 0) / entry.posts.length
+          : 0,
+        fakeAiAverage: entry.posts.length
+          ? entry.posts.reduce((sum, post) => sum + post.fakeAiPercent, 0) / entry.posts.length
+          : 0,
       }))
       .sort((left, right) => right.averageScore - left.averageScore);
   }, [currentUserProfile, posts]);
