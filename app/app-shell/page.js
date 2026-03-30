@@ -517,6 +517,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[0];
   const isFounderAccount = isFounderIdentity(currentUser);
+  const hasAuthenticatedAccount = Boolean(currentUser?.id);
 
   return (
     <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
@@ -556,12 +557,14 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
                 type="button"
                 onClick={() => setSelectedMembershipId(tier.id)}
                 disabled={isFounderAccount}
-                className={`mt-6 inline-flex min-h-[3.75rem] w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
+                className={`mt-6 inline-flex min-h-[3.75rem] w-full items-center justify-center rounded-full border px-5 py-3 text-center text-sm font-semibold transition ${
                   isSelected
-                    ? "bg-gold text-obsidian"
+                    ? isElite
+                      ? "border-gold/55 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold shadow-[0_0_18px_rgba(216,178,90,0.12)]"
+                      : "border-white/25 bg-white/[0.05] text-white"
                     : isElite
-                      ? "border border-gold/55 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold shadow-[0_0_18px_rgba(216,178,90,0.12)] hover:border-gold/80 hover:text-[#f1cf7b]"
-                      : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                      ? "border-gold/55 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold shadow-[0_0_18px_rgba(216,178,90,0.12)] hover:border-gold/80 hover:text-[#f1cf7b]"
+                      : "border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
                 }`}
               >
                 {isSelected ? `${tier.name} selected` : tier.cta}
@@ -571,6 +574,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
         })}
       </div>
 
+      {hasAuthenticatedAccount ? (
       <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/40 p-4">
         <div className="flex items-center gap-4">
           <Avatar
@@ -592,6 +596,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
           </div>
         </div>
       </div>
+      ) : null}
     </div>
   );
 }
