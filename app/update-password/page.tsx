@@ -185,7 +185,7 @@ export default function UpdatePasswordPage() {
             {successMessage ? <p className="text-sm text-gold/85">{successMessage}</p> : null}
           </form>
 
-          <Link href="/app-shell" className="mt-6 inline-flex text-sm text-white/58 transition hover:text-gold">
+          <Link href="/" className="mt-6 inline-flex text-sm text-white/58 transition hover:text-gold">
             Back to login
           </Link>
         </div>
