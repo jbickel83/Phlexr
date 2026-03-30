@@ -1571,9 +1571,10 @@ export default function AppShellPage() {
     }
 
     if (data?.session) {
-      await hydrateCurrentUserFromSession(data.session);
       setHasEnteredApp(true);
       setCurrentView("feed");
+      setAuthLoading(false);
+      hydrateCurrentUserFromSession(data.session);
       if (typeof window !== "undefined" && window.location.pathname !== "/feed") {
         window.location.assign("/feed");
         return;

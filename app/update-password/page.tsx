@@ -23,22 +23,8 @@ export default function UpdatePasswordPage() {
 
     async function prepareRecoverySession() {
       const url = new URL(window.location.href);
-      const code = url.searchParams.get("code");
       const queryAccessToken = url.searchParams.get("access_token");
       const queryRefreshToken = url.searchParams.get("refresh_token");
-
-      if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (!active) {
-          return;
-        }
-
-        if (exchangeError) {
-          setError(exchangeError.message);
-          return;
-        }
-      }
 
       if (queryAccessToken && queryRefreshToken) {
         const { error: querySessionError } = await supabase.auth.setSession({
