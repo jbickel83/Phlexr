@@ -2570,6 +2570,42 @@ export default function AppShellPage() {
                             ? "Supabase auth is connected. Google and Apple stay disabled until configured."
                             : "Supabase foundation added. Paste env keys to activate live auth."}
                         </p>
+                        {authMode === "signup" ? (
+                          <div className="mt-2 rounded-[1.35rem] border border-white/10 bg-white/[0.02] px-4 py-4">
+                            <p className="text-xs uppercase tracking-[0.2em] text-gold/75">
+                              Account disclosures
+                            </p>
+                            <p className="mt-3 text-sm leading-6 text-white/58">
+                              By creating a PHLEXR account, you agree to the platform rules that
+                              govern posting, comments, follows, notifications, boosts,
+                              memberships, moderation, and account safety. Review the policies
+                              below before joining.
+                            </p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {[
+                                ["Terms & Conditions", "/terms-conditions"],
+                                ["Privacy / Safety Policy", "/privacy-safety-policy"],
+                                ["Cookies Policy", "/cookies-policy"],
+                                [
+                                  "How PHLEXR uses your email or phone",
+                                  "/account-contact-info",
+                                ],
+                                ["Copyright / Trademark Policy", "/copyright-trademark-policy"],
+                                ["Community Guidelines", "/community-guidelines"],
+                                ["Reporting / Abuse / Safety", "/reporting-abuse-safety"],
+                                ["Contact / Support", "/contact-support"],
+                              ].map(([label, href]) => (
+                                <Link
+                                  key={href}
+                                  href={href}
+                                  className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-white/78 transition hover:border-gold/30 hover:text-gold"
+                                >
+                                  {label}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     </>
                   )}
