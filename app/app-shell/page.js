@@ -913,6 +913,9 @@ export default function AppShellPage() {
   const [draftImageName, setDraftImageName] = useState("");
   const [profileDraft, setProfileDraft] = useState(emptyAuthenticatedUserProfile);
   const [profileImageName, setProfileImageName] = useState("");
+  const [profileSaveError, setProfileSaveError] = useState("");
+  const [profileSaveMessage, setProfileSaveMessage] = useState("");
+  const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [postSafetyError, setPostSafetyError] = useState("");
   const [postLimitError, setPostLimitError] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -2619,12 +2622,23 @@ export default function AppShellPage() {
         avatar: result,
       }));
       setProfileImageName(selectedFile.name);
+      setProfileSaveError("");
+      setProfileSaveMessage("");
     };
     reader.readAsDataURL(selectedFile);
   }
 
   async function handleProfileSave(event) {
     event.preventDefault();
+    setProfileSaveError("");
+    setProfileSaveMessage("");
+
+    if (!currentUserProfile.id) {
+      setProfileSaveError("Your account is still syncing. Try saving again in a moment.");
+      return;
+    }
+
+    setIsProfileSaving(true);
     const nextProfile = {
       ...currentUserProfile,
       ...profileDraft,
@@ -2637,7 +2651,7 @@ export default function AppShellPage() {
 
     const previousUsername = currentUserProfile.username;
 
-    if (currentUserProfile.id) {
+    try {
       const { data, error } = await updateProfileRow(currentUserProfile.id, {
         username: nextProfile.username,
         display_name: nextProfile.displayName,
@@ -2648,6 +2662,7 @@ export default function AppShellPage() {
       });
 
       if (error || !data) {
+        setProfileSaveError(error?.message || "Profile save failed. Try again.");
         return;
       }
 
@@ -2665,26 +2680,29 @@ export default function AppShellPage() {
       })
         ? "Elite"
         : normalizeStatus(data.membership_tier);
-    }
 
-    setCurrentUserProfile(nextProfile);
-    setProfileDraft(nextProfile);
-    setPosts((currentPosts) =>
-      currentPosts.map((post) =>
-        post.owner
-          ? {
-              ...post,
-              username: nextProfile.username,
-              displayName: nextProfile.displayName,
-              badge: nextProfile.badge,
-            }
-          : post
-      )
-    );
-    setSelectedProfileUsername((currentUsername) =>
-      currentUsername === previousUsername ? nextProfile.username : currentUsername
-    );
-    setCurrentView("profile");
+      setCurrentUserProfile(nextProfile);
+      setProfileDraft(nextProfile);
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.owner
+            ? {
+                ...post,
+                username: nextProfile.username,
+                displayName: nextProfile.displayName,
+                badge: nextProfile.badge,
+              }
+            : post
+        )
+      );
+      setSelectedProfileUsername((currentUsername) =>
+        currentUsername === previousUsername ? nextProfile.username : currentUsername
+      );
+      setProfileSaveMessage("Profile saved.");
+      setCurrentView("profile");
+    } finally {
+      setIsProfileSaving(false);
+    }
   }
 
   function startEditingPost(post) {
@@ -4397,7 +4415,7 @@ export default function AppShellPage() {
             id="edit-profile"
             eyebrow="05. Edit"
             title="Edit profile"
-            copy="Update your visible identity in the shell and keep it stored locally across refreshes."
+            copy="Update your profile details and keep them synced to your PHLEXR account."
             hideHeader
           >
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
@@ -4499,11 +4517,19 @@ export default function AppShellPage() {
                   </div>
                 </div>
 
+                {profileSaveError ? (
+                  <p className="mt-5 text-sm text-[#f0b4b4]">{profileSaveError}</p>
+                ) : null}
+                {profileSaveMessage ? (
+                  <p className="mt-5 text-sm text-gold/85">{profileSaveMessage}</p>
+                ) : null}
+
                 <button
                   type="submit"
-                  className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian"
+                  disabled={isProfileSaving}
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gold px-6 py-3.5 text-sm font-semibold text-obsidian disabled:cursor-not-allowed disabled:opacity-55"
                 >
-                  Save local profile
+                  {isProfileSaving ? "Saving..." : "Save profile"}
                 </button>
               </form>
 
