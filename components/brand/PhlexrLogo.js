@@ -7,7 +7,7 @@ function TrademarkMark({ className = "" }) {
   return (
     <span
       aria-hidden="true"
-      className={`pointer-events-none absolute right-0 top-0 translate-x-[78%] -translate-y-[10%] text-[0.38em] font-semibold uppercase leading-none tracking-normal text-gold/85 ${className}`}
+      className={`pointer-events-none absolute right-0 top-0 translate-x-[62%] -translate-y-[28%] text-[0.24em] font-semibold uppercase leading-none tracking-[-0.02em] text-gold/65 ${className}`}
     >
       TM
     </span>
