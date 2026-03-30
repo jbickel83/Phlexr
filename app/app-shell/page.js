@@ -1619,7 +1619,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
         }
 
         if (!initialHasAccess) {
-          await resetToSignedOutState({ authMode: "signin" });
+          await resetToSignedOutState({ clearBrowserSession: true, authMode: "signin" });
           setIsAuthInitializing(false);
           return;
         }
