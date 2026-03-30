@@ -1106,6 +1106,8 @@ export default function AppShellPage({ initialHasAccess = false }) {
         new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime()
     );
   }, [notifications]);
+  const isAuthRoute =
+    typeof window === "undefined" ? !initialHasAccess : window.location.pathname === "/app-shell";
   const unreadNotificationCount = notifications.filter((notification) => !notification.read).length;
   const supabaseReady = canUseSupabaseAuth();
   const viewMeta = {
@@ -3101,7 +3103,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
       <div className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
         <div className="relative z-10 space-y-6">
-          {hasEnteredApp ? (
+          {hasEnteredApp && !isAuthRoute ? (
             <>
               <div className="sticky top-3 z-40 space-y-4 rounded-[2.25rem] bg-[linear-gradient(180deg,rgba(10,10,10,0.9),rgba(10,10,10,0.72))] px-1 pb-1 pt-1 backdrop-blur-xl">
                 <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-5 py-4 sm:px-6">
