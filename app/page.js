@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 
 const featureCards = [
@@ -89,20 +87,6 @@ const metrics = [
 ];
 
 export default async function Page() {
-  if (
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    const supabase = await getSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (user) {
-      redirect("/feed");
-    }
-  }
-
   return (
     <main className="min-h-screen overflow-x-hidden bg-obsidian text-ivory">
       <a
