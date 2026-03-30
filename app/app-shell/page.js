@@ -497,10 +497,6 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
     <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
       <PremiumBadge>PHLEXR membership tiers</PremiumBadge>
       <h3 className="mt-5 text-2xl font-semibold text-white">Membership</h3>
-      <p className="mt-3 text-base leading-7 text-white/62">
-        Choose the local shell plan that controls your visible PHLEXR status and boost pricing.
-      </p>
-
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {membershipTiers.map((tier) => {
           const isSelected = selectedMembershipId === tier.id;
