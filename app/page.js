@@ -160,8 +160,9 @@ export default async function Page() {
             Post it. Prove it. Get rated.
           </p>
           <p className="mt-5 max-w-2xl text-base leading-7 text-white/68 sm:mt-6 sm:leading-8 sm:text-lg">
-            A black-and-gold launch page for the next social app built to rate the flex, surface
-            the truth, and reward what actually holds up.
+            PHLEXR is where people post and get real attention. Every post gets rated instantly
+            — Flex, Not It, or Fake. Build your profile, grow your following, and see how you
+            rank.
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
