@@ -473,6 +473,27 @@ function Avatar({ src, alt, sizeClass, borderClass = "border-gold/45", imageClas
   );
 }
 
+function PasswordVisibilityIcon({ visible }) {
+  return visible ? (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.8]">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 3l18 18m-7.9-3.2A8.8 8.8 0 0 1 12 18c-5 0-8.8-6-8.8-6a17 17 0 0 1 4.3-4.8m3-1.6A8.9 8.9 0 0 1 12 6c5 0 8.8 6 8.8 6a16.7 16.7 0 0 1-3.6 4.3M9.9 9.9a3 3 0 0 0 4.2 4.2"
+      />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.8]">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.8 12S6.6 6 12 6s9.2 6 9.2 6-3.8 6-9.2 6S2.8 12 2.8 12Z"
+      />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 function ShareIcon({ className = "h-4 w-4" }) {
   return (
     <svg
@@ -906,6 +927,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [isAuthPasswordVisible, setIsAuthPasswordVisible] = useState(false);
   const [signupCaptchaToken, setSignupCaptchaToken] = useState("");
   const [signupCaptchaResetCount, setSignupCaptchaResetCount] = useState(0);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -3412,13 +3434,23 @@ export default function AppShellPage({ initialHasAccess = false }) {
                         </label>
                         <label className="grid gap-2">
                           <span className="text-sm font-medium text-white/72">Password</span>
-                          <input
-                            type="password"
-                            value={authForm.password}
-                            onChange={(event) => handleAuthFieldChange("password", event.target.value)}
-                            placeholder="........"
-                            className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
-                          />
+                          <div className="relative">
+                            <input
+                              type={isAuthPasswordVisible ? "text" : "password"}
+                              value={authForm.password}
+                              onChange={(event) => handleAuthFieldChange("password", event.target.value)}
+                              placeholder="........"
+                              className="w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 pr-12 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                            />
+                            <button
+                              type="button"
+                              aria-label={isAuthPasswordVisible ? "Hide password" : "Show password"}
+                              onClick={() => setIsAuthPasswordVisible((currentValue) => !currentValue)}
+                              className="absolute inset-y-0 right-0 inline-flex items-center justify-center px-4 text-white/45 transition hover:text-gold"
+                            >
+                              <PasswordVisibilityIcon visible={isAuthPasswordVisible} />
+                            </button>
+                          </div>
                         </label>
                         <label className="grid gap-2">
                           <span className="text-sm font-medium text-white/72">Birthdate</span>
