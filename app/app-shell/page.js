@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PhlexrImageLogo, PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 import {
   canUseSupabaseAuth,
   fetchProfileRow,
@@ -2254,9 +2255,12 @@ export default function AppShellPage() {
                     <button
                       type="button"
                       onClick={() => navigateTo("feed")}
-                      className="font-display text-2xl tracking-[0.22em] text-gold"
+                      className="inline-flex w-fit items-center"
+                      aria-label="PHLEXR"
                     >
-                      PHLEXR
+                      <PhlexrWordmark
+                        textClassName="font-display text-2xl tracking-[0.22em] text-gold"
+                      />
                     </button>
                     <div className="flex items-center gap-3">
                       <button
@@ -2386,17 +2390,7 @@ export default function AppShellPage() {
           ) : (
             <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] p-5 sm:p-6">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <a
-                  href="/"
-                  aria-label="PHLEXR"
-                  className="inline-flex w-fit items-center"
-                >
-                  <img
-                    src="/phlexr-logo.png"
-                    alt="PHLEXR"
-                    className="h-10 w-auto sm:h-12"
-                  />
-                </a>
+                <PhlexrImageLogo href="/" />
                 <div className="flex flex-wrap gap-3">
                   <PremiumBadge tone={getStatusTone(selectedMembership.badge)}>
                     {selectedMembership.name} membership

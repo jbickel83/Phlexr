@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 
 const featureCards = [
   {
@@ -115,9 +116,10 @@ export default async function Page() {
 
       <header className="sticky top-0 z-40 border-b border-white/10 bg-obsidian/88 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-12">
-          <a href="#top" className="font-display text-lg tracking-[0.26em] text-gold sm:text-xl sm:tracking-[0.35em]">
-            PHLEXR
-          </a>
+          <PhlexrWordmark
+            href="#top"
+            textClassName="font-display text-lg tracking-[0.26em] text-gold sm:text-xl sm:tracking-[0.35em]"
+          />
 
           <nav aria-label="Primary navigation" className="hidden items-center gap-8 text-sm text-white/70 md:flex">
             <a href="#features" className="transition hover:text-gold">
@@ -148,8 +150,11 @@ export default async function Page() {
             Premium social credibility
           </div>
 
-          <h1 className="mt-6 max-w-3xl text-balance font-display text-4xl leading-none text-white sm:mt-8 sm:text-6xl lg:text-7xl">
-            PHLEXR
+          <h1 className="mt-6 max-w-3xl text-balance text-4xl leading-none text-white sm:mt-8 sm:text-6xl lg:text-7xl">
+            <PhlexrWordmark
+              textClassName="font-display text-white"
+              tmClassName="text-white/82"
+            />
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-gold sm:mt-5 sm:text-2xl">
             Post it. Prove it. Get rated.
@@ -452,7 +457,9 @@ export default async function Page() {
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-12">
           <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
             <div>
-              <p className="font-display text-2xl tracking-[0.22em] text-gold">PHLEXR</p>
+              <PhlexrWordmark
+                textClassName="font-display text-2xl tracking-[0.22em] text-gold"
+              />
               <p className="mt-3 text-sm text-white/58">Post it. Prove it. Get rated.</p>
             </div>
 

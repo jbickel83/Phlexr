@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { legalPageOrder, legalPages } from "@/lib/legal-content";
+import { PhlexrImageLogo } from "@/components/brand/PhlexrLogo";
 
 export default function PolicyPage({ slug }) {
   const page = legalPages[slug];
@@ -15,9 +16,7 @@ export default function PolicyPage({ slug }) {
       <div className="mx-auto max-w-5xl">
         <div className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] p-5 sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <Link href="/" className="inline-flex w-fit items-center" aria-label="PHLEXR">
-              <img src="/phlexr-logo.png" alt="PHLEXR" className="h-10 w-auto sm:h-12" />
-            </Link>
+            <PhlexrImageLogo href="/" />
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/app-shell"

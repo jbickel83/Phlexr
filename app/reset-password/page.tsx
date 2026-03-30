@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { canUseSupabaseAuth, sendPasswordResetEmail } from "@/lib/supabase-auth";
+import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -49,7 +50,7 @@ export default function ResetPasswordPage() {
     <main className="min-h-screen bg-obsidian px-4 py-16 text-ivory sm:px-6 lg:px-8">
       <div className="mx-auto max-w-xl">
         <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.95)] sm:p-8">
-          <p className="text-xs uppercase tracking-[0.24em] text-gold/75">PHLEXR</p>
+          <PhlexrWordmark textClassName="text-xs uppercase tracking-[0.24em] text-gold/75" />
           <h1 className="mt-4 text-3xl font-semibold text-white">Reset password</h1>
           <p className="mt-3 text-sm leading-6 text-white/58">
             Enter your email and we&apos;ll send you a password reset link.
