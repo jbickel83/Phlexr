@@ -6,7 +6,9 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get("code");
   const nextPath = requestUrl.searchParams.get("next");
   const safeNextPath =
-    nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/feed";
+    nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
+      ? nextPath
+      : "/app-shell?confirmed=1";
   const redirectUrl = new URL(safeNextPath, requestUrl.origin);
   let response = NextResponse.redirect(redirectUrl);
 
@@ -32,6 +34,10 @@ export async function GET(request: NextRequest) {
   );
 
   await supabase.auth.exchangeCodeForSession(code);
+
+  if (!nextPath) {
+    await supabase.auth.signOut();
+  }
 
   return response;
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PhlexrImageLogo, PhlexrWordmark } from "@/components/brand/PhlexrLogo";
+import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 import { accountMenuSections } from "@/lib/account-pages";
 import {
   canUseSupabaseAuth,
@@ -1298,6 +1298,23 @@ export default function AppShellPage() {
       window.localStorage.removeItem(FOLLOWING_STORAGE_KEY);
       window.localStorage.removeItem(SEED_VERSION_STORAGE_KEY);
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("confirmed") !== "1") {
+      return;
+    }
+
+    setAuthMode("signin");
+    setAuthError("");
+    setAuthMessage("Email confirmed. Sign in to enter PHLEXR.");
+    url.searchParams.delete("confirmed");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
   }, []);
 
   useEffect(() => {
@@ -2648,7 +2665,11 @@ export default function AppShellPage() {
           ) : (
             <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] p-5 sm:p-6">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <PhlexrImageLogo href="/" />
+                <PhlexrWordmark
+                  href="/"
+                  className="shrink-0"
+                  textClassName="font-display text-lg tracking-[0.26em] text-gold sm:text-xl sm:tracking-[0.35em]"
+                />
                 <div className="flex flex-wrap gap-3">
                   <PremiumBadge
                     tone={getStatusTone(selectedMembership.badge)}
