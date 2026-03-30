@@ -728,6 +728,7 @@ export default function AppShellPage() {
   const [boostMenuPostId, setBoostMenuPostId] = useState(null);
   const [shareFeedback, setShareFeedback] = useState({});
   const [activeSharePostId, setActiveSharePostId] = useState(null);
+  const [shareSheetView, setShareSheetView] = useState("primary");
   const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [notifications, setNotifications] = useState(seededNotifications);
@@ -1847,6 +1848,7 @@ export default function AppShellPage() {
 
   async function handleSharePost(post) {
     setActiveSharePostId(post.id);
+    setShareSheetView("primary");
     return;
 
     const shareUrl = `https://phlexr.com/app-shell?post=${post.id}`;
@@ -1897,6 +1899,29 @@ export default function AppShellPage() {
 
   function closeShareSheet() {
     setActiveSharePostId(null);
+    setShareSheetView("primary");
+  }
+
+  function canShowTextShareOption() {
+    if (typeof navigator === "undefined") {
+      return false;
+    }
+
+    const userAgent = navigator.userAgent || "";
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent) || navigator.maxTouchPoints > 0;
+  }
+
+  async function copyShareLinkSilently(shareUrl) {
+    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+      return false;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async function handleCopyShareLink() {
@@ -1953,7 +1978,15 @@ export default function AppShellPage() {
     }
   }
 
-  function handleExternalShare(destination) {
+  function openMoreShareSheet() {
+    setShareSheetView("more");
+  }
+
+  function openPrimaryShareSheet() {
+    setShareSheetView("primary");
+  }
+
+  async function handleExternalShare(destination) {
     const activeSharePost = posts.find((post) => post.id === activeSharePostId);
 
     if (!activeSharePost || typeof window === "undefined") {
@@ -1964,11 +1997,23 @@ export default function AppShellPage() {
     const shareText = `${activeSharePost.displayName} · ${activeSharePost.caption || "PHLEXR post"}`;
     const encodedUrl = encodeURIComponent(shareUrl);
     const encodedText = encodeURIComponent(shareText);
+    const copiedForDestination = await copyShareLinkSilently(shareUrl);
+    const isMobileDevice = canShowTextShareOption();
     const shareDestinations = {
+      text: `sms:?&body=${encodedText}%0A%0A${encodedUrl}`,
+      messenger: isMobileDevice
+        ? `fb-messenger://share/?link=${encodedUrl}`
+        : "https://www.messenger.com/",
+      reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedText}`,
+      instagram: "https://www.instagram.com/",
       gmail: `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent("PHLEXR post")}&body=${encodedText}%0A%0A${encodedUrl}`,
       email: `mailto:?subject=${encodeURIComponent("PHLEXR post")}&body=${encodedText}%0A%0A${encodedUrl}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
       x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      snapchat: "https://www.snapchat.com/",
+      drive: "https://drive.google.com/drive/my-drive",
+      discord: "https://discord.com/channels/@me",
+      pinterest: `https://www.pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedText}`,
     };
 
     const destinationUrl = shareDestinations[destination];
@@ -1978,7 +2023,13 @@ export default function AppShellPage() {
     }
 
     window.open(destinationUrl, "_blank", "noopener,noreferrer");
-    setTimedShareFeedback(activeSharePost.id, "Share ready");
+    setTimedShareFeedback(
+      activeSharePost.id,
+      copiedForDestination &&
+        ["instagram", "messenger", "snapchat", "drive", "discord"].includes(destination)
+        ? "Link copied and share opened"
+        : "Share ready"
+    );
     closeShareSheet();
   }
 
@@ -3534,9 +3585,13 @@ export default function AppShellPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-gold/75">Share</p>
-                <p className="mt-3 text-2xl font-semibold text-white">Share this flex</p>
+                <p className="mt-3 text-2xl font-semibold text-white">
+                  {shareSheetView === "primary" ? "Share this flex" : "More ways to share"}
+                </p>
                 <p className="mt-3 text-sm leading-6 text-white/58">
-                  Choose where to send it without leaving PHLEXR first.
+                  {shareSheetView === "primary"
+                    ? "Choose where to send it without leaving PHLEXR first."
+                    : "Open another destination without losing your place in PHLEXR."}
                 </p>
               </div>
               <button
@@ -3548,51 +3603,130 @@ export default function AppShellPage() {
               </button>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleCopyShareLink}
-                className="rounded-[1.35rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-4 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b]"
-              >
-                Copy link
-              </button>
-              {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
-                <button
-                  type="button"
-                  onClick={handleNativeShare}
-                  className="rounded-[1.35rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-4 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b]"
-                >
-                  Native share
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => handleExternalShare("gmail")}
-                className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
-              >
-                Gmail
-              </button>
-              <button
-                type="button"
-                onClick={() => handleExternalShare("email")}
-                className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
-              >
-                Email
-              </button>
-              <button
-                type="button"
-                onClick={() => handleExternalShare("facebook")}
-                className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
-              >
-                Facebook
-              </button>
-              <button
-                type="button"
-                onClick={() => handleExternalShare("x")}
-                className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
-              >
-                X
-              </button>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {shareSheetView === "primary" ? (
+                <>
+                  {canShowTextShareOption() ? (
+                    <button
+                      type="button"
+                      onClick={() => handleExternalShare("text")}
+                      className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                    >
+                      Text
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("messenger")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Messenger
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("reddit")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Reddit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("instagram")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Instagram
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("gmail")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Gmail
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("email")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("facebook")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Facebook
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("x")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    X
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyShareLink}
+                    className="rounded-[1.35rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-4 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b]"
+                  >
+                    Copy link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openMoreShareSheet}
+                    className="rounded-[1.35rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-4 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b]"
+                  >
+                    ⋯ More
+                  </button>
+                  {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
+                    <button
+                      type="button"
+                      onClick={handleNativeShare}
+                      className="rounded-[1.35rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-4 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b]"
+                    >
+                      Native share
+                    </button>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={openPrimaryShareSheet}
+                    className="rounded-[1.35rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-4 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b]"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("snapchat")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Snapchat
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("drive")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Drive
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("discord")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Discord
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExternalShare("pinterest")}
+                    className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                  >
+                    Pinterest
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
