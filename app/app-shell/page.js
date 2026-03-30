@@ -673,7 +673,7 @@ function deriveIsAdult(birthdate) {
     return null;
   }
 
-  const birth = new Date(birthdate);
+  const birth = parseBirthdateValue(birthdate);
   if (Number.isNaN(birth.getTime())) {
     return null;
   }
@@ -686,6 +686,32 @@ function deriveIsAdult(birthdate) {
   }
 
   return age >= 18;
+}
+
+function parseBirthdateValue(value) {
+  const normalizedValue = String(value || "").trim();
+  const typedDateMatch = normalizedValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+  if (typedDateMatch) {
+    const [, month, day, year] = typedDateMatch;
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
+  return new Date(normalizedValue);
+}
+
+function formatBirthdateInput(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
+
+  if (digits.length <= 2) {
+    return digits;
+  }
+
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  }
+
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
 function moderateComment(text, isAdult) {
@@ -1656,7 +1682,7 @@ export default function AppShellPage() {
   }
 
   function handleBirthdateChange(event) {
-    const birthdate = event.target.value;
+    const birthdate = formatBirthdateInput(event.target.value);
     setSafetyProfile({
       birthdate,
       isAdult: deriveIsAdult(birthdate),
@@ -2698,10 +2724,14 @@ export default function AppShellPage() {
                         <label className="grid gap-2">
                           <span className="text-sm font-medium text-white/72">Birthdate</span>
                           <input
-                            type="date"
+                            type="text"
                             value={safetyProfile.birthdate}
                             onChange={handleBirthdateChange}
-                            className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition focus:border-gold/35"
+                            inputMode="numeric"
+                            autoComplete="bday"
+                            maxLength={10}
+                            placeholder="MM/DD/YYYY"
+                            className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                           />
                           <span className="text-xs text-white/45">
                             {safetyProfile.isAdult === null

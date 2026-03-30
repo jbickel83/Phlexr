@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 function TrademarkMark({ className = "" }) {
   return (
@@ -40,13 +43,29 @@ export function PhlexrWordmark({
 export function PhlexrImageLogo({
   href = undefined,
   imageClassName = "h-10 w-auto sm:h-12",
+  fallbackTextClassName = "font-display text-lg tracking-[0.26em] text-gold sm:text-xl sm:tracking-[0.35em]",
   tmClassName = "",
   ariaLabel = "PHLEXR",
 }) {
+  const [hasImageError, setHasImageError] = useState(false);
   const content = (
     <span className="relative inline-flex w-fit items-start">
-      <img src="/phlexr-logo.png" alt="PHLEXR" className={imageClassName} />
-      <TrademarkMark className={tmClassName} />
+      {hasImageError ? (
+        <>
+          <span className={fallbackTextClassName}>PHLEXR</span>
+          <TrademarkMark className={tmClassName} />
+        </>
+      ) : (
+        <>
+          <img
+            src="/phlexr-logo.png"
+            alt="PHLEXR"
+            className={imageClassName}
+            onError={() => setHasImageError(true)}
+          />
+          <TrademarkMark className={tmClassName} />
+        </>
+      )}
     </span>
   );
 
