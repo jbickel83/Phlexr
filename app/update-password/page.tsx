@@ -23,8 +23,26 @@ export default function UpdatePasswordPage() {
 
     async function prepareRecoverySession() {
       const url = new URL(window.location.href);
+      const tokenHash = url.searchParams.get("token_hash");
+      const tokenType = url.searchParams.get("type");
       const queryAccessToken = url.searchParams.get("access_token");
       const queryRefreshToken = url.searchParams.get("refresh_token");
+
+      if (tokenHash && tokenType === "recovery") {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+
+        if (!active) {
+          return;
+        }
+
+        if (verifyError) {
+          setError(verifyError.message);
+          return;
+        }
+      }
 
       if (queryAccessToken && queryRefreshToken) {
         const { error: querySessionError } = await supabase.auth.setSession({
