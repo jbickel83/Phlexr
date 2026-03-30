@@ -2340,7 +2340,6 @@ export default function AppShellPage({ initialHasAccess = false }) {
     }
 
     setAuthLoading(true);
-    setIsAuthInitializing(true);
     setAuthMode("signin");
     setAuthError("");
     setAuthMessage("");
@@ -2357,13 +2356,11 @@ export default function AppShellPage({ initialHasAccess = false }) {
             ? "Invalid email or password. If you just created your account, confirm your email first or reset your password."
             : error.message
         );
-        setIsAuthInitializing(false);
         return;
       }
 
       if (!data?.session) {
         setAuthError("Unable to start your session. Try again.");
-        setIsAuthInitializing(false);
         return;
       }
 
@@ -2371,7 +2368,6 @@ export default function AppShellPage({ initialHasAccess = false }) {
       if (userError || !userData?.user) {
         await resetToSignedOutState({ clearBrowserSession: true, authMode: "signin" });
         setAuthError(userError?.message || "Unable to verify your session. Try again.");
-        setIsAuthInitializing(false);
         return;
       }
 
@@ -2382,17 +2378,15 @@ export default function AppShellPage({ initialHasAccess = false }) {
       setSelectedProfileUsername(optimisticProfile.username);
       setHasEnteredApp(true);
       await hydrateCurrentUserFromSession(data.session);
-      setIsAuthInitializing(false);
 
       if (typeof window !== "undefined" && window.location.pathname !== "/feed") {
         window.history.replaceState({}, "", "/feed");
       }
-    } catch (error) {
-      setIsAuthInitializing(false);
-      setAuthError(error instanceof Error ? error.message : "Unable to sign in right now.");
-    } finally {
-      setAuthLoading(false);
-    }
+      } catch (error) {
+        setAuthError(error instanceof Error ? error.message : "Unable to sign in right now.");
+      } finally {
+        setAuthLoading(false);
+      }
   }
 
   async function handleSignOut() {
@@ -3393,7 +3387,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
             >
               <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5">
-                  {isAuthInitializing && authMode !== "check-email" ? (
+                  {initialHasAccess && isAuthInitializing && authMode !== "check-email" ? (
                     <div className="flex min-h-[27rem] flex-col justify-center">
                       <p className="text-xs uppercase tracking-[0.22em] text-gold/75">
                         Restoring session
