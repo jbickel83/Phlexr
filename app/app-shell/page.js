@@ -1597,12 +1597,7 @@ export default function AppShellPage() {
               return;
             }
 
-            setHasEnteredApp(false);
-            setCurrentView("feed");
-            setSelectedMembershipId("free");
-            setSelectedProfileUsername("");
-            setCurrentUserProfile(emptyAuthenticatedUserProfile);
-            setProfileDraft(emptyAuthenticatedUserProfile);
+            await resetToSignedOutState({ authMode: "signin" });
             setIsAuthInitializing(false);
             return;
           }
@@ -1619,13 +1614,8 @@ export default function AppShellPage() {
         }
 
         if (!userData?.user) {
-          setSelectedMembershipId("free");
-          setSelectedProfileUsername("");
-          setCurrentUserProfile(emptyAuthenticatedUserProfile);
-          setProfileDraft(emptyAuthenticatedUserProfile);
-          setHasEnteredApp(false);
+          await resetToSignedOutState({ clearBrowserSession: true });
           setIsAuthInitializing(false);
-          normalizeLoggedOutRoute();
           return;
         }
 
@@ -1647,26 +1637,16 @@ export default function AppShellPage() {
           setHasEnteredApp(true);
           setIsAuthInitializing(false);
         } else {
-          setSelectedMembershipId("free");
-          setSelectedProfileUsername("");
-          setCurrentUserProfile(emptyAuthenticatedUserProfile);
-          setProfileDraft(emptyAuthenticatedUserProfile);
-          setHasEnteredApp(false);
+          await resetToSignedOutState({ clearBrowserSession: true });
           setIsAuthInitializing(false);
-          normalizeLoggedOutRoute();
         }
       } catch (error) {
         if (!isMounted) {
           return;
         }
 
-        setSelectedMembershipId("free");
-        setSelectedProfileUsername("");
-        setCurrentUserProfile(emptyAuthenticatedUserProfile);
-        setProfileDraft(emptyAuthenticatedUserProfile);
-        setHasEnteredApp(false);
+        await resetToSignedOutState({ clearBrowserSession: true });
         setIsAuthInitializing(false);
-        normalizeLoggedOutRoute();
         setAuthError(error instanceof Error ? error.message : "Unable to initialize auth.");
       }
     }
@@ -1675,12 +1655,34 @@ export default function AppShellPage() {
 
     const {
       data: { subscription },
-    } = subscribeToSupabaseAuthChanges(async (_event, session) => {
+    } = subscribeToSupabaseAuthChanges(async (event, session) => {
       if (!isMounted) {
         return;
       }
 
+      if (event === "INITIAL_SESSION") {
+        return;
+      }
+
       if (session) {
+        const { data: userData, error: userError } = await getCurrentSupabaseUser();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (userError) {
+          setAuthError(userError.message);
+          setIsAuthInitializing(false);
+          return;
+        }
+
+        if (!userData?.user) {
+          await resetToSignedOutState({ clearBrowserSession: true });
+          setIsAuthInitializing(false);
+          return;
+        }
+
         const optimisticProfile = buildOptimisticProfileFromAuthUser(session.user);
         setCurrentUserProfile(optimisticProfile);
         setProfileDraft(optimisticProfile);
@@ -1690,15 +1692,8 @@ export default function AppShellPage() {
         setAuthError("");
         void hydrateCurrentUserFromSession(session);
       } else {
-        setHasEnteredApp(false);
-        setCurrentView("feed");
-        setSelectedMembershipId("free");
-        setSelectedProfileUsername("");
-        setCurrentUserProfile(emptyAuthenticatedUserProfile);
-        setProfileDraft(emptyAuthenticatedUserProfile);
-        setAuthMode("signup");
+        await resetToSignedOutState({ authMode: "signup" });
         setIsAuthInitializing(false);
-        normalizeLoggedOutRoute();
       }
     });
 
@@ -1984,6 +1979,21 @@ export default function AppShellPage() {
     if (window.location.pathname === "/feed") {
       window.history.replaceState({}, "", "/app-shell");
     }
+  }
+
+  async function resetToSignedOutState({ clearBrowserSession = false, authMode = "signup" } = {}) {
+    if (clearBrowserSession) {
+      await clearSupabaseBrowserSession();
+    }
+
+    setHasEnteredApp(false);
+    setCurrentView("feed");
+    setSelectedMembershipId("free");
+    setSelectedProfileUsername("");
+    setCurrentUserProfile(emptyAuthenticatedUserProfile);
+    setProfileDraft(emptyAuthenticatedUserProfile);
+    setAuthMode(authMode);
+    normalizeLoggedOutRoute();
   }
 
   async function handleMarkNotificationRead(notificationId) {
@@ -2331,6 +2341,14 @@ export default function AppShellPage() {
 
       if (!data?.session) {
         setAuthError("Unable to start your session. Try again.");
+        setIsAuthInitializing(false);
+        return;
+      }
+
+      const { data: userData, error: userError } = await getCurrentSupabaseUser();
+      if (userError || !userData?.user) {
+        await resetToSignedOutState({ clearBrowserSession: true, authMode: "signin" });
+        setAuthError(userError?.message || "Unable to verify your session. Try again.");
         setIsAuthInitializing(false);
         return;
       }
