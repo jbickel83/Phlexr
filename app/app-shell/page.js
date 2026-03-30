@@ -7,6 +7,7 @@ import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 import { accountMenuSections } from "@/lib/account-pages";
 import {
   canUseSupabaseAuth,
+  clearSupabaseBrowserSession,
   createCommentRow,
   createFollowRow,
   createNotification,
@@ -1470,16 +1471,38 @@ export default function AppShellPage() {
       return;
     }
 
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("confirmed") !== "1") {
-      return;
+    let active = true;
+
+    async function handleConfirmedReturn() {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("confirmed") !== "1") {
+        return;
+      }
+
+      await clearSupabaseBrowserSession();
+
+      if (!active) {
+        return;
+      }
+
+      setHasEnteredApp(false);
+      setCurrentView("feed");
+      setSelectedMembershipId("free");
+      setSelectedProfileUsername(demoCurrentUserProfile.username);
+      setCurrentUserProfile(demoCurrentUserProfile);
+      setProfileDraft(demoCurrentUserProfile);
+      setAuthMode("signin");
+      setAuthError("");
+      setAuthMessage("Email confirmed. Sign in to enter PHLEXR.");
+      url.searchParams.delete("confirmed");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     }
 
-    setAuthMode("signin");
-    setAuthError("");
-    setAuthMessage("Email confirmed. Sign in to enter PHLEXR.");
-    url.searchParams.delete("confirmed");
-    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    void handleConfirmedReturn();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -1509,6 +1532,20 @@ export default function AppShellPage() {
 
     async function initializeAuth() {
       try {
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href);
+          if (url.searchParams.get("confirmed") === "1") {
+            await clearSupabaseBrowserSession();
+
+            if (!isMounted) {
+              return;
+            }
+
+            setHasEnteredApp(false);
+            return;
+          }
+        }
+
         const { data, error } = await getCurrentSupabaseSession();
 
         if (!isMounted) {
