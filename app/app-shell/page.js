@@ -1618,6 +1618,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
           }
         }
 
+        if (!initialHasAccess) {
+          await resetToSignedOutState({ authMode: "signin" });
+          setIsAuthInitializing(false);
+          return;
+        }
+
         const { data: userData, error: userError } = await getCurrentSupabaseUser();
 
         if (!isMounted) {
@@ -1667,6 +1673,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
     }
 
     initializeAuth();
+
+    if (!initialHasAccess) {
+      return () => {
+        isMounted = false;
+      };
+    }
 
       const {
         data: { subscription },
@@ -2344,6 +2356,11 @@ export default function AppShellPage({ initialHasAccess = false }) {
         return;
       }
 
+      if (typeof window !== "undefined") {
+        window.location.assign("/feed");
+        return;
+      }
+
       const optimisticProfile = buildOptimisticProfileFromAuthUser(data.session.user);
       setCurrentView("feed");
       setCurrentUserProfile(optimisticProfile);
@@ -2352,14 +2369,11 @@ export default function AppShellPage({ initialHasAccess = false }) {
       setHasEnteredApp(true);
       void hydrateCurrentUserFromSession(data.session);
 
-      if (typeof window !== "undefined" && window.location.pathname !== "/feed") {
-        window.history.replaceState({}, "", "/feed");
-      }
-      } catch (error) {
-        setAuthError(error instanceof Error ? error.message : "Unable to sign in right now.");
-      } finally {
-        setAuthLoading(false);
-      }
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Unable to sign in right now.");
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
   async function handleSignOut() {
