@@ -2241,6 +2241,12 @@ export default function AppShellPage() {
                           Continue with Apple
                         </button>
                         <Link
+                          href="/recover-account"
+                          className="px-1 text-sm text-white/58 transition hover:text-gold"
+                        >
+                          Forgot email / username?
+                        </Link>
+                        <Link
                           href="/reset-password"
                           className="px-1 text-sm text-white/58 transition hover:text-gold"
                         >
