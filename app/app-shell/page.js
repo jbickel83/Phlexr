@@ -1318,6 +1318,23 @@ export default function AppShellPage() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("signedout") !== "1") {
+      return;
+    }
+
+    setAuthMode("signin");
+    setAuthError("");
+    setAuthMessage("Signed out.");
+    url.searchParams.delete("signedout");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
+
+  useEffect(() => {
     if (!supabaseReady) {
       setHasEnteredApp(false);
       return;
@@ -1868,7 +1885,21 @@ export default function AppShellPage() {
       ...currentForm,
       password: "",
     }));
+
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(PROFILE_STORAGE_KEY);
+      window.localStorage.removeItem(MEMBERSHIP_STORAGE_KEY);
+      window.localStorage.removeItem(FOLLOWING_STORAGE_KEY);
+      window.history.replaceState({}, "", "/app-shell?signedout=1");
+    }
+
+    setAuthMode("signin");
+    setAuthMessage("Signed out.");
     setAuthLoading(false);
+
+    if (typeof window !== "undefined") {
+      window.location.assign("/auth/signout");
+    }
   }
 
   async function handleAddComment(postId) {
