@@ -7,18 +7,32 @@ import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 import { accountMenuSections } from "@/lib/account-pages";
 import {
   canUseSupabaseAuth,
+  createCommentRow,
+  createFollowRow,
   createNotification,
+  createPostRow,
+  deleteCommentRow,
+  deleteFollowRow,
+  deletePostRow,
+  fetchCommentsForPosts,
+  fetchFeedPosts,
   fetchNotifications,
+  fetchFollowingRows,
   fetchProfileByUsername,
   fetchProfileRow,
+  fetchVoteRows,
   getCurrentSupabaseSession,
   markAllNotificationsAsRead,
   markNotificationAsRead,
+  reportCommentRow,
   signInWithEmail,
   signOutFromSupabase,
   signUpWithEmail,
   subscribeToNotifications,
   subscribeToSupabaseAuthChanges,
+  updatePostRow,
+  updateProfileRow,
+  upsertVoteRow,
 } from "@/lib/supabase-auth";
 
 const shellNav = [
@@ -860,11 +874,14 @@ export default function AppShellPage() {
       if (!accumulator[post.username]) {
         const profile = post.owner
           ? currentUserProfile
-          : profileDirectory[post.username] || {
-              avatar: DEFAULT_PROFILE_AVATAR,
-              location: "",
-              bio: "",
-            };
+          : profileDirectory[post.username] ||
+            (isFounderUsername(post.username)
+              ? demoCurrentUserProfile
+              : {
+                  avatar: DEFAULT_PROFILE_AVATAR,
+                  location: "",
+                  bio: "",
+                });
         accumulator[post.username] = {
           username: post.username,
           displayName: post.owner ? currentUserProfile.displayName : post.displayName,
@@ -938,7 +955,9 @@ export default function AppShellPage() {
     ? getSeededSocialCount(selectedProfile.username, 140, 780) + currentUserFollowing.length
     : getSeededSocialCount(selectedProfile.username, 140, 780);
   const leaderboardPreview = profiles.slice(0, 5);
-  const currentUserPostCount = posts.filter((post) => post.username === currentUser.username).length;
+  const currentUserPostCount = posts.filter((post) =>
+    currentUserProfile.id ? post.userId === currentUserProfile.id : post.username === currentUser.username
+  ).length;
   const sortedFeedPosts = useMemo(() => {
     return [...posts].sort((left, right) => {
       const leftBoosted = left.boosted ? 1 : 0;
@@ -1120,6 +1139,42 @@ export default function AppShellPage() {
     };
   }
 
+  function mapPostRow(postRow, userId) {
+    return {
+      id: postRow.id,
+      userId: postRow.user_id,
+      username: postRow.username,
+      displayName: postRow.display_name,
+      badge: normalizeStatus(postRow.badge),
+      image: postRow.image_url,
+      caption: postRow.caption,
+      category: postRow.category,
+      score: Number(postRow.score),
+      wouldFlexPercent: postRow.would_flex_percent,
+      fakeAiPercent: postRow.fake_ai_percent,
+      createdAt: postRow.created_at,
+      owner: postRow.user_id === userId,
+      boosted: Boolean(postRow.boosted),
+      boostLevel: postRow.boost_level,
+      boostedAt: postRow.boosted_at,
+    };
+  }
+
+  function mapCommentRow(commentRow) {
+    return {
+      id: commentRow.id,
+      postId: commentRow.post_id,
+      userId: commentRow.user_id,
+      username: commentRow.username,
+      displayName: commentRow.display_name,
+      text: commentRow.text,
+      createdAt: commentRow.created_at,
+      isReported: Boolean(commentRow.is_reported),
+      reportReason: commentRow.report_reason || undefined,
+      hidden: Boolean(commentRow.hidden),
+    };
+  }
+
   async function loadNotifications(recipientUserId) {
     if (!supabaseReady || !recipientUserId) {
       setNotifications([]);
@@ -1219,42 +1274,12 @@ export default function AppShellPage() {
         window.localStorage.removeItem(PROFILE_STORAGE_KEY);
       }
 
-      const savedPosts = window.localStorage.getItem(POSTS_STORAGE_KEY);
-      if (savedPosts) {
-        const parsedPosts = JSON.parse(savedPosts);
-        if (Array.isArray(parsedPosts) && parsedPosts.length > 0) {
-          setPosts(
-            parsedPosts.map((post) => ({
-              ...post,
-              badge: normalizeStatus(post.badge),
-            }))
-          );
-        }
-      }
-
-      const savedVotes = window.localStorage.getItem(VOTED_POSTS_STORAGE_KEY);
-      if (savedVotes) {
-        const parsedVotes = JSON.parse(savedVotes);
-        if (parsedVotes && typeof parsedVotes === "object") {
-          setVotedPosts(parsedVotes);
-        }
-      }
-
-      const savedComments = window.localStorage.getItem(COMMENTS_STORAGE_KEY);
-      if (savedComments) {
-        const parsedComments = JSON.parse(savedComments);
-        if (Array.isArray(parsedComments)) {
-          setComments(parsedComments);
-        }
-      } else {
-        setComments(seededComments);
-      }
-
       const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
       let restoredUsername = demoCurrentUserProfile.username;
+      let shouldUseDemoStorage = true;
       if (savedProfile) {
         const parsedProfile = JSON.parse(savedProfile);
-        if (parsedProfile && typeof parsedProfile === "object") {
+        if (parsedProfile && typeof parsedProfile === "object" && !parsedProfile.id) {
           const mergedBaseProfile = getProfileBase(Boolean(parsedProfile.id));
           const mergedProfile = {
             ...mergedBaseProfile,
@@ -1274,6 +1299,57 @@ export default function AppShellPage() {
         setProfileDraft(demoCurrentUserProfile);
         setSelectedProfileUsername(demoCurrentUserProfile.username);
         setHasEnteredApp(false);
+      }
+
+      if (savedProfile) {
+        const parsedProfile = JSON.parse(savedProfile);
+        if (parsedProfile?.id) {
+          shouldUseDemoStorage = false;
+          window.localStorage.removeItem(PROFILE_STORAGE_KEY);
+          window.localStorage.removeItem(MEMBERSHIP_STORAGE_KEY);
+          window.localStorage.removeItem(FOLLOWING_STORAGE_KEY);
+          window.localStorage.removeItem(POSTS_STORAGE_KEY);
+          window.localStorage.removeItem(COMMENTS_STORAGE_KEY);
+          window.localStorage.removeItem(VOTED_POSTS_STORAGE_KEY);
+        }
+      }
+
+      if (shouldUseDemoStorage) {
+        const savedPosts = window.localStorage.getItem(POSTS_STORAGE_KEY);
+        if (savedPosts) {
+          const parsedPosts = JSON.parse(savedPosts);
+          if (Array.isArray(parsedPosts) && parsedPosts.length > 0) {
+            setPosts(
+              parsedPosts.map((post) => ({
+                ...post,
+                badge: normalizeStatus(post.badge),
+              }))
+            );
+          }
+        }
+
+        const savedVotes = window.localStorage.getItem(VOTED_POSTS_STORAGE_KEY);
+        if (savedVotes) {
+          const parsedVotes = JSON.parse(savedVotes);
+          if (parsedVotes && typeof parsedVotes === "object") {
+            setVotedPosts(parsedVotes);
+          }
+        }
+
+        const savedComments = window.localStorage.getItem(COMMENTS_STORAGE_KEY);
+        if (savedComments) {
+          const parsedComments = JSON.parse(savedComments);
+          if (Array.isArray(parsedComments)) {
+            setComments(parsedComments);
+          }
+        } else {
+          setComments(seededComments);
+        }
+      } else {
+        setPosts([]);
+        setComments([]);
+        setVotedPosts({});
+        setCurrentUserFollowing([]);
       }
 
       const savedSafety = window.localStorage.getItem(SAFETY_STORAGE_KEY);
@@ -1298,7 +1374,7 @@ export default function AppShellPage() {
       }
 
       const savedFollowing = window.localStorage.getItem(FOLLOWING_STORAGE_KEY);
-      if (savedFollowing) {
+      if (shouldUseDemoStorage && savedFollowing) {
         const parsedFollowing = JSON.parse(savedFollowing);
         if (Array.isArray(parsedFollowing)) {
           setCurrentUserFollowing(parsedFollowing);
@@ -1448,31 +1524,93 @@ export default function AppShellPage() {
   }, [currentUserProfile.id, supabaseReady]);
 
   useEffect(() => {
+    if (!supabaseReady || !currentUserProfile.id) {
+      return;
+    }
+
+    let active = true;
+
+    async function loadAuthenticatedAppState() {
+      const [{ data: postRows, error: postsError }, { data: followingRows }, { data: voteRows }] =
+        await Promise.all([
+          fetchFeedPosts(),
+          fetchFollowingRows(currentUserProfile.id),
+          fetchVoteRows(currentUserProfile.id),
+        ]);
+
+      if (!active || postsError) {
+        return;
+      }
+
+      const mappedPosts = (postRows || []).map((postRow) => mapPostRow(postRow, currentUserProfile.id));
+      const postIds = mappedPosts.map((post) => post.id);
+      const { data: commentRows } = await fetchCommentsForPosts(postIds);
+
+      if (!active) {
+        return;
+      }
+
+      setPosts(mappedPosts);
+      setComments((commentRows || []).map(mapCommentRow));
+      setCurrentUserFollowing((followingRows || []).map((row) => row.following_username));
+      setVotedPosts(
+        (voteRows || []).reduce((accumulator, voteRow) => {
+          accumulator[voteRow.post_id] = voteRow.vote_type;
+          return accumulator;
+        }, {})
+      );
+    }
+
+    loadAuthenticatedAppState();
+
+    return () => {
+      active = false;
+    };
+  }, [currentUserProfile.id, supabaseReady]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+
+    if (currentUserProfile.id) {
       return;
     }
 
     window.localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(posts));
-  }, [posts]);
+  }, [currentUserProfile.id, posts]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+
+    if (currentUserProfile.id) {
       return;
     }
 
     window.localStorage.setItem(VOTED_POSTS_STORAGE_KEY, JSON.stringify(votedPosts));
-  }, [votedPosts]);
+  }, [currentUserProfile.id, votedPosts]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
+    if (currentUserProfile.id) {
+      return;
+    }
+
     window.localStorage.setItem(COMMENTS_STORAGE_KEY, JSON.stringify(comments));
-  }, [comments]);
+  }, [currentUserProfile.id, comments]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+
+    if (currentUserProfile.id) {
+      setProfileDraft(currentUserProfile);
       return;
     }
 
@@ -1493,6 +1631,10 @@ export default function AppShellPage() {
       return;
     }
 
+    if (currentUserProfile.id) {
+      return;
+    }
+
     if (isFounderUsername(currentUserProfile.username)) {
       window.localStorage.setItem(MEMBERSHIP_STORAGE_KEY, "elite");
       return;
@@ -1506,8 +1648,12 @@ export default function AppShellPage() {
       return;
     }
 
+    if (currentUserProfile.id) {
+      return;
+    }
+
     window.localStorage.setItem(FOLLOWING_STORAGE_KEY, JSON.stringify(currentUserFollowing));
-  }, [currentUserFollowing]);
+  }, [currentUserFollowing, currentUserProfile.id]);
 
   useEffect(() => {
     if (isFounderUsername(currentUserProfile.username) && selectedMembershipId !== "elite") {
@@ -1664,12 +1810,41 @@ export default function AppShellPage() {
       return;
     }
 
-    const targetProfile =
-      profiles.find((profile) => profile.username === username) ||
-      profileDirectory[username] || {
-        username,
-        displayName: username,
-      };
+    if (currentUserProfile.id) {
+      const targetProfileId = await resolveProfileIdByUsername(username);
+
+      if (!targetProfileId) {
+        return;
+      }
+
+      const isAlreadyFollowing = currentUserFollowing.includes(username);
+
+      if (isAlreadyFollowing) {
+        await deleteFollowRow(currentUserProfile.id, targetProfileId);
+        setCurrentUserFollowing((currentFollowing) =>
+          currentFollowing.filter((entry) => entry !== username)
+        );
+        return;
+      }
+
+      const { error } = await createFollowRow({
+        follower_user_id: currentUserProfile.id,
+        follower_username: currentUser.username,
+        following_user_id: targetProfileId,
+        following_username: username,
+      });
+
+      if (error) {
+        return;
+      }
+
+      setCurrentUserFollowing((currentFollowing) => [...currentFollowing, username]);
+      await createRealtimeNotification({
+        recipientUsername: username,
+        type: "follow",
+      });
+      return;
+    }
 
     setCurrentUserFollowing((currentFollowing) => {
       if (currentFollowing.includes(username)) {
@@ -1677,11 +1852,6 @@ export default function AppShellPage() {
       }
 
       return [...currentFollowing, username];
-    });
-
-    await createRealtimeNotification({
-      recipientUsername: username,
-      type: "follow",
     });
   }
 
@@ -1711,20 +1881,69 @@ export default function AppShellPage() {
     }
 
     const targetPost = posts.find((post) => post.id === postId);
+    if (!targetPost) {
+      return;
+    }
+
+    const adjustments = {
+      flex: { score: 0.12, wouldFlexPercent: 3, fakeAiPercent: -1 },
+      notIt: { score: -0.18, wouldFlexPercent: -4, fakeAiPercent: 1 },
+      fakeAi: { score: -0.26, wouldFlexPercent: -6, fakeAiPercent: 4 },
+    };
+    const change = adjustments[voteType];
+
+    if (currentUserProfile.id) {
+      const { error: voteError } = await upsertVoteRow({
+        post_id: postId,
+        voter_user_id: currentUserProfile.id,
+        vote_type: voteType,
+      });
+
+      if (voteError) {
+        return;
+      }
+
+      const { data: updatedPost, error: updateError } = await updatePostRow(postId, {
+        score: Math.max(5.5, Math.min(10, Number((targetPost.score + change.score).toFixed(1)))),
+        would_flex_percent: Math.max(
+          35,
+          Math.min(99, Math.round(targetPost.wouldFlexPercent + change.wouldFlexPercent))
+        ),
+        fake_ai_percent: Math.max(
+          1,
+          Math.min(60, Math.round(targetPost.fakeAiPercent + change.fakeAiPercent))
+        ),
+      });
+
+      if (updateError || !updatedPost) {
+        return;
+      }
+
+      setPosts((currentPosts) =>
+        currentPosts.map((post) =>
+          post.id === postId ? mapPostRow(updatedPost, currentUserProfile.id) : post
+        )
+      );
+      setVotedPosts((currentVotes) => ({
+        ...currentVotes,
+        [postId]: voteType,
+      }));
+
+      if (targetPost.username && targetPost.username !== currentUser.username) {
+        await createRealtimeNotification({
+          recipientUsername: targetPost.username,
+          type: "vote",
+          postId,
+        });
+      }
+      return;
+    }
 
     setPosts((currentPosts) =>
       currentPosts.map((post) => {
         if (post.id !== postId) {
           return post;
         }
-
-        const adjustments = {
-          flex: { score: 0.12, wouldFlexPercent: 3, fakeAiPercent: -1 },
-          notIt: { score: -0.18, wouldFlexPercent: -4, fakeAiPercent: 1 },
-          fakeAi: { score: -0.26, wouldFlexPercent: -6, fakeAiPercent: 4 },
-        };
-
-        const change = adjustments[voteType];
 
         return {
           ...post,
@@ -1744,14 +1963,6 @@ export default function AppShellPage() {
       ...currentVotes,
       [postId]: voteType,
     }));
-
-    if (targetPost?.username && targetPost.username !== currentUser.username) {
-      await createRealtimeNotification({
-        recipientUsername: targetPost.username,
-        type: "vote",
-        postId,
-      });
-    }
   }
 
   function handleBirthdateChange(event) {
@@ -1932,6 +2143,9 @@ export default function AppShellPage() {
       window.localStorage.removeItem(PROFILE_STORAGE_KEY);
       window.localStorage.removeItem(MEMBERSHIP_STORAGE_KEY);
       window.localStorage.removeItem(FOLLOWING_STORAGE_KEY);
+      window.localStorage.removeItem(POSTS_STORAGE_KEY);
+      window.localStorage.removeItem(COMMENTS_STORAGE_KEY);
+      window.localStorage.removeItem(VOTED_POSTS_STORAGE_KEY);
       window.history.replaceState({}, "", "/app-shell?signedout=1");
     }
 
@@ -1958,9 +2172,10 @@ export default function AppShellPage() {
       return;
     }
 
-    const newComment = {
+    let newComment = {
       id: `comment-${Date.now()}`,
       postId,
+      userId: currentUserProfile.id || null,
       username: currentUser.username,
       displayName: currentUser.displayName,
       text: nextText,
@@ -1968,6 +2183,22 @@ export default function AppShellPage() {
       isReported: false,
       hidden: false,
     };
+
+    if (currentUserProfile.id) {
+      const { data, error } = await createCommentRow({
+        post_id: postId,
+        user_id: currentUserProfile.id,
+        username: currentUser.username,
+        display_name: currentUser.displayName,
+        text: nextText,
+      });
+
+      if (error || !data) {
+        return;
+      }
+
+      newComment = mapCommentRow(data);
+    }
 
     setComments((currentComments) => [...currentComments, newComment]);
     setCommentDrafts((currentDrafts) => ({
@@ -1991,11 +2222,20 @@ export default function AppShellPage() {
   }
 
   function handleDeleteComment(commentId) {
+    if (currentUserProfile.id) {
+      deleteCommentRow(commentId);
+    }
+
     setComments((currentComments) => currentComments.filter((comment) => comment.id !== commentId));
   }
 
   function handleReportComment(commentId) {
     const reason = commentReportReasons[commentId] || "Other";
+
+    if (currentUserProfile.id) {
+      reportCommentRow(commentId, reason);
+    }
+
     setComments((currentComments) =>
       currentComments.map((comment) =>
         comment.id === commentId
@@ -2146,7 +2386,7 @@ export default function AppShellPage() {
     reader.readAsDataURL(selectedFile);
   }
 
-  function handleProfileSave(event) {
+  async function handleProfileSave(event) {
     event.preventDefault();
     const nextProfile = {
       ...currentUserProfile,
@@ -2159,6 +2399,27 @@ export default function AppShellPage() {
     };
 
     const previousUsername = currentUserProfile.username;
+
+    if (currentUserProfile.id) {
+      const { data } = await updateProfileRow(currentUserProfile.id, {
+        username: nextProfile.username,
+        display_name: nextProfile.displayName,
+        bio: nextProfile.bio,
+        location: nextProfile.location,
+        avatar_url: nextProfile.avatar,
+        membership_tier: selectedMembership.name,
+      });
+
+      if (data) {
+        nextProfile.username = data.username;
+        nextProfile.displayName = data.display_name;
+        nextProfile.bio = data.bio || "";
+        nextProfile.location = data.location || "";
+        nextProfile.avatar = data.avatar_url || DEFAULT_PROFILE_AVATAR;
+        nextProfile.badge = normalizeStatus(data.membership_tier);
+      }
+    }
+
     setCurrentUserProfile(nextProfile);
     setPosts((currentPosts) =>
       currentPosts.map((post) =>
@@ -2194,7 +2455,11 @@ export default function AppShellPage() {
     setCurrentView("post");
   }
 
-  function handleDeletePost(postId) {
+  async function handleDeletePost(postId) {
+    if (currentUserProfile.id) {
+      await deletePostRow(postId);
+    }
+
     setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
     setComments((currentComments) => currentComments.filter((comment) => comment.postId !== postId));
     setVotedPosts((currentVotes) => {
@@ -2225,7 +2490,22 @@ export default function AppShellPage() {
     setBoostMenuPostId((currentPostId) => (currentPostId === postId ? null : postId));
   }
 
-  function handleBoostSelect(postId, boostLevel) {
+  async function handleBoostSelect(postId, boostLevel) {
+    if (currentUserProfile.id) {
+      const { data } = await updatePostRow(postId, {
+        boosted: true,
+        boost_level: boostLevel,
+        boosted_at: new Date().toISOString(),
+      });
+
+      if (data) {
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.id === postId ? mapPostRow(data, currentUserProfile.id) : post
+          )
+        );
+      }
+    } else {
     setPosts((currentPosts) =>
       currentPosts.map((post) =>
         post.id === postId
@@ -2238,6 +2518,7 @@ export default function AppShellPage() {
           : post
       )
     );
+    }
     addNotification({
       type: "boost",
       message: `Your post was boosted for ${boostLevel}`,
@@ -2434,7 +2715,7 @@ export default function AppShellPage() {
     closeShareSheet();
   }
 
-  function handlePostSubmit(event) {
+  async function handlePostSubmit(event) {
     event.preventDefault();
     setHasEnteredApp(true);
     setPostLimitError("");
@@ -2454,21 +2735,38 @@ export default function AppShellPage() {
     }
 
     if (editingPostId) {
-      setPosts((currentPosts) =>
-        currentPosts.map((post) =>
-          post.id === editingPostId
-            ? {
-                ...post,
-                image: draft.image,
-                caption: draft.caption,
-                category: draft.category,
-              }
-            : post
-        )
-      );
+      if (currentUserProfile.id) {
+        const { data } = await updatePostRow(editingPostId, {
+          image_url: draft.image,
+          caption: draft.caption,
+          category: draft.category,
+        });
+
+        if (data) {
+          setPosts((currentPosts) =>
+            currentPosts.map((post) =>
+              post.id === editingPostId ? mapPostRow(data, currentUserProfile.id) : post
+            )
+          );
+        }
+      } else {
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.id === editingPostId
+              ? {
+                  ...post,
+                  image: draft.image,
+                  caption: draft.caption,
+                  category: draft.category,
+                }
+              : post
+          )
+        );
+      }
     } else {
       const newPost = {
         id: `post-${Date.now()}`,
+        userId: currentUserProfile.id || null,
         username: currentUser.username,
         displayName: currentUser.displayName,
         badge: currentUser.badge,
@@ -2484,7 +2782,26 @@ export default function AppShellPage() {
         boostLevel: null,
       };
 
-      setPosts((currentPosts) => [newPost, ...currentPosts]);
+      if (currentUserProfile.id) {
+        const { data } = await createPostRow({
+          user_id: currentUserProfile.id,
+          username: currentUser.username,
+          display_name: currentUser.displayName,
+          badge: currentUser.badge,
+          image_url: draft.image,
+          caption: draft.caption,
+          category: draft.category,
+          score: newPost.score,
+          would_flex_percent: newPost.wouldFlexPercent,
+          fake_ai_percent: newPost.fakeAiPercent,
+        });
+
+        if (data) {
+          setPosts((currentPosts) => [mapPostRow(data, currentUserProfile.id), ...currentPosts]);
+        }
+      } else {
+        setPosts((currentPosts) => [newPost, ...currentPosts]);
+      }
     }
     setPostSafetyError("");
     setPostLimitError("");
@@ -3043,6 +3360,15 @@ export default function AppShellPage() {
               </button>
             </div>
             <div className="grid items-stretch gap-5 xl:grid-cols-2">
+              {sortedFeedPosts.length === 0 ? (
+                <div className="rounded-[1.7rem] border border-white/8 bg-black/35 p-6 sm:p-8 xl:col-span-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-gold/75">Feed</p>
+                  <h3 className="mt-4 text-2xl font-semibold text-white">No posts yet</h3>
+                  <p className="mt-3 max-w-2xl text-base leading-7 text-white/58">
+                    Your authenticated feed is now showing real PHLEXR posts only. Create your first post to start your feed.
+                  </p>
+                </div>
+              ) : null}
               {sortedFeedPosts.map((post) => {
                 const lockedVote = votedPosts[post.id];
                 const postComments = comments.filter((comment) => comment.postId === post.id);
