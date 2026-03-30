@@ -862,10 +862,10 @@ function moderateComment(text, isAdult) {
   return true;
 }
 
-export default function AppShellPage() {
+export default function AppShellPage({ initialHasAccess = false }) {
   const [posts, setPosts] = useState(seededPosts);
-  const [hasEnteredApp, setHasEnteredApp] = useState(false);
-  const [isAuthInitializing, setIsAuthInitializing] = useState(true);
+  const [hasEnteredApp, setHasEnteredApp] = useState(initialHasAccess);
+  const [isAuthInitializing, setIsAuthInitializing] = useState(initialHasAccess);
   const [currentView, setCurrentView] = useState("feed");
   const [selectedProfileUsername, setSelectedProfileUsername] = useState("");
   const [editingPostId, setEditingPostId] = useState(null);
@@ -1578,7 +1578,7 @@ export default function AppShellPage() {
 
   useEffect(() => {
     if (!supabaseReady) {
-      setHasEnteredApp(false);
+      setHasEnteredApp(initialHasAccess);
       setIsAuthInitializing(false);
       return;
     }
@@ -1586,7 +1586,11 @@ export default function AppShellPage() {
     let isMounted = true;
 
     async function initializeAuth() {
-      setIsAuthInitializing(true);
+      if (initialHasAccess) {
+        setIsAuthInitializing(true);
+      } else {
+        setIsAuthInitializing(false);
+      }
       try {
         if (typeof window !== "undefined") {
           const url = new URL(window.location.href);
@@ -1701,7 +1705,7 @@ export default function AppShellPage() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [supabaseReady]);
+  }, [initialHasAccess, supabaseReady]);
 
   useEffect(() => {
     if (!supabaseReady || !currentUserProfile.id) {

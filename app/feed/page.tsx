@@ -17,5 +17,5 @@ export default async function FeedPage() {
     }
   }
 
-  return <AppShellPage />;
+  return <AppShellPage initialHasAccess />;
 }
