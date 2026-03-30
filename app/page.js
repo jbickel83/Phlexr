@@ -412,10 +412,6 @@ export default async function Page() {
               <h2 className="mt-4 text-balance font-display text-3xl text-white sm:text-5xl">
                 Reserve your PHLEXR username before the drop.
               </h2>
-              <p className="mt-5 max-w-xl text-base leading-7 text-white/65 sm:leading-8 sm:text-lg">
-                Keep it simple: collect interest, claim names early, and send the strongest early
-                users straight into launch.
-              </p>
             </div>
 
             <div className="rounded-[1.6rem] border border-white/10 bg-black/45 p-5 sm:p-6">
@@ -453,11 +449,6 @@ export default async function Page() {
                   Reserve my username
                 </button>
               </form>
-
-              <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 text-sm text-white/55">
-                No backend added here on purpose. This keeps the repo Vercel-ready and easy to
-                hook into a waitlist tool later.
-              </div>
             </div>
           </div>
         </div>
