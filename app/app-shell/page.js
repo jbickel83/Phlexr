@@ -2340,13 +2340,6 @@ export default function AppShellPage({ initialHasAccess = false }) {
         return;
       }
 
-      const { data: userData, error: userError } = await getCurrentSupabaseUser();
-      if (userError || !userData?.user) {
-        await resetToSignedOutState({ clearBrowserSession: true, authMode: "signin" });
-        setAuthError(userError?.message || "Unable to verify your session. Try again.");
-        return;
-      }
-
       const optimisticProfile = buildOptimisticProfileFromAuthUser(data.session.user);
       setCurrentView("feed");
       setCurrentUserProfile(optimisticProfile);
