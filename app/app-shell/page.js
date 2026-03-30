@@ -866,6 +866,7 @@ function moderateComment(text, isAdult) {
 export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
+  const [isAuthInitializing, setIsAuthInitializing] = useState(true);
   const [currentView, setCurrentView] = useState("feed");
   const [selectedProfileUsername, setSelectedProfileUsername] = useState("");
   const [editingPostId, setEditingPostId] = useState(null);
@@ -1575,12 +1576,14 @@ export default function AppShellPage() {
   useEffect(() => {
     if (!supabaseReady) {
       setHasEnteredApp(false);
+      setIsAuthInitializing(false);
       return;
     }
 
     let isMounted = true;
 
     async function initializeAuth() {
+      setIsAuthInitializing(true);
       try {
         if (typeof window !== "undefined") {
           const url = new URL(window.location.href);
@@ -1597,6 +1600,7 @@ export default function AppShellPage() {
             setSelectedProfileUsername("");
             setCurrentUserProfile(emptyAuthenticatedUserProfile);
             setProfileDraft(emptyAuthenticatedUserProfile);
+            setIsAuthInitializing(false);
             return;
           }
         }
@@ -1612,12 +1616,12 @@ export default function AppShellPage() {
         }
 
         if (!userData?.user) {
-          await clearSupabaseBrowserSession();
           setSelectedMembershipId("free");
           setSelectedProfileUsername("");
           setCurrentUserProfile(emptyAuthenticatedUserProfile);
           setProfileDraft(emptyAuthenticatedUserProfile);
           setHasEnteredApp(false);
+          setIsAuthInitializing(false);
           normalizeLoggedOutRoute();
           return;
         }
@@ -1638,13 +1642,14 @@ export default function AppShellPage() {
             return;
           }
           setHasEnteredApp(true);
+          setIsAuthInitializing(false);
         } else {
-          await clearSupabaseBrowserSession();
           setSelectedMembershipId("free");
           setSelectedProfileUsername("");
           setCurrentUserProfile(emptyAuthenticatedUserProfile);
           setProfileDraft(emptyAuthenticatedUserProfile);
           setHasEnteredApp(false);
+          setIsAuthInitializing(false);
           normalizeLoggedOutRoute();
         }
       } catch (error) {
@@ -1657,6 +1662,7 @@ export default function AppShellPage() {
         setCurrentUserProfile(emptyAuthenticatedUserProfile);
         setProfileDraft(emptyAuthenticatedUserProfile);
         setHasEnteredApp(false);
+        setIsAuthInitializing(false);
         normalizeLoggedOutRoute();
         setAuthError(error instanceof Error ? error.message : "Unable to initialize auth.");
       }
@@ -1666,43 +1672,18 @@ export default function AppShellPage() {
 
     const {
       data: { subscription },
-    } = subscribeToSupabaseAuthChanges(async (event, session) => {
+    } = subscribeToSupabaseAuthChanges(async (_event, session) => {
       if (!isMounted) {
         return;
       }
 
-      if (event === "INITIAL_SESSION") {
-        return;
-      }
-
       if (session) {
-        const { data: userData, error: userError } = await getCurrentSupabaseUser();
-
-        if (!isMounted) {
-          return;
-        }
-
-        if (userError) {
-          setAuthError(userError.message);
-          return;
-        }
-
-        if (!userData?.user) {
-          setHasEnteredApp(false);
-          setCurrentView("feed");
-          setSelectedMembershipId("free");
-          setSelectedProfileUsername("");
-          setCurrentUserProfile(emptyAuthenticatedUserProfile);
-          setProfileDraft(emptyAuthenticatedUserProfile);
-          normalizeLoggedOutRoute();
-          return;
-        }
-
         const optimisticProfile = buildOptimisticProfileFromAuthUser(session.user);
         setCurrentUserProfile(optimisticProfile);
         setProfileDraft(optimisticProfile);
         setSelectedProfileUsername(optimisticProfile.username);
         setHasEnteredApp(true);
+        setIsAuthInitializing(false);
         setAuthError("");
         void hydrateCurrentUserFromSession(session);
       } else {
@@ -1713,6 +1694,7 @@ export default function AppShellPage() {
         setCurrentUserProfile(emptyAuthenticatedUserProfile);
         setProfileDraft(emptyAuthenticatedUserProfile);
         setAuthMode("signup");
+        setIsAuthInitializing(false);
         normalizeLoggedOutRoute();
       }
     });
@@ -2323,41 +2305,51 @@ export default function AppShellPage() {
     }
 
     setAuthLoading(true);
+    setIsAuthInitializing(true);
     setAuthMode("signin");
     setAuthError("");
     setAuthMessage("");
 
-    const { data, error } = await signInWithEmail({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await signInWithEmail({
+        email,
+        password,
+      });
 
-    if (error) {
-      setAuthLoading(false);
-      setAuthError(
-        error.message.toLowerCase().includes("invalid login credentials")
-          ? "Invalid email or password. If you just created your account, confirm your email first or reset your password."
-          : error.message
-      );
-      return;
-    }
+      if (error) {
+        setAuthError(
+          error.message.toLowerCase().includes("invalid login credentials")
+            ? "Invalid email or password. If you just created your account, confirm your email first or reset your password."
+            : error.message
+        );
+        setIsAuthInitializing(false);
+        return;
+      }
 
-    if (data?.session) {
+      if (!data?.session) {
+        setAuthError("Unable to start your session. Try again.");
+        setIsAuthInitializing(false);
+        return;
+      }
+
       const optimisticProfile = buildOptimisticProfileFromAuthUser(data.session.user);
       setCurrentView("feed");
       setCurrentUserProfile(optimisticProfile);
       setProfileDraft(optimisticProfile);
       setSelectedProfileUsername(optimisticProfile.username);
       setHasEnteredApp(true);
-      setAuthLoading(false);
-      void hydrateCurrentUserFromSession(data.session);
-      if (typeof window !== "undefined" && window.location.pathname !== "/feed") {
-        window.location.assign("/feed");
-        return;
-      }
-    }
+      await hydrateCurrentUserFromSession(data.session);
+      setIsAuthInitializing(false);
 
-    setAuthLoading(false);
+      if (typeof window !== "undefined" && window.location.pathname !== "/feed") {
+        window.history.replaceState({}, "", "/feed");
+      }
+    } catch (error) {
+      setIsAuthInitializing(false);
+      setAuthError(error instanceof Error ? error.message : "Unable to sign in right now.");
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
   async function handleSignOut() {
@@ -3343,7 +3335,19 @@ export default function AppShellPage() {
             >
               <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5">
-                  {authMode === "check-email" ? (
+                  {isAuthInitializing && authMode !== "check-email" ? (
+                    <div className="flex min-h-[27rem] flex-col justify-center">
+                      <p className="text-xs uppercase tracking-[0.22em] text-gold/75">
+                        Restoring session
+                      </p>
+                      <h3 className="mt-4 text-3xl font-semibold text-white">
+                        Restoring your session
+                      </h3>
+                      <p className="mt-4 max-w-lg text-base leading-7 text-white/62">
+                        PHLEXR is confirming your account and loading the right app state.
+                      </p>
+                    </div>
+                  ) : authMode === "check-email" ? (
                     <div className="flex min-h-[27rem] flex-col justify-between">
                       <div>
                         <p className="text-xs uppercase tracking-[0.22em] text-gold/75">
@@ -3425,13 +3429,15 @@ export default function AppShellPage() {
                             placeholder="MM/DD/YYYY"
                             className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
                           />
-                          <span className="text-xs text-white/45">
-                            {safetyProfile.isAdult === null
-                              ? "Stored locally for safety checks only."
-                              : safetyProfile.isAdult
-                                ? "Adult flag saved locally."
-                                : "Under-18 flag saved locally."}
-                          </span>
+                          {safetyProfile.isAdult === null ? (
+                            <span className="text-xs text-white/45">
+                              Stored locally for safety checks only.
+                            </span>
+                          ) : safetyProfile.isAdult ? null : (
+                            <span className="text-xs text-white/45">
+                              Under-18 flag saved locally.
+                            </span>
+                          )}
                         </label>
                       </div>
 
