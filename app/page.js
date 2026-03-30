@@ -264,8 +264,7 @@ export default async function Page() {
             Where your flex actually matters.
           </h2>
           <p className="mt-5 text-base leading-7 text-white/62 sm:leading-8 sm:text-lg">
-            PHLEXR stays focused: premium presentation, sharp scoring, and a username reserve
-            flow that feels like an invite-only social launch.
+            You don’t just post here — you get seen, rated, and ranked.
           </p>
         </div>
 
