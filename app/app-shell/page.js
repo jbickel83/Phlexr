@@ -1574,6 +1574,7 @@ export default function AppShellPage() {
           setCurrentUserProfile(emptyAuthenticatedUserProfile);
           setProfileDraft(emptyAuthenticatedUserProfile);
           setHasEnteredApp(false);
+          normalizeLoggedOutRoute();
         }
       } catch (error) {
         if (!isMounted) {
@@ -1585,6 +1586,7 @@ export default function AppShellPage() {
         setCurrentUserProfile(emptyAuthenticatedUserProfile);
         setProfileDraft(emptyAuthenticatedUserProfile);
         setHasEnteredApp(false);
+        normalizeLoggedOutRoute();
         setAuthError(error instanceof Error ? error.message : "Unable to initialize auth.");
       }
     }
@@ -1614,6 +1616,7 @@ export default function AppShellPage() {
         setCurrentUserProfile(emptyAuthenticatedUserProfile);
         setProfileDraft(emptyAuthenticatedUserProfile);
         setAuthMode("signup");
+        normalizeLoggedOutRoute();
       }
     });
 
@@ -1889,6 +1892,16 @@ export default function AppShellPage() {
   function openLeaderboard() {
     setHasEnteredApp(true);
     setCurrentView("leaderboard");
+  }
+
+  function normalizeLoggedOutRoute() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (window.location.pathname === "/feed") {
+      window.history.replaceState({}, "", "/app-shell");
+    }
   }
 
   async function handleMarkNotificationRead(notificationId) {
@@ -2558,6 +2571,7 @@ export default function AppShellPage() {
     }
 
     setCurrentUserProfile(nextProfile);
+    setProfileDraft(nextProfile);
     setPosts((currentPosts) =>
       currentPosts.map((post) =>
         post.owner
