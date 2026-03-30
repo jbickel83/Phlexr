@@ -6,12 +6,18 @@ import { PhlexrImageLogo, PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 import { accountMenuSections } from "@/lib/account-pages";
 import {
   canUseSupabaseAuth,
+  createNotification,
+  fetchNotifications,
+  fetchProfileByUsername,
   fetchProfileRow,
   getCurrentSupabaseSession,
   initializeSupabaseSessionFromUrl,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
   signInWithEmail,
   signOutFromSupabase,
   signUpWithEmail,
+  subscribeToNotifications,
   subscribeToSupabaseAuthChanges,
 } from "@/lib/supabase-auth";
 
@@ -43,11 +49,11 @@ const COMMENTS_STORAGE_KEY = "phlexr-app-shell-comments";
 const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const FOLLOWING_STORAGE_KEY = "phlexr-app-shell-following";
-const NOTIFICATIONS_STORAGE_KEY = "phlexr-app-shell-notifications";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
 const APP_SHELL_SEED_VERSION = "2026-03-28-josh-james-v11";
 
 const defaultCurrentUserProfile = {
+  id: null,
   username: "phlexrfounder",
   displayName: "Josh James",
   badge: "Elite",
@@ -111,36 +117,6 @@ const boostPriority = {
 function minutesAgoIso(minutes) {
   return new Date(Date.now() - minutes * 60 * 1000).toISOString();
 }
-
-const seededNotifications = [
-  {
-    id: "notification-seed-1",
-    type: "follow",
-    message: "Layla Rivera followed you",
-    relatedUserId: "laylariv",
-    relatedPostId: null,
-    createdAt: minutesAgoIso(9),
-    read: false,
-  },
-  {
-    id: "notification-seed-2",
-    type: "comment",
-    message: "Zay Cole commented on your post",
-    relatedUserId: "zaycole",
-    relatedPostId: "post-5",
-    createdAt: minutesAgoIso(27),
-    read: false,
-  },
-  {
-    id: "notification-seed-3",
-    type: "rating",
-    message: "Marcus Lane rated your post",
-    relatedUserId: "marcuslane",
-    relatedPostId: "post-5",
-    createdAt: minutesAgoIso(58),
-    read: true,
-  },
-];
 
 const seededPosts = [
   {
@@ -751,7 +727,7 @@ export default function AppShellPage() {
   const [shareSheetView, setShareSheetView] = useState("primary");
   const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
-  const [notifications, setNotifications] = useState(seededNotifications);
+  const [notifications, setNotifications] = useState([]);
   const [authForm, setAuthForm] = useState({
     username: "",
     email: "",
@@ -793,6 +769,7 @@ export default function AppShellPage() {
   const cameraVideoRef = useRef(null);
   const cameraCanvasRef = useRef(null);
   const cameraStreamRef = useRef(null);
+  const profileIdCacheRef = useRef({});
 
   const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
@@ -871,7 +848,6 @@ export default function AppShellPage() {
     : getSeededSocialCount(selectedProfile.username, 140, 780);
   const leaderboardPreview = profiles.slice(0, 5);
   const currentUserPostCount = posts.filter((post) => post.username === currentUser.username).length;
-  const notificationActors = profiles.filter((profile) => profile.username !== currentUser.username);
   const sortedFeedPosts = useMemo(() => {
     return [...posts].sort((left, right) => {
       const leftBoosted = left.boosted ? 1 : 0;
@@ -951,7 +927,7 @@ export default function AppShellPage() {
     notifications: {
       eyebrow: "Activity",
       title: "Notifications",
-      copy: "Local PHLEXR activity powered by follows, comments, votes, and boosts.",
+      copy: "PHLEXR activity powered by follows, comments, votes, and boosts.",
     },
     leaderboard: {
       eyebrow: "Rankings",
@@ -986,6 +962,7 @@ export default function AppShellPage() {
 
     const nextProfile = {
       ...defaultCurrentUserProfile,
+      id: authUser.id,
       username: profileRow?.username || fallbackUsername,
       displayName:
         profileRow?.display_name || metadata.display_name || metadata.username || fallbackUsername,
@@ -1005,6 +982,113 @@ export default function AppShellPage() {
       email: authUser.email || currentForm.email,
       password: "",
     }));
+  }
+
+  function buildNotificationMessage(notification) {
+    const actorName = notification.actorDisplayName || notification.actorUsername || "Someone";
+
+    if (notification.type === "follow") {
+      return `${actorName} followed you`;
+    }
+
+    if (notification.type === "comment") {
+      return `${actorName} commented on your post`;
+    }
+
+    if (notification.type === "vote") {
+      return `${actorName} rated your post`;
+    }
+
+    if (notification.type === "boost") {
+      return `${actorName} boosted your post`;
+    }
+
+    return `${actorName} interacted with your account`;
+  }
+
+  function mapNotificationRow(notificationRow) {
+    return {
+      id: notificationRow.id,
+      type: notificationRow.type,
+      message: buildNotificationMessage({
+        actorDisplayName: notificationRow.actor_display_name,
+        actorUsername: notificationRow.actor_username,
+        type: notificationRow.type,
+      }),
+      relatedUserId: notificationRow.actor_username || null,
+      relatedPostId: notificationRow.post_id || null,
+      relatedCommentId: notificationRow.comment_id || null,
+      createdAt: notificationRow.created_at,
+      read: notificationRow.read,
+      actorDisplayName: notificationRow.actor_display_name || null,
+      actorUsername: notificationRow.actor_username || null,
+    };
+  }
+
+  async function loadNotifications(recipientUserId) {
+    if (!supabaseReady || !recipientUserId) {
+      setNotifications([]);
+      return;
+    }
+
+    const { data, error } = await fetchNotifications(recipientUserId);
+
+    if (error) {
+      return;
+    }
+
+    setNotifications((data || []).map(mapNotificationRow));
+  }
+
+  async function resolveProfileIdByUsername(username) {
+    if (!username) {
+      return null;
+    }
+
+    if (profileIdCacheRef.current[username]) {
+      return profileIdCacheRef.current[username];
+    }
+
+    if (username === currentUser.username && currentUserProfile.id) {
+      profileIdCacheRef.current[username] = currentUserProfile.id;
+      return currentUserProfile.id;
+    }
+
+    const { data } = await fetchProfileByUsername(username);
+    const profileId = data?.id || null;
+
+    if (profileId) {
+      profileIdCacheRef.current[username] = profileId;
+    }
+
+    return profileId;
+  }
+
+  async function createRealtimeNotification({
+    recipientUsername,
+    type,
+    postId = null,
+    commentId = null,
+  }) {
+    if (!supabaseReady || !currentUserProfile.id) {
+      return;
+    }
+
+    const recipientUserId = await resolveProfileIdByUsername(recipientUsername);
+
+    if (!recipientUserId || recipientUserId === currentUserProfile.id) {
+      return;
+    }
+
+    await createNotification({
+      recipient_user_id: recipientUserId,
+      actor_user_id: currentUserProfile.id,
+      actor_username: currentUser.username,
+      actor_display_name: currentUser.displayName,
+      type,
+      post_id: postId,
+      comment_id: commentId,
+    });
   }
 
   useEffect(() => {
@@ -1115,16 +1199,6 @@ export default function AppShellPage() {
         }
       }
 
-      const savedNotifications = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-      if (savedNotifications) {
-        const parsedNotifications = JSON.parse(savedNotifications);
-        if (Array.isArray(parsedNotifications)) {
-          setNotifications(parsedNotifications);
-        }
-      } else {
-        setNotifications(seededNotifications);
-      }
-
       window.localStorage.setItem(SEED_VERSION_STORAGE_KEY, APP_SHELL_SEED_VERSION);
     } catch {
       window.localStorage.removeItem(POSTS_STORAGE_KEY);
@@ -1134,7 +1208,6 @@ export default function AppShellPage() {
       window.localStorage.removeItem(SAFETY_STORAGE_KEY);
       window.localStorage.removeItem(MEMBERSHIP_STORAGE_KEY);
       window.localStorage.removeItem(FOLLOWING_STORAGE_KEY);
-      window.localStorage.removeItem(NOTIFICATIONS_STORAGE_KEY);
       window.localStorage.removeItem(SEED_VERSION_STORAGE_KEY);
     }
   }, []);
@@ -1229,6 +1302,29 @@ export default function AppShellPage() {
   }, [supabaseReady]);
 
   useEffect(() => {
+    if (!supabaseReady || !currentUserProfile.id) {
+      setNotifications([]);
+      return;
+    }
+
+    let active = true;
+    loadNotifications(currentUserProfile.id);
+
+    const subscription = subscribeToNotifications(currentUserProfile.id, async () => {
+      if (!active) {
+        return;
+      }
+
+      await loadNotifications(currentUserProfile.id);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [currentUserProfile.id, supabaseReady]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
@@ -1284,14 +1380,6 @@ export default function AppShellPage() {
 
     window.localStorage.setItem(FOLLOWING_STORAGE_KEY, JSON.stringify(currentUserFollowing));
   }, [currentUserFollowing]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    window.localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
-  }, [notifications]);
 
   useEffect(() => {
     setCurrentUserProfile((currentProfile) => ({
@@ -1401,46 +1489,34 @@ export default function AppShellPage() {
     setCurrentView("leaderboard");
   }
 
-  function addNotification(notification) {
-    setNotifications((currentNotifications) => [
-      {
-        id: `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        read: false,
-        createdAt: new Date().toISOString(),
-        ...notification,
-      },
-      ...currentNotifications,
-    ]);
-  }
-
-  function getSimulatedActor(seed) {
-    if (!notificationActors.length) {
-      return null;
+  async function handleMarkNotificationRead(notificationId) {
+    if (!supabaseReady || !currentUserProfile.id) {
+      return;
     }
 
-    const numericSeed = String(seed || "")
-      .split("")
-      .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-
-    return notificationActors[numericSeed % notificationActors.length];
-  }
-
-  function markNotificationRead(notificationId) {
     setNotifications((currentNotifications) =>
       currentNotifications.map((notification) =>
         notification.id === notificationId ? { ...notification, read: true } : notification
       )
     );
+
+    await markNotificationAsRead(notificationId);
   }
 
-  function markAllNotificationsRead() {
+  async function handleMarkAllNotificationsRead() {
+    if (!supabaseReady || !currentUserProfile.id) {
+      return;
+    }
+
     setNotifications((currentNotifications) =>
       currentNotifications.map((notification) => ({ ...notification, read: true }))
     );
+
+    await markAllNotificationsAsRead(currentUserProfile.id);
   }
 
-  function handleNotificationOpen(notification) {
-    markNotificationRead(notification.id);
+  async function handleNotificationOpen(notification) {
+    await handleMarkNotificationRead(notification.id);
 
     if (notification.relatedUserId) {
       openProfile(notification.relatedUserId);
@@ -1450,7 +1526,7 @@ export default function AppShellPage() {
     navigateTo("feed");
   }
 
-  function handleToggleFollow(username) {
+  async function handleToggleFollow(username) {
     if (username === currentUser.username) {
       return;
     }
@@ -1467,14 +1543,12 @@ export default function AppShellPage() {
         return currentFollowing.filter((entry) => entry !== username);
       }
 
-      addNotification({
-        type: "follow",
-        message: `${targetProfile.displayName || username} followed you`,
-        relatedUserId: username,
-        relatedPostId: null,
-      });
-
       return [...currentFollowing, username];
+    });
+
+    await createRealtimeNotification({
+      recipientUsername: username,
+      type: "follow",
     });
   }
 
@@ -1498,7 +1572,7 @@ export default function AppShellPage() {
     }, 2400);
   }
 
-  function handleVote(postId, voteType) {
+  async function handleVote(postId, voteType) {
     if (votedPosts[postId]) {
       return;
     }
@@ -1538,16 +1612,11 @@ export default function AppShellPage() {
       [postId]: voteType,
     }));
 
-    if (targetPost?.username === currentUser.username) {
-      const actor = getSimulatedActor(`${postId}-${voteType}`);
-      addNotification({
-        type: voteType === "fakeAi" ? "fake-ai" : "rating",
-        message:
-          voteType === "fakeAi"
-            ? `${actor?.displayName || "Someone"} marked your post Fake / AI`
-            : `${actor?.displayName || "Someone"} rated your post`,
-        relatedUserId: actor?.username || null,
-        relatedPostId: postId,
+    if (targetPost?.username && targetPost.username !== currentUser.username) {
+      await createRealtimeNotification({
+        recipientUsername: targetPost.username,
+        type: "vote",
+        postId,
       });
     }
   }
@@ -1703,7 +1772,7 @@ export default function AppShellPage() {
     setAuthLoading(false);
   }
 
-  function handleAddComment(postId) {
+  async function handleAddComment(postId) {
     const nextText = (commentDrafts[postId] || "").trim();
     if (!nextText) {
       return;
@@ -1739,13 +1808,12 @@ export default function AppShellPage() {
     }));
 
     const targetPost = posts.find((post) => post.id === postId);
-    if (targetPost?.username === currentUser.username) {
-      const actor = getSimulatedActor(`comment-${postId}-${nextText.length}`);
-      addNotification({
+    if (targetPost?.username && targetPost.username !== currentUser.username) {
+      await createRealtimeNotification({
+        recipientUsername: targetPost.username,
         type: "comment",
-        message: `${actor?.displayName || "Someone"} commented on your post`,
-        relatedUserId: actor?.username || null,
-        relatedPostId: postId,
+        postId,
+        commentId: newComment.id,
       });
     }
   }
@@ -3704,7 +3772,7 @@ export default function AppShellPage() {
             id="notifications"
             eyebrow="06. Notifications"
             title="Notifications"
-            copy="Local PHLEXR activity powered by follows, comments, ratings, and boosts."
+            copy="PHLEXR activity powered by follows, comments, ratings, and boosts."
             hideHeader
           >
             <div className="grid gap-4">
@@ -3719,7 +3787,7 @@ export default function AppShellPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={markAllNotificationsRead}
+                  onClick={handleMarkAllNotificationsRead}
                   className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
                 >
                   Mark all as read
@@ -3765,7 +3833,7 @@ export default function AppShellPage() {
                           {!notification.read ? (
                             <button
                               type="button"
-                              onClick={() => markNotificationRead(notification.id)}
+                              onClick={() => handleMarkNotificationRead(notification.id)}
                               className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-white transition hover:border-gold/30 hover:text-gold"
                             >
                               Mark read
