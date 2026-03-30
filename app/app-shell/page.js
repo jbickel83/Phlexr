@@ -18,6 +18,7 @@ import {
   fetchCommentsForPosts,
   fetchFeedPosts,
   fetchNotifications,
+  fetchPostRow,
   fetchFollowingRows,
   fetchProfileByUsername,
   fetchProfileRow,
@@ -682,7 +683,7 @@ function formatScore(value) {
   return value.toFixed(1);
 }
 
-function formatRelativeTime(value) {
+  function formatRelativeTime(value) {
   if (!value) {
     return "";
   }
@@ -708,8 +709,23 @@ function formatRelativeTime(value) {
   }
 
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
+    return `${diffDays}d ago`;
+  }
+
+  function applyVoteChangeToPost(post, change) {
+    return {
+      ...post,
+      score: Math.max(5.5, Math.min(10, Number((post.score + change.score).toFixed(1)))),
+      wouldFlexPercent: Math.max(
+        35,
+        Math.min(99, Math.round(post.wouldFlexPercent + change.wouldFlexPercent))
+      ),
+      fakeAiPercent: Math.max(
+        1,
+        Math.min(60, Math.round(post.fakeAiPercent + change.fakeAiPercent))
+      ),
+    };
+  }
 
 function deriveIsAdult(birthdate) {
   if (!birthdate) {
@@ -2099,31 +2115,22 @@ export default function AppShellPage() {
           return;
         }
 
-        const { data: updatedPost, error: updateError } = await updatePostRow(postId, {
-          score: Math.max(5.5, Math.min(10, Number((targetPost.score + change.score).toFixed(1)))),
-          would_flex_percent: Math.max(
-            35,
-            Math.min(99, Math.round(targetPost.wouldFlexPercent + change.wouldFlexPercent))
-          ),
-          fake_ai_percent: Math.max(
-            1,
-            Math.min(60, Math.round(targetPost.fakeAiPercent + change.fakeAiPercent))
-          ),
-        });
-
-        if (updateError || !updatedPost) {
-          return;
-        }
-
-        setPosts((currentPosts) =>
-          currentPosts.map((post) =>
-            post.id === postId ? mapPostRow(updatedPost, currentUserProfile.id) : post
-          )
-        );
         setVotedPosts((currentVotes) => ({
           ...currentVotes,
           [postId]: voteType,
         }));
+
+        const { data: updatedPost } = await fetchPostRow(postId);
+
+        setPosts((currentPosts) =>
+          currentPosts.map((post) =>
+            post.id === postId
+              ? updatedPost
+                ? mapPostRow(updatedPost, currentUserProfile.id)
+                : applyVoteChangeToPost(post, change)
+              : post
+          )
+        );
 
         if (!previousVote && targetPost.username && targetPost.username !== currentUser.username) {
           await createRealtimeNotification({
@@ -2141,18 +2148,7 @@ export default function AppShellPage() {
             return post;
           }
 
-          return {
-            ...post,
-            score: Math.max(5.5, Math.min(10, Number((post.score + change.score).toFixed(1)))),
-            wouldFlexPercent: Math.max(
-              35,
-              Math.min(99, Math.round(post.wouldFlexPercent + change.wouldFlexPercent))
-            ),
-            fakeAiPercent: Math.max(
-              1,
-              Math.min(60, Math.round(post.fakeAiPercent + change.fakeAiPercent))
-            ),
-          };
+          return applyVoteChangeToPost(post, change);
         })
       );
       setVotedPosts((currentVotes) => ({
