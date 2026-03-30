@@ -498,14 +498,21 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
           const isStatusTier = tier.id === "premium" || tier.id === "elite";
 
           return (
-            <div key={tier.id} className={`rounded-[1.45rem] border p-4 ${tier.accent}`}>
-              <div className="flex items-start justify-between gap-3">
+            <div
+              key={tier.id}
+              className={`relative rounded-[1.45rem] border p-4 ${isElite ? "pr-28 pt-16 sm:pr-32" : ""} ${tier.accent}`}
+            >
+              <div className="flex items-start gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.22em] text-gold/75">{tier.name}</p>
                   <p className="mt-3 text-2xl font-semibold text-white">{tier.price}</p>
                 </div>
-                {isElite ? <PremiumBadge>Top tier</PremiumBadge> : null}
               </div>
+              {isElite ? (
+                <div className="absolute right-4 top-4 z-10">
+                  <PremiumBadge>Top tier</PremiumBadge>
+                </div>
+              ) : null}
 
               <div className="mt-4 space-y-2 text-sm leading-6 text-white/68">
                 {tier.features.map((feature) => (
