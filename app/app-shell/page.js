@@ -741,6 +741,33 @@ function formatBirthdateInput(value) {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
+function triggerVoteHaptic(voteType) {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return;
+  }
+
+  const isTouchDevice =
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "") ||
+    navigator.maxTouchPoints > 0;
+
+  if (!isTouchDevice || typeof navigator.vibrate !== "function") {
+    return;
+  }
+
+  const vibrationPattern =
+    voteType === "flex"
+      ? 18
+      : voteType === "notIt"
+        ? 10
+        : 8;
+
+  try {
+    navigator.vibrate(vibrationPattern);
+  } catch {
+    // Fail silently when vibration is unavailable or blocked.
+  }
+}
+
 async function verifyCaptchaToken(token) {
   const response = await fetch("/api/captcha/verify", {
     method: "POST",
@@ -1884,6 +1911,8 @@ export default function AppShellPage() {
     if (!targetPost) {
       return;
     }
+
+    triggerVoteHaptic(voteType);
 
     const adjustments = {
       flex: { score: 0.12, wouldFlexPercent: 3, fakeAiPercent: -1 },
