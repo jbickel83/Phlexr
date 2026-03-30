@@ -66,27 +66,32 @@ const FOLLOWING_STORAGE_KEY = "phlexr-app-shell-following";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
 const APP_SHELL_SEED_VERSION = "2026-03-28-josh-james-v11";
 const FOUNDER_USERNAME = "phlexrfounder";
+const FOUNDER_EMAIL = "phlexrapp@gmail.com";
 const DEFAULT_PROFILE_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Crect width='160' height='160' rx='80' fill='%23110f0c'/%3E%3Ccircle cx='80' cy='60' r='28' fill='%23c8a24d' fill-opacity='0.95'/%3E%3Cpath d='M34 136c8-24 27-38 46-38s38 14 46 38' fill='%23c8a24d' fill-opacity='0.95'/%3E%3C/svg%3E";
 
 const demoCurrentUserProfile = {
   id: null,
   username: FOUNDER_USERNAME,
+  email: FOUNDER_EMAIL,
   displayName: "Josh James",
   badge: "Elite",
   avatar: "/josh-james-avatar.png",
   location: "Miami, FL",
   bio: "building phlexr. mostly cars, watches, and clean spots.",
+  isFounder: true,
 };
 
 const emptyAuthenticatedUserProfile = {
   id: null,
   username: "",
+  email: "",
   displayName: "",
   badge: "Basic",
   avatar: DEFAULT_PROFILE_AVATAR,
   location: "",
   bio: "",
+  isFounder: false,
 };
 
 const membershipTiers = [
@@ -505,7 +510,7 @@ function CameraIcon({ className = "h-4 w-4" }) {
 function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, currentUser }) {
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
-  const isFounderAccount = isFounderUsername(currentUser.username);
+  const isFounderAccount = isFounderIdentity(currentUser);
 
   return (
     <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
@@ -553,13 +558,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
                       : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
                 }`}
               >
-                {isFounderAccount
-                  ? isSelected
-                    ? "Founder account"
-                    : tier.cta
-                  : isSelected
-                    ? `${tier.name} selected`
-                    : tier.cta}
+                {isSelected ? `${tier.name} selected` : tier.cta}
               </button>
             </div>
           );
@@ -582,7 +581,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
             <p className="mt-2 text-sm text-white/55">Shell mode only. Checkout coming soon.</p>
             {isFounderAccount ? (
               <p className="mt-2 text-xs uppercase tracking-[0.16em] text-gold/75">
-                Founder account is permanently locked to Elite.
+                Founder status · permanent Elite
               </p>
             ) : null}
           </div>
@@ -642,8 +641,16 @@ function isFounderUsername(username) {
   return String(username || "").trim().toLowerCase() === FOUNDER_USERNAME;
 }
 
-function resolveMembershipIdForProfile({ username, membershipTier }) {
-  if (isFounderUsername(username)) {
+function isFounderIdentity({ username, email, isFounder = false }) {
+  return (
+    Boolean(isFounder) ||
+    isFounderUsername(username) ||
+    String(email || "").trim().toLowerCase() === FOUNDER_EMAIL
+  );
+}
+
+function resolveMembershipIdForProfile({ username, email, membershipTier, isFounder = false }) {
+  if (isFounderIdentity({ username, email, isFounder })) {
     return "elite";
   }
 
@@ -958,7 +965,7 @@ export default function AppShellPage() {
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
   const profileUpgradeLabel =
-    isFounderUsername(currentUserProfile.username)
+    isFounderIdentity(currentUserProfile)
       ? "Founder Elite"
       : selectedMembershipId === "premium"
       ? "Upgrade to Elite"
@@ -973,7 +980,7 @@ export default function AppShellPage() {
       ? [...selectedProfile.posts].sort((left, right) => right.score - left.score)[0]
       : null;
   const isOwnProfile = selectedProfile.username === currentUser.username;
-  const isFounderProfile = isFounderUsername(selectedProfile.username);
+  const isFounderProfile = isFounderIdentity(selectedProfile);
   const isFollowingSelectedProfile = currentUserFollowing.includes(selectedProfile.username);
   const selectedProfileFollowers =
     getSeededSocialCount(selectedProfile.username, 1240, 6200) +
@@ -1096,7 +1103,9 @@ export default function AppShellPage() {
     const nextUsername = profileRow?.username || fallbackUsername;
     const membershipId = resolveMembershipIdForProfile({
       username: nextUsername,
+      email: authUser.email,
       membershipTier: profileRow?.membership_tier,
+      isFounder: profileRow?.is_founder,
     });
     const membershipBadge =
       membershipTiers.find((tier) => tier.id === membershipId)?.badge || emptyAuthenticatedUserProfile.badge;
@@ -1105,12 +1114,18 @@ export default function AppShellPage() {
       ...getProfileBase(true),
       id: authUser.id,
       username: nextUsername,
+      email: authUser.email || "",
       displayName:
         profileRow?.display_name || metadata.display_name || metadata.username || fallbackUsername,
       bio: profileRow?.bio || "",
       location: profileRow?.location || "",
       avatar: profileRow?.avatar_url || emptyAuthenticatedUserProfile.avatar,
       badge: membershipBadge,
+      isFounder: isFounderIdentity({
+        username: nextUsername,
+        email: authUser.email,
+        isFounder: profileRow?.is_founder,
+      }),
     };
 
     setSelectedMembershipId(membershipId);
@@ -1311,7 +1326,7 @@ export default function AppShellPage() {
           const mergedProfile = {
             ...mergedBaseProfile,
             ...parsedProfile,
-            badge: isFounderUsername(parsedProfile.username)
+            badge: isFounderIdentity(parsedProfile)
               ? "Elite"
               : normalizeStatus(parsedProfile.badge),
           };
@@ -1395,7 +1410,7 @@ export default function AppShellPage() {
       if (
         savedMembership &&
         membershipTiers.some((tier) => tier.id === savedMembership) &&
-        !isFounderUsername(restoredUsername)
+        !isFounderIdentity({ username: restoredUsername })
       ) {
         setSelectedMembershipId(savedMembership);
       }
@@ -1662,7 +1677,7 @@ export default function AppShellPage() {
       return;
     }
 
-    if (isFounderUsername(currentUserProfile.username)) {
+    if (isFounderIdentity(currentUserProfile)) {
       window.localStorage.setItem(MEMBERSHIP_STORAGE_KEY, "elite");
       return;
     }
@@ -1683,14 +1698,14 @@ export default function AppShellPage() {
   }, [currentUserFollowing, currentUserProfile.id]);
 
   useEffect(() => {
-    if (isFounderUsername(currentUserProfile.username) && selectedMembershipId !== "elite") {
+    if (isFounderIdentity(currentUserProfile) && selectedMembershipId !== "elite") {
       setSelectedMembershipId("elite");
       return;
     }
 
     setCurrentUserProfile((currentProfile) => ({
       ...currentProfile,
-      badge: isFounderUsername(currentProfile.username) ? "Elite" : selectedMembership.badge,
+      badge: isFounderIdentity(currentProfile) ? "Elite" : selectedMembership.badge,
     }));
   }, [selectedMembership.badge]);
 
@@ -2436,7 +2451,7 @@ export default function AppShellPage() {
         bio: nextProfile.bio,
         location: nextProfile.location,
         avatar_url: nextProfile.avatar,
-        membership_tier: selectedMembership.name,
+        membership_tier: isFounderIdentity(currentUserProfile) ? "Elite" : selectedMembership.name,
       });
 
       if (data) {
@@ -2445,7 +2460,15 @@ export default function AppShellPage() {
         nextProfile.bio = data.bio || "";
         nextProfile.location = data.location || "";
         nextProfile.avatar = data.avatar_url || DEFAULT_PROFILE_AVATAR;
-        nextProfile.badge = normalizeStatus(data.membership_tier);
+        nextProfile.email = currentUserProfile.email;
+        nextProfile.isFounder = Boolean(data.is_founder);
+        nextProfile.badge = isFounderIdentity({
+          username: data.username,
+          email: currentUserProfile.email,
+          isFounder: data.is_founder,
+        })
+          ? "Elite"
+          : normalizeStatus(data.membership_tier);
       }
     }
 
@@ -4009,13 +4032,9 @@ export default function AppShellPage() {
                     {isOwnProfile ? (
                       <>
                         {isFounderProfile ? (
-                          <button
-                            type="button"
-                            disabled
-                            className="inline-flex items-center rounded-full border border-gold/28 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] px-5 py-3 text-sm font-semibold text-gold/85"
-                          >
+                          <span className="inline-flex items-center rounded-full border border-gold/22 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-gold/80">
                             Founder Elite
-                          </button>
+                          </span>
                         ) : selectedMembershipId === "elite" ? (
                           <button
                             type="button"

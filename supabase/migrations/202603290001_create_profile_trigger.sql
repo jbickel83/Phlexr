@@ -12,7 +12,8 @@ begin
     bio,
     location,
     avatar_url,
-    membership_tier
+    membership_tier,
+    is_founder
   )
   values (
     new.id,
@@ -21,7 +22,11 @@ begin
     '',
     '',
     '',
-    'Free'
+    case
+      when lower(new.email) = 'phlexrapp@gmail.com' then 'Elite'
+      else 'Free'
+    end,
+    lower(new.email) = 'phlexrapp@gmail.com'
   )
   on conflict (id) do nothing;
 
