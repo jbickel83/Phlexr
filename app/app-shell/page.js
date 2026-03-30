@@ -51,10 +51,11 @@ const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const FOLLOWING_STORAGE_KEY = "phlexr-app-shell-following";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
 const APP_SHELL_SEED_VERSION = "2026-03-28-josh-james-v11";
+const FOUNDER_USERNAME = "phlexrfounder";
 
 const defaultCurrentUserProfile = {
   id: null,
-  username: "phlexrfounder",
+  username: FOUNDER_USERNAME,
   displayName: "Josh James",
   badge: "Elite",
   avatar: "/josh-james-avatar.png",
@@ -478,6 +479,7 @@ function CameraIcon({ className = "h-4 w-4" }) {
 function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, currentUser }) {
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
+  const isFounderAccount = isFounderUsername(currentUser.username);
 
   return (
     <div className="rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-5">
@@ -520,6 +522,7 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
               <button
                 type="button"
                 onClick={() => setSelectedMembershipId(tier.id)}
+                disabled={isFounderAccount}
                 className={`mt-6 inline-flex min-h-[3.75rem] w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
                   isSelected
                     ? "bg-gold text-obsidian"
@@ -528,7 +531,13 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
                       : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
                 }`}
               >
-                {isSelected ? `${tier.name} selected` : tier.cta}
+                {isFounderAccount
+                  ? isSelected
+                    ? "Founder account"
+                    : tier.cta
+                  : isSelected
+                    ? `${tier.name} selected`
+                    : tier.cta}
               </button>
             </div>
           );
@@ -549,6 +558,11 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
               Current plan: {selectedMembership.name} · {selectedMembership.badge}
             </p>
             <p className="mt-2 text-sm text-white/55">Shell mode only. Checkout coming soon.</p>
+            {isFounderAccount ? (
+              <p className="mt-2 text-xs uppercase tracking-[0.16em] text-gold/75">
+                Founder account is permanently locked to Elite.
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -600,6 +614,18 @@ function getMembershipIdFromTier(value) {
   }
 
   return "free";
+}
+
+function isFounderUsername(username) {
+  return String(username || "").trim().toLowerCase() === FOUNDER_USERNAME;
+}
+
+function resolveMembershipIdForProfile({ username, membershipTier }) {
+  if (isFounderUsername(username)) {
+    return "elite";
+  }
+
+  return getMembershipIdFromTier(membershipTier);
 }
 
 function getSeededSocialCount(username, base, range) {
@@ -826,7 +852,9 @@ export default function AppShellPage() {
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
   const profileUpgradeLabel =
-    selectedMembershipId === "premium"
+    isFounderUsername(currentUserProfile.username)
+      ? "Founder Elite"
+      : selectedMembershipId === "premium"
       ? "Upgrade to Elite"
       : selectedMembershipId === "elite"
         ? "Elite Active"
@@ -839,6 +867,7 @@ export default function AppShellPage() {
       ? [...selectedProfile.posts].sort((left, right) => right.score - left.score)[0]
       : null;
   const isOwnProfile = selectedProfile.username === currentUser.username;
+  const isFounderProfile = isFounderUsername(selectedProfile.username);
   const isFollowingSelectedProfile = currentUserFollowing.includes(selectedProfile.username);
   const selectedProfileFollowers =
     getSeededSocialCount(selectedProfile.username, 1240, 6200) +
@@ -956,14 +985,18 @@ export default function AppShellPage() {
       metadata.username ||
       authUser.email?.split("@")[0]?.toLowerCase().replace(/[^a-z0-9_]/g, "") ||
       `member${authUser.id.slice(0, 6)}`;
-    const membershipId = getMembershipIdFromTier(profileRow?.membership_tier);
+    const nextUsername = profileRow?.username || fallbackUsername;
+    const membershipId = resolveMembershipIdForProfile({
+      username: nextUsername,
+      membershipTier: profileRow?.membership_tier,
+    });
     const membershipBadge =
       membershipTiers.find((tier) => tier.id === membershipId)?.badge || defaultCurrentUserProfile.badge;
 
     const nextProfile = {
       ...defaultCurrentUserProfile,
       id: authUser.id,
-      username: profileRow?.username || fallbackUsername,
+      username: nextUsername,
       displayName:
         profileRow?.display_name || metadata.display_name || metadata.username || fallbackUsername,
       bio: profileRow?.bio || defaultCurrentUserProfile.bio,
@@ -1156,14 +1189,18 @@ export default function AppShellPage() {
       }
 
       const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+      let restoredUsername = defaultCurrentUserProfile.username;
       if (savedProfile) {
         const parsedProfile = JSON.parse(savedProfile);
         if (parsedProfile && typeof parsedProfile === "object") {
           const mergedProfile = {
             ...defaultCurrentUserProfile,
             ...parsedProfile,
-            badge: normalizeStatus(parsedProfile.badge),
+            badge: isFounderUsername(parsedProfile.username)
+              ? "Elite"
+              : normalizeStatus(parsedProfile.badge),
           };
+          restoredUsername = mergedProfile.username;
           setCurrentUserProfile(mergedProfile);
           setProfileDraft(mergedProfile);
           setSelectedProfileUsername(mergedProfile.username);
@@ -1187,7 +1224,11 @@ export default function AppShellPage() {
       }
 
       const savedMembership = window.localStorage.getItem(MEMBERSHIP_STORAGE_KEY);
-      if (savedMembership && membershipTiers.some((tier) => tier.id === savedMembership)) {
+      if (
+        savedMembership &&
+        membershipTiers.some((tier) => tier.id === savedMembership) &&
+        !isFounderUsername(restoredUsername)
+      ) {
         setSelectedMembershipId(savedMembership);
       }
 
@@ -1370,8 +1411,13 @@ export default function AppShellPage() {
       return;
     }
 
+    if (isFounderUsername(currentUserProfile.username)) {
+      window.localStorage.setItem(MEMBERSHIP_STORAGE_KEY, "elite");
+      return;
+    }
+
     window.localStorage.setItem(MEMBERSHIP_STORAGE_KEY, selectedMembershipId);
-  }, [selectedMembershipId]);
+  }, [currentUserProfile.username, selectedMembershipId]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -1382,9 +1428,14 @@ export default function AppShellPage() {
   }, [currentUserFollowing]);
 
   useEffect(() => {
+    if (isFounderUsername(currentUserProfile.username) && selectedMembershipId !== "elite") {
+      setSelectedMembershipId("elite");
+      return;
+    }
+
     setCurrentUserProfile((currentProfile) => ({
       ...currentProfile,
-      badge: selectedMembership.badge,
+      badge: isFounderUsername(currentProfile.username) ? "Elite" : selectedMembership.badge,
     }));
   }, [selectedMembership.badge]);
 
@@ -3465,7 +3516,15 @@ export default function AppShellPage() {
                     ) : null}
                     {isOwnProfile ? (
                       <>
-                        {selectedMembershipId === "elite" ? (
+                        {isFounderProfile ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="inline-flex items-center rounded-full border border-gold/28 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] px-5 py-3 text-sm font-semibold text-gold/85"
+                          >
+                            Founder Elite
+                          </button>
+                        ) : selectedMembershipId === "elite" ? (
                           <button
                             type="button"
                             disabled
