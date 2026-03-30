@@ -516,7 +516,7 @@ function CameraIcon({ className = "h-4 w-4" }) {
 function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, currentUser }) {
   const selectedMembership =
     membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[0];
-  const isFounderAccount = isFounderIdentity(currentUser);
+  const isFounderAccount = Boolean(currentUser?.id) && isFounderIdentity(currentUser);
   const hasAuthenticatedAccount = Boolean(currentUser?.id);
 
   return (
@@ -530,13 +530,13 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
           const isStatusTier = tier.id === "premium" || tier.id === "elite";
 
           return (
-            <div
-              key={tier.id}
-              className={`relative flex h-full flex-col rounded-[1.45rem] border p-4 ${
-                isElite ? "pr-28 pt-16 sm:pr-32" : ""
-              } ${
-                isSelected
-                  ? isElite
+              <div
+                key={tier.id}
+                className={`relative flex h-full flex-col rounded-[1.45rem] border p-4 ${
+                  isElite ? "pt-16" : ""
+                } ${
+                  isSelected
+                    ? isElite
                     ? "border-gold/75 shadow-[0_0_26px_rgba(216,178,90,0.18)]"
                     : "border-white/25"
                   : ""
@@ -1412,36 +1412,16 @@ export default function AppShellPage({ initialHasAccess = false }) {
         window.localStorage.removeItem(PROFILE_STORAGE_KEY);
       }
 
-      const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
-      let restoredUsername = demoCurrentUserProfile.username;
-      let shouldUseDemoStorage = true;
-      if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile);
-        if (parsedProfile && typeof parsedProfile === "object" && !parsedProfile.id) {
-          const mergedBaseProfile = getProfileBase(Boolean(parsedProfile.id));
-          const mergedProfile = {
-            ...mergedBaseProfile,
-            ...parsedProfile,
-            badge: isFounderIdentity(parsedProfile)
-              ? "Elite"
-              : normalizeStatus(parsedProfile.badge),
-          };
-          restoredUsername = mergedProfile.username;
-          setCurrentUserProfile(mergedProfile);
-          setProfileDraft(mergedProfile);
-          setSelectedProfileUsername(mergedProfile.username);
-          setHasEnteredApp(Boolean(mergedProfile.id));
-        }
-      } else {
+        const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+        let shouldUseDemoStorage = true;
         setCurrentUserProfile(emptyAuthenticatedUserProfile);
         setProfileDraft(emptyAuthenticatedUserProfile);
         setSelectedProfileUsername("");
         setSelectedMembershipId("free");
         setHasEnteredApp(false);
-      }
 
-      if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile);
+        if (savedProfile) {
+          const parsedProfile = JSON.parse(savedProfile);
         if (parsedProfile?.id) {
           shouldUseDemoStorage = false;
           window.localStorage.removeItem(PROFILE_STORAGE_KEY);
@@ -1504,13 +1484,9 @@ export default function AppShellPage({ initialHasAccess = false }) {
       }
 
       const savedMembership = window.localStorage.getItem(MEMBERSHIP_STORAGE_KEY);
-      if (
-        savedMembership &&
-        membershipTiers.some((tier) => tier.id === savedMembership) &&
-        !isFounderIdentity({ username: restoredUsername })
-      ) {
-        setSelectedMembershipId(savedMembership);
-      }
+        if (savedMembership && membershipTiers.some((tier) => tier.id === savedMembership)) {
+          setSelectedMembershipId(savedMembership);
+        }
 
       const savedFollowing = window.localStorage.getItem(FOLLOWING_STORAGE_KEY);
       if (shouldUseDemoStorage && savedFollowing) {
