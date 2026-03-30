@@ -51,8 +51,10 @@ const FOLLOWING_STORAGE_KEY = "phlexr-app-shell-following";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
 const APP_SHELL_SEED_VERSION = "2026-03-28-josh-james-v11";
 const FOUNDER_USERNAME = "phlexrfounder";
+const DEFAULT_PROFILE_AVATAR =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Crect width='160' height='160' rx='80' fill='%23110f0c'/%3E%3Ccircle cx='80' cy='60' r='28' fill='%23c8a24d' fill-opacity='0.95'/%3E%3Cpath d='M34 136c8-24 27-38 46-38s38 14 46 38' fill='%23c8a24d' fill-opacity='0.95'/%3E%3C/svg%3E";
 
-const defaultCurrentUserProfile = {
+const demoCurrentUserProfile = {
   id: null,
   username: FOUNDER_USERNAME,
   displayName: "Josh James",
@@ -60,6 +62,16 @@ const defaultCurrentUserProfile = {
   avatar: "/josh-james-avatar.png",
   location: "Miami, FL",
   bio: "building phlexr. mostly cars, watches, and clean spots.",
+};
+
+const emptyAuthenticatedUserProfile = {
+  id: null,
+  username: "",
+  displayName: "",
+  badge: "Basic",
+  avatar: DEFAULT_PROFILE_AVATAR,
+  location: "",
+  bio: "",
 };
 
 const membershipTiers = [
@@ -627,6 +639,10 @@ function resolveMembershipIdForProfile({ username, membershipTier }) {
   return getMembershipIdFromTier(membershipTier);
 }
 
+function getProfileBase(isAuthenticatedProfile = false) {
+  return isAuthenticatedProfile ? emptyAuthenticatedUserProfile : demoCurrentUserProfile;
+}
+
 function getSeededSocialCount(username, base, range) {
   return username.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % range + base;
 }
@@ -763,7 +779,7 @@ export default function AppShellPage() {
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [currentView, setCurrentView] = useState("feed");
   const [selectedProfileUsername, setSelectedProfileUsername] = useState(
-    defaultCurrentUserProfile.username
+    demoCurrentUserProfile.username
   );
   const [editingPostId, setEditingPostId] = useState(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -791,7 +807,7 @@ export default function AppShellPage() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [currentUserProfile, setCurrentUserProfile] = useState(defaultCurrentUserProfile);
+  const [currentUserProfile, setCurrentUserProfile] = useState(demoCurrentUserProfile);
   const [safetyProfile, setSafetyProfile] = useState({
     birthdate: "",
     isAdult: null,
@@ -804,7 +820,7 @@ export default function AppShellPage() {
     confirmSafe: false,
   });
   const [draftImageName, setDraftImageName] = useState("");
-  const [profileDraft, setProfileDraft] = useState(defaultCurrentUserProfile);
+  const [profileDraft, setProfileDraft] = useState(demoCurrentUserProfile);
   const [profileImageName, setProfileImageName] = useState("");
   const [postSafetyError, setPostSafetyError] = useState("");
   const [postLimitError, setPostLimitError] = useState("");
@@ -826,7 +842,11 @@ export default function AppShellPage() {
       if (!accumulator[post.username]) {
         const profile = post.owner
           ? currentUserProfile
-          : profileDirectory[post.username] || profileDirectory.phlexrfounder;
+          : profileDirectory[post.username] || {
+              avatar: DEFAULT_PROFILE_AVATAR,
+              location: "",
+              bio: "",
+            };
         accumulator[post.username] = {
           username: post.username,
           displayName: post.owner ? currentUserProfile.displayName : post.displayName,
@@ -1015,17 +1035,17 @@ export default function AppShellPage() {
       membershipTier: profileRow?.membership_tier,
     });
     const membershipBadge =
-      membershipTiers.find((tier) => tier.id === membershipId)?.badge || defaultCurrentUserProfile.badge;
+      membershipTiers.find((tier) => tier.id === membershipId)?.badge || emptyAuthenticatedUserProfile.badge;
 
     const nextProfile = {
-      ...defaultCurrentUserProfile,
+      ...getProfileBase(true),
       id: authUser.id,
       username: nextUsername,
       displayName:
         profileRow?.display_name || metadata.display_name || metadata.username || fallbackUsername,
-      bio: profileRow?.bio || defaultCurrentUserProfile.bio,
-      location: profileRow?.location || defaultCurrentUserProfile.location,
-      avatar: profileRow?.avatar_url || defaultCurrentUserProfile.avatar,
+      bio: profileRow?.bio || "",
+      location: profileRow?.location || "",
+      avatar: profileRow?.avatar_url || emptyAuthenticatedUserProfile.avatar,
       badge: membershipBadge,
     };
 
@@ -1213,12 +1233,13 @@ export default function AppShellPage() {
       }
 
       const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
-      let restoredUsername = defaultCurrentUserProfile.username;
+      let restoredUsername = demoCurrentUserProfile.username;
       if (savedProfile) {
         const parsedProfile = JSON.parse(savedProfile);
         if (parsedProfile && typeof parsedProfile === "object") {
+          const mergedBaseProfile = getProfileBase(Boolean(parsedProfile.id));
           const mergedProfile = {
-            ...defaultCurrentUserProfile,
+            ...mergedBaseProfile,
             ...parsedProfile,
             badge: isFounderUsername(parsedProfile.username)
               ? "Elite"
@@ -1231,9 +1252,9 @@ export default function AppShellPage() {
           setHasEnteredApp(Boolean(mergedProfile.id));
         }
       } else {
-        setCurrentUserProfile(defaultCurrentUserProfile);
-        setProfileDraft(defaultCurrentUserProfile);
-        setSelectedProfileUsername(defaultCurrentUserProfile.username);
+        setCurrentUserProfile(demoCurrentUserProfile);
+        setProfileDraft(demoCurrentUserProfile);
+        setSelectedProfileUsername(demoCurrentUserProfile.username);
         setHasEnteredApp(false);
       }
 
@@ -1338,9 +1359,9 @@ export default function AppShellPage() {
         setHasEnteredApp(false);
         setCurrentView("feed");
         setSelectedMembershipId("free");
-        setSelectedProfileUsername(defaultCurrentUserProfile.username);
-        setCurrentUserProfile(defaultCurrentUserProfile);
-        setProfileDraft(defaultCurrentUserProfile);
+        setSelectedProfileUsername(demoCurrentUserProfile.username);
+        setCurrentUserProfile(demoCurrentUserProfile);
+        setProfileDraft(demoCurrentUserProfile);
         setAuthMode("signup");
       }
     });
@@ -1794,10 +1815,10 @@ export default function AppShellPage() {
     }
 
     if (data?.session) {
-      setHasEnteredApp(true);
       setCurrentView("feed");
+      await hydrateCurrentUserFromSession(data.session);
+      setHasEnteredApp(true);
       setAuthLoading(false);
-      hydrateCurrentUserFromSession(data.session);
       if (typeof window !== "undefined" && window.location.pathname !== "/feed") {
         window.location.assign("/feed");
         return;
@@ -1823,8 +1844,9 @@ export default function AppShellPage() {
     setHasEnteredApp(false);
     setCurrentView("feed");
     setSelectedMembershipId("free");
-    setCurrentUserProfile(defaultCurrentUserProfile);
-    setProfileDraft(defaultCurrentUserProfile);
+    setSelectedProfileUsername(demoCurrentUserProfile.username);
+    setCurrentUserProfile(demoCurrentUserProfile);
+    setProfileDraft(demoCurrentUserProfile);
     setAuthForm((currentForm) => ({
       ...currentForm,
       password: "",
