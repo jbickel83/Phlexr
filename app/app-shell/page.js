@@ -727,6 +727,7 @@ export default function AppShellPage() {
   const [commentReportReasons, setCommentReportReasons] = useState({});
   const [boostMenuPostId, setBoostMenuPostId] = useState(null);
   const [shareFeedback, setShareFeedback] = useState({});
+  const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [notifications, setNotifications] = useState(seededNotifications);
@@ -1408,6 +1409,21 @@ export default function AppShellPage() {
     setCurrentView(view);
   }
 
+  function setTimedShareFeedback(postId, message) {
+    setShareFeedback((currentFeedback) => ({
+      ...currentFeedback,
+      [postId]: message,
+    }));
+
+    window.setTimeout(() => {
+      setShareFeedback((currentFeedback) => {
+        const nextFeedback = { ...currentFeedback };
+        delete nextFeedback[postId];
+        return nextFeedback;
+      });
+    }, 2400);
+  }
+
   function handleVote(postId, voteType) {
     if (votedPosts[postId]) {
       return;
@@ -1826,6 +1842,9 @@ export default function AppShellPage() {
   }
 
   async function handleSharePost(post) {
+    setActiveSharePostId(post.id);
+    return;
+
     const shareUrl = `https://phlexr.com/app-shell?post=${post.id}`;
     const sharePayload = {
       title: "PHLEXR",
@@ -1870,6 +1889,93 @@ export default function AppShellPage() {
         });
       }, 2400);
     }
+  }
+
+  function closeShareSheet() {
+    setActiveSharePostId(null);
+  }
+
+  async function handleCopyShareLink() {
+    const activeSharePost = posts.find((post) => post.id === activeSharePostId);
+
+    if (!activeSharePost) {
+      return;
+    }
+
+    const shareUrl = `https://phlexr.com/app-shell?post=${activeSharePost.id}`;
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setTimedShareFeedback(activeSharePost.id, "Link copied");
+      } else {
+        throw new Error("Copy unavailable");
+      }
+    } catch {
+      setTimedShareFeedback(activeSharePost.id, "Copy unavailable");
+    }
+
+    closeShareSheet();
+  }
+
+  async function handleNativeShare() {
+    const activeSharePost = posts.find((post) => post.id === activeSharePostId);
+
+    if (
+      !activeSharePost ||
+      typeof navigator === "undefined" ||
+      typeof navigator.share !== "function"
+    ) {
+      return;
+    }
+
+    const sharePayload = {
+      title: "PHLEXR",
+      text: `${activeSharePost.displayName} · ${activeSharePost.caption || "PHLEXR post"}`,
+      url: `https://phlexr.com/app-shell?post=${activeSharePost.id}`,
+    };
+
+    try {
+      await navigator.share(sharePayload);
+      setTimedShareFeedback(activeSharePost.id, "Shared");
+      closeShareSheet();
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+
+      setTimedShareFeedback(activeSharePost.id, "Share unavailable");
+      closeShareSheet();
+    }
+  }
+
+  function handleExternalShare(destination) {
+    const activeSharePost = posts.find((post) => post.id === activeSharePostId);
+
+    if (!activeSharePost || typeof window === "undefined") {
+      return;
+    }
+
+    const shareUrl = `https://phlexr.com/app-shell?post=${activeSharePost.id}`;
+    const shareText = `${activeSharePost.displayName} · ${activeSharePost.caption || "PHLEXR post"}`;
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(shareText);
+    const shareDestinations = {
+      gmail: `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent("PHLEXR post")}&body=${encodedText}%0A%0A${encodedUrl}`,
+      email: `mailto:?subject=${encodeURIComponent("PHLEXR post")}&body=${encodedText}%0A%0A${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+    };
+
+    const destinationUrl = shareDestinations[destination];
+
+    if (!destinationUrl) {
+      return;
+    }
+
+    window.open(destinationUrl, "_blank", "noopener,noreferrer");
+    setTimedShareFeedback(activeSharePost.id, "Share ready");
+    closeShareSheet();
   }
 
   function handlePostSubmit(event) {
@@ -1950,153 +2056,155 @@ export default function AppShellPage() {
         <div className="relative z-10 space-y-6">
           {hasEnteredApp ? (
             <>
-              <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-5 py-4 sm:px-6">
-                <div className="flex items-center justify-between gap-4">
-                  <button
-                    type="button"
-                    onClick={() => navigateTo("feed")}
-                    className="font-display text-2xl tracking-[0.22em] text-gold"
-                  >
-                    PHLEXR
-                  </button>
-                  <div className="flex items-center gap-3">
+              <div className="sticky top-3 z-40 space-y-4 rounded-[2.25rem] bg-[linear-gradient(180deg,rgba(10,10,10,0.9),rgba(10,10,10,0.72))] px-1 pb-1 pt-1 backdrop-blur-xl">
+                <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-5 py-4 sm:px-6">
+                  <div className="flex items-center justify-between gap-4">
                     <button
                       type="button"
-                      onClick={() => navigateTo("notifications")}
-                      aria-label="Open notifications"
-                      className={`relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition ${
-                        currentView === "notifications"
-                          ? "border-gold/45 bg-[linear-gradient(180deg,rgba(230,179,58,0.16),rgba(255,255,255,0.03))] text-gold"
-                          : "border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
-                      }`}
+                      onClick={() => navigateTo("feed")}
+                      className="font-display text-2xl tracking-[0.22em] text-gold"
                     >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        className="h-5 w-5 text-gold"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.85"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      PHLEXR
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => navigateTo("notifications")}
+                        aria-label="Open notifications"
+                        className={`relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition ${
+                          currentView === "notifications"
+                            ? "border-gold/45 bg-[linear-gradient(180deg,rgba(230,179,58,0.16),rgba(255,255,255,0.03))] text-gold"
+                            : "border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                        }`}
                       >
-                        <path d="M6.5 9.5a5.5 5.5 0 1 1 11 0c0 5.12 2.25 6.08 2.25 7H4.25c0-.92 2.25-1.88 2.25-7Z" />
-                        <path d="M10 19.25a2.25 2.25 0 0 0 4 0" />
-                      </svg>
-                      {unreadNotificationCount > 0 ? (
-                        <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border border-gold/45 bg-[#241a0a] px-1.5 text-[10px] font-semibold leading-none text-gold shadow-[0_0_10px_rgba(216,178,90,0.18)]">
-                          {unreadNotificationCount}
-                        </span>
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openProfile(currentUser.username)}
-                      aria-label="Open profile"
-                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] transition hover:border-gold/30"
-                    >
-                      <Avatar
-                        src={currentUser.avatar}
-                        alt={currentUser.displayName}
-                        sizeClass="h-10 w-10"
-                        borderClass="border-gold/40"
-                      />
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <div className="w-full lg:flex lg:flex-1 lg:justify-center lg:px-6">
-                    <div ref={searchRef} className="relative w-full max-w-xl">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(event) => {
-                          setSearchQuery(event.target.value);
-                          setIsSearchOpen(true);
-                        }}
-                        onFocus={() => setIsSearchOpen(true)}
-                        placeholder="Search"
-                        className="w-full rounded-full border border-white/15 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
-                      />
-                      {isSearchOpen && searchQuery.trim() ? (
-                        <div className="absolute left-0 right-0 top-[calc(100%+0.65rem)] z-30 overflow-hidden rounded-[1.4rem] border border-white/10 bg-obsidian/95 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)] backdrop-blur">
-                          {searchResults.length ? (
-                            <div className="divide-y divide-white/8">
-                              {searchResults.map((result) => (
-                                <button
-                                  key={result.username}
-                                  type="button"
-                                  onClick={() => openProfile(result.username)}
-                                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
-                                >
-                                  <Avatar
-                                    src={result.avatar}
-                                    alt={result.displayName}
-                                    sizeClass="h-11 w-11"
-                                    borderClass="border-gold/35"
-                                  />
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold text-white">
-                                      {result.displayName}
-                                    </p>
-                                    <p className="mt-1 truncate text-xs text-gold">
-                                      @{result.username}
-                                    </p>
-                                  </div>
-                                  <p
-                                    className={`shrink-0 text-xs uppercase tracking-[0.16em] ${getStatusTextClass(
-                                      result.badge
-                                    )}`}
-                                  >
-                                    {normalizeStatus(result.badge)}
-                                  </p>
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="px-4 py-4 text-sm text-white/50">No results</div>
-                          )}
-                        </div>
-                      ) : null}
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          className="h-5 w-5 text-gold"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.85"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M6.5 9.5a5.5 5.5 0 1 1 11 0c0 5.12 2.25 6.08 2.25 7H4.25c0-.92 2.25-1.88 2.25-7Z" />
+                          <path d="M10 19.25a2.25 2.25 0 0 0 4 0" />
+                        </svg>
+                        {unreadNotificationCount > 0 ? (
+                          <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border border-gold/45 bg-[#241a0a] px-1.5 text-[10px] font-semibold leading-none text-gold shadow-[0_0_10px_rgba(216,178,90,0.18)]">
+                            {unreadNotificationCount}
+                          </span>
+                        ) : null}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openProfile(currentUser.username)}
+                        aria-label="Open profile"
+                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] transition hover:border-gold/30"
+                      >
+                        <Avatar
+                          src={currentUser.avatar}
+                          alt={currentUser.displayName}
+                          sizeClass="h-10 w-10"
+                          borderClass="border-gold/40"
+                        />
+                      </button>
                     </div>
                   </div>
-                </div>
-              </header>
+                  <div className="mt-3">
+                    <div className="w-full lg:flex lg:flex-1 lg:justify-center lg:px-6">
+                      <div ref={searchRef} className="relative w-full max-w-xl">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(event) => {
+                            setSearchQuery(event.target.value);
+                            setIsSearchOpen(true);
+                          }}
+                          onFocus={() => setIsSearchOpen(true)}
+                          placeholder="Search"
+                          className="w-full rounded-full border border-white/15 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/28 focus:border-gold/35"
+                        />
+                        {isSearchOpen && searchQuery.trim() ? (
+                          <div className="absolute left-0 right-0 top-[calc(100%+0.65rem)] z-30 overflow-hidden rounded-[1.4rem] border border-white/10 bg-obsidian/95 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)] backdrop-blur">
+                            {searchResults.length ? (
+                              <div className="divide-y divide-white/8">
+                                {searchResults.map((result) => (
+                                  <button
+                                    key={result.username}
+                                    type="button"
+                                    onClick={() => openProfile(result.username)}
+                                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
+                                  >
+                                    <Avatar
+                                      src={result.avatar}
+                                      alt={result.displayName}
+                                      sizeClass="h-11 w-11"
+                                      borderClass="border-gold/35"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="truncate text-sm font-semibold text-white">
+                                        {result.displayName}
+                                      </p>
+                                      <p className="mt-1 truncate text-xs text-gold">
+                                        @{result.username}
+                                      </p>
+                                    </div>
+                                    <p
+                                      className={`shrink-0 text-xs uppercase tracking-[0.16em] ${getStatusTextClass(
+                                        result.badge
+                                      )}`}
+                                    >
+                                      {normalizeStatus(result.badge)}
+                                    </p>
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="px-4 py-4 text-sm text-white/50">No results</div>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </header>
 
-              <div className="hidden items-center gap-3 lg:flex">
-                {shellNav.map((item) => (
-                  <button
-                    key={item.view}
-                    type="button"
-                    onClick={() => navigateTo(item.view)}
-                    className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
-                      currentView === item.view
-                        ? "bg-gold text-obsidian"
-                        : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-                <PremiumBadge tone={getStatusTone(selectedMembership.badge)}>
-                  {selectedMembership.name} membership
-                </PremiumBadge>
+                <div className="hidden items-center gap-3 lg:flex">
+                  {shellNav.map((item) => (
+                    <button
+                      key={item.view}
+                      type="button"
+                      onClick={() => navigateTo(item.view)}
+                      className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
+                        currentView === item.view
+                          ? "bg-gold text-obsidian"
+                          : "border border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                  <PremiumBadge tone={getStatusTone(selectedMembership.badge)}>
+                    {selectedMembership.name} membership
+                  </PremiumBadge>
+                </div>
               </div>
             </>
           ) : (
             <header className="rounded-[2rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] p-5 sm:p-6">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Separate App Route</p>
-                  <h1 className="mt-4 text-balance font-display text-4xl text-white sm:text-5xl">
-                    PHLEXR app shell
-                  </h1>
-                  <p className="mt-4 max-w-3xl text-base leading-7 text-white/62 sm:text-lg">
-                    Seeded local-state prototype for the real PHLEXR app experience. No backend, no
-                    APIs, no persistence, just polished shell behavior.
-                  </p>
-                </div>
-
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <a
+                  href="/"
+                  aria-label="PHLEXR"
+                  className="inline-flex w-fit items-center"
+                >
+                  <img
+                    src="/phlexr-logo.png"
+                    alt="PHLEXR"
+                    className="h-10 w-auto sm:h-12"
+                  />
+                </a>
                 <div className="flex flex-wrap gap-3">
                   <PremiumBadge tone={getStatusTone(selectedMembership.badge)}>
                     {selectedMembership.name} membership
@@ -2117,7 +2225,7 @@ export default function AppShellPage() {
               id="auth"
               eyebrow="01. Auth"
               title="Login / Signup"
-              copy="A high-trust entry screen with direct account fields, platform buttons, and the full PHLEXR membership structure."
+              copy=""
             >
               <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="rounded-[1.6rem] border border-white/8 bg-black/35 p-4 sm:p-5">
@@ -3403,6 +3511,81 @@ export default function AppShellPage() {
           ))}
         </div>
       </nav>
+      {activeSharePostId ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 pb-6 pt-20 backdrop-blur-sm sm:items-center">
+          <button
+            type="button"
+            aria-label="Close share sheet"
+            onClick={closeShareSheet}
+            className="absolute inset-0"
+          />
+          <div className="relative z-10 w-full max-w-md rounded-[2rem] border border-gold/18 bg-[linear-gradient(180deg,rgba(20,20,20,0.96),rgba(12,12,12,0.94))] p-5 shadow-[0_30px_120px_-40px_rgba(0,0,0,0.95)] sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-gold/75">Share</p>
+                <p className="mt-3 text-2xl font-semibold text-white">Share this flex</p>
+                <p className="mt-3 text-sm leading-6 text-white/58">
+                  Choose where to send it without leaving PHLEXR first.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeShareSheet}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-white transition hover:border-gold/30 hover:text-gold"
+              >
+                <span className="text-lg leading-none">x</span>
+              </button>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={handleCopyShareLink}
+                className="rounded-[1.35rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-4 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b]"
+              >
+                Copy link
+              </button>
+              {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
+                <button
+                  type="button"
+                  onClick={handleNativeShare}
+                  className="rounded-[1.35rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-4 text-sm font-semibold text-gold transition hover:border-gold/50 hover:text-[#f1cf7b]"
+                >
+                  Native share
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => handleExternalShare("gmail")}
+                className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+              >
+                Gmail
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExternalShare("email")}
+                className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExternalShare("facebook")}
+                className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+              >
+                Facebook
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExternalShare("x")}
+                className="rounded-[1.35rem] border border-white/12 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+              >
+                X
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
