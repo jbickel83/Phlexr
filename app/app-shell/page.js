@@ -707,6 +707,20 @@ function getProfileBase(isAuthenticatedProfile = false) {
   return isAuthenticatedProfile ? emptyAuthenticatedUserProfile : demoCurrentUserProfile;
 }
 
+function applyFounderProfileIdentity(profile) {
+  if (!isFounderIdentity(profile)) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    username: FOUNDER_USERNAME,
+    displayName: "Josh James",
+    badge: "Elite",
+    isFounder: true,
+  };
+}
+
 function getSeededSocialCount(username, base, range) {
   return username.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % range + base;
 }
@@ -1185,7 +1199,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
       }),
     };
 
-    return optimisticProfile;
+    return applyFounderProfileIdentity(optimisticProfile);
   }
 
   async function hydrateCurrentUserFromSession(session) {
@@ -1259,13 +1273,15 @@ export default function AppShellPage({ initialHasAccess = false }) {
       }),
     };
 
+    const normalizedProfile = applyFounderProfileIdentity(nextProfile);
+
     setSelectedMembershipId(membershipId);
-    setCurrentUserProfile(nextProfile);
-    setProfileDraft(nextProfile);
-    setSelectedProfileUsername(nextProfile.username);
+    setCurrentUserProfile(normalizedProfile);
+    setProfileDraft(normalizedProfile);
+    setSelectedProfileUsername(normalizedProfile.username);
     setAuthForm((currentForm) => ({
       ...currentForm,
-      username: nextProfile.username,
+      username: normalizedProfile.username,
       email: authUser.email || currentForm.email,
       password: "",
     }));
@@ -1485,6 +1501,19 @@ export default function AppShellPage({ initialHasAccess = false }) {
       return;
     }
 
+    if (initialHasAccess) {
+      setCurrentUserProfile(emptyAuthenticatedUserProfile);
+      setProfileDraft(emptyAuthenticatedUserProfile);
+      setSelectedProfileUsername("");
+      setSelectedMembershipId("free");
+      setHasEnteredApp(true);
+      setPosts([]);
+      setComments([]);
+      setVotedPosts({});
+      setCurrentUserFollowing([]);
+      return;
+    }
+
     try {
       const savedSeedVersion = window.localStorage.getItem(SEED_VERSION_STORAGE_KEY);
       const shouldRefreshSeedData = savedSeedVersion !== APP_SHELL_SEED_VERSION;
@@ -1591,7 +1620,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
       window.localStorage.removeItem(FOLLOWING_STORAGE_KEY);
       window.localStorage.removeItem(SEED_VERSION_STORAGE_KEY);
     }
-  }, []);
+  }, [initialHasAccess]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -2807,15 +2836,17 @@ export default function AppShellPage({ initialHasAccess = false }) {
       avatar: profileDraft.avatar.trim() || currentUserProfile.avatar,
     };
 
+    const normalizedNextProfile = applyFounderProfileIdentity(nextProfile);
+
     const previousUsername = currentUserProfile.username;
 
     try {
       const { data, error } = await updateProfileRow(currentUserProfile.id, {
-        username: nextProfile.username,
-        display_name: nextProfile.displayName,
-        bio: nextProfile.bio,
-        location: nextProfile.location,
-        avatar_url: nextProfile.avatar,
+        username: normalizedNextProfile.username,
+        display_name: normalizedNextProfile.displayName,
+        bio: normalizedNextProfile.bio,
+        location: normalizedNextProfile.location,
+        avatar_url: normalizedNextProfile.avatar,
         membership_tier: isFounderIdentity(currentUserProfile) ? "Elite" : selectedMembership.name,
       });
 
@@ -2824,37 +2855,38 @@ export default function AppShellPage({ initialHasAccess = false }) {
         return;
       }
 
-      nextProfile.username = data.username;
-      nextProfile.displayName = data.display_name;
-      nextProfile.bio = data.bio || "";
-      nextProfile.location = data.location || "";
-      nextProfile.avatar = data.avatar_url || DEFAULT_PROFILE_AVATAR;
-      nextProfile.email = currentUserProfile.email;
-      nextProfile.isFounder = Boolean(data.is_founder);
-      nextProfile.badge = isFounderIdentity({
+      normalizedNextProfile.username = data.username;
+      normalizedNextProfile.displayName = data.display_name;
+      normalizedNextProfile.bio = data.bio || "";
+      normalizedNextProfile.location = data.location || "";
+      normalizedNextProfile.avatar = data.avatar_url || DEFAULT_PROFILE_AVATAR;
+      normalizedNextProfile.email = currentUserProfile.email;
+      normalizedNextProfile.isFounder = isFounderIdentity({
         username: data.username,
         email: currentUserProfile.email,
-        isFounder: data.is_founder,
-      })
+      });
+      normalizedNextProfile.badge = normalizedNextProfile.isFounder
         ? "Elite"
         : normalizeStatus(data.membership_tier);
 
-      setCurrentUserProfile(nextProfile);
-      setProfileDraft(nextProfile);
+      const savedProfile = applyFounderProfileIdentity(normalizedNextProfile);
+
+      setCurrentUserProfile(savedProfile);
+      setProfileDraft(savedProfile);
       setPosts((currentPosts) =>
         currentPosts.map((post) =>
           post.owner
             ? {
                 ...post,
-                username: nextProfile.username,
-                displayName: nextProfile.displayName,
-                badge: nextProfile.badge,
+                username: savedProfile.username,
+                displayName: savedProfile.displayName,
+                badge: savedProfile.badge,
               }
             : post
         )
       );
       setSelectedProfileUsername((currentUsername) =>
-        currentUsername === previousUsername ? nextProfile.username : currentUsername
+        currentUsername === previousUsername ? savedProfile.username : currentUsername
       );
       setProfileSaveMessage("Profile saved.");
       setCurrentView("profile");
