@@ -510,7 +510,7 @@ function CameraIcon({ className = "h-4 w-4" }) {
 
 function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, currentUser }) {
   const selectedMembership =
-    membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
+    membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[0];
   const isFounderAccount = isFounderIdentity(currentUser);
 
   return (
@@ -579,7 +579,6 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
             <p className="mt-2 text-sm text-gold">
               Current plan: {selectedMembership.name} · {selectedMembership.badge}
             </p>
-            <p className="mt-2 text-sm text-white/55">Shell mode only. Checkout coming soon.</p>
             {isFounderAccount ? (
               <p className="mt-2 text-xs uppercase tracking-[0.16em] text-gold/75">
                 Founder status · permanent Elite
@@ -843,9 +842,7 @@ export default function AppShellPage() {
   const [posts, setPosts] = useState(seededPosts);
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [currentView, setCurrentView] = useState("feed");
-  const [selectedProfileUsername, setSelectedProfileUsername] = useState(
-    demoCurrentUserProfile.username
-  );
+  const [selectedProfileUsername, setSelectedProfileUsername] = useState("");
   const [editingPostId, setEditingPostId] = useState(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [votedPosts, setVotedPosts] = useState({});
@@ -857,7 +854,7 @@ export default function AppShellPage() {
   const [shareFeedback, setShareFeedback] = useState({});
   const [activeSharePostId, setActiveSharePostId] = useState(null);
   const [shareSheetView, setShareSheetView] = useState("primary");
-  const [selectedMembershipId, setSelectedMembershipId] = useState("elite");
+  const [selectedMembershipId, setSelectedMembershipId] = useState("free");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [authForm, setAuthForm] = useState({
@@ -874,7 +871,7 @@ export default function AppShellPage() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [currentUserProfile, setCurrentUserProfile] = useState(demoCurrentUserProfile);
+  const [currentUserProfile, setCurrentUserProfile] = useState(emptyAuthenticatedUserProfile);
   const [safetyProfile, setSafetyProfile] = useState({
     birthdate: "",
     isAdult: null,
@@ -887,7 +884,7 @@ export default function AppShellPage() {
     confirmSafe: false,
   });
   const [draftImageName, setDraftImageName] = useState("");
-  const [profileDraft, setProfileDraft] = useState(demoCurrentUserProfile);
+  const [profileDraft, setProfileDraft] = useState(emptyAuthenticatedUserProfile);
   const [profileImageName, setProfileImageName] = useState("");
   const [postSafetyError, setPostSafetyError] = useState("");
   const [postLimitError, setPostLimitError] = useState("");
@@ -963,14 +960,17 @@ export default function AppShellPage() {
       posts: [],
     };
 
+  const effectiveMembershipId = isFounderIdentity(currentUserProfile)
+    ? "elite"
+    : selectedMembershipId;
   const selectedMembership =
-    membershipTiers.find((tier) => tier.id === selectedMembershipId) || membershipTiers[3];
+    membershipTiers.find((tier) => tier.id === effectiveMembershipId) || membershipTiers[0];
   const profileUpgradeLabel =
     isFounderIdentity(currentUserProfile)
       ? "Founder Elite"
-      : selectedMembershipId === "premium"
+      : effectiveMembershipId === "premium"
       ? "Upgrade to Elite"
-      : selectedMembershipId === "elite"
+      : effectiveMembershipId === "elite"
         ? "Elite Active"
         : "Upgrade Status";
 
@@ -1367,9 +1367,10 @@ export default function AppShellPage() {
           setHasEnteredApp(Boolean(mergedProfile.id));
         }
       } else {
-        setCurrentUserProfile(demoCurrentUserProfile);
-        setProfileDraft(demoCurrentUserProfile);
-        setSelectedProfileUsername(demoCurrentUserProfile.username);
+        setCurrentUserProfile(emptyAuthenticatedUserProfile);
+        setProfileDraft(emptyAuthenticatedUserProfile);
+        setSelectedProfileUsername("");
+        setSelectedMembershipId("free");
         setHasEnteredApp(false);
       }
 
@@ -1488,9 +1489,9 @@ export default function AppShellPage() {
       setHasEnteredApp(false);
       setCurrentView("feed");
       setSelectedMembershipId("free");
-      setSelectedProfileUsername(demoCurrentUserProfile.username);
-      setCurrentUserProfile(demoCurrentUserProfile);
-      setProfileDraft(demoCurrentUserProfile);
+      setSelectedProfileUsername("");
+      setCurrentUserProfile(emptyAuthenticatedUserProfile);
+      setProfileDraft(emptyAuthenticatedUserProfile);
       setAuthMode("signin");
       setAuthError("");
       setAuthMessage("Email confirmed. Sign in to enter PHLEXR.");
@@ -1542,6 +1543,11 @@ export default function AppShellPage() {
             }
 
             setHasEnteredApp(false);
+            setCurrentView("feed");
+            setSelectedMembershipId("free");
+            setSelectedProfileUsername("");
+            setCurrentUserProfile(emptyAuthenticatedUserProfile);
+            setProfileDraft(emptyAuthenticatedUserProfile);
             return;
           }
         }
@@ -1563,6 +1569,10 @@ export default function AppShellPage() {
           }
           setHasEnteredApp(true);
         } else {
+          setSelectedMembershipId("free");
+          setSelectedProfileUsername("");
+          setCurrentUserProfile(emptyAuthenticatedUserProfile);
+          setProfileDraft(emptyAuthenticatedUserProfile);
           setHasEnteredApp(false);
         }
       } catch (error) {
@@ -1570,6 +1580,10 @@ export default function AppShellPage() {
           return;
         }
 
+        setSelectedMembershipId("free");
+        setSelectedProfileUsername("");
+        setCurrentUserProfile(emptyAuthenticatedUserProfile);
+        setProfileDraft(emptyAuthenticatedUserProfile);
         setHasEnteredApp(false);
         setAuthError(error instanceof Error ? error.message : "Unable to initialize auth.");
       }
@@ -1596,9 +1610,9 @@ export default function AppShellPage() {
         setHasEnteredApp(false);
         setCurrentView("feed");
         setSelectedMembershipId("free");
-        setSelectedProfileUsername(demoCurrentUserProfile.username);
-        setCurrentUserProfile(demoCurrentUserProfile);
-        setProfileDraft(demoCurrentUserProfile);
+        setSelectedProfileUsername("");
+        setCurrentUserProfile(emptyAuthenticatedUserProfile);
+        setProfileDraft(emptyAuthenticatedUserProfile);
         setAuthMode("signup");
       }
     });
@@ -2246,9 +2260,9 @@ export default function AppShellPage() {
     setHasEnteredApp(false);
     setCurrentView("feed");
     setSelectedMembershipId("free");
-    setSelectedProfileUsername(demoCurrentUserProfile.username);
-    setCurrentUserProfile(demoCurrentUserProfile);
-    setProfileDraft(demoCurrentUserProfile);
+    setSelectedProfileUsername("");
+    setCurrentUserProfile(emptyAuthenticatedUserProfile);
+    setProfileDraft(emptyAuthenticatedUserProfile);
     setAuthForm((currentForm) => ({
       ...currentForm,
       password: "",
@@ -3410,7 +3424,7 @@ export default function AppShellPage() {
                 </div>
 
                 <MembershipPlansPanel
-                  selectedMembershipId={selectedMembershipId}
+                  selectedMembershipId={effectiveMembershipId}
                   setSelectedMembershipId={setSelectedMembershipId}
                   currentUser={currentUser}
                 />
@@ -4103,10 +4117,10 @@ export default function AppShellPage() {
                     {isOwnProfile ? (
                       <>
                         {isFounderProfile ? (
-                          <span className="inline-flex items-center rounded-full border border-gold/22 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-gold/80">
-                            Founder Elite
-                          </span>
-                        ) : selectedMembershipId === "elite" ? (
+                          <p className="text-xs uppercase tracking-[0.16em] text-gold/75">
+                            Founder · Permanent Elite
+                          </p>
+                        ) : effectiveMembershipId === "elite" ? (
                           <button
                             type="button"
                             disabled
@@ -4401,7 +4415,7 @@ export default function AppShellPage() {
             hideHeader
           >
             <MembershipPlansPanel
-              selectedMembershipId={selectedMembershipId}
+              selectedMembershipId={effectiveMembershipId}
               setSelectedMembershipId={setSelectedMembershipId}
               currentUser={currentUser}
             />
