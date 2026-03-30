@@ -3523,11 +3523,6 @@ export default function AppShellPage({ initialHasAccess = false }) {
                         {authMessage ? (
                           <p className="px-1 text-sm text-gold/85">{authMessage}</p>
                         ) : null}
-                        <p className="px-1 text-xs text-white/45">
-                          {supabaseReady
-                            ? "Supabase auth is connected. Google and Apple stay disabled until configured."
-                            : "Supabase foundation added. Paste env keys to activate live auth."}
-                        </p>
                         {authMode === "signup" ? (
                           <div className="mt-2 rounded-[1.35rem] border border-white/10 bg-white/[0.02] px-4 py-4">
                             <p className="text-xs uppercase tracking-[0.2em] text-gold/75">
