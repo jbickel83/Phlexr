@@ -1646,48 +1646,30 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
     initializeAuth();
 
-    const {
-      data: { subscription },
-    } = subscribeToSupabaseAuthChanges(async (event, session) => {
-      if (!isMounted) {
-        return;
-      }
-
-      if (event === "INITIAL_SESSION") {
-        return;
-      }
-
-      if (session) {
-        const { data: userData, error: userError } = await getCurrentSupabaseUser();
-
+      const {
+        data: { subscription },
+      } = subscribeToSupabaseAuthChanges(async (event, session) => {
         if (!isMounted) {
+        return;
+      }
+
+        if (event === "INITIAL_SESSION") {
           return;
         }
 
-        if (userError) {
-          setAuthError(userError.message);
+        if (session) {
+          const optimisticProfile = buildOptimisticProfileFromAuthUser(session.user);
+          setCurrentUserProfile(optimisticProfile);
+          setProfileDraft(optimisticProfile);
+          setSelectedProfileUsername(optimisticProfile.username);
+          setHasEnteredApp(true);
           setIsAuthInitializing(false);
-          return;
-        }
-
-        if (!userData?.user) {
+          setAuthError("");
+          void hydrateCurrentUserFromSession(session);
+        } else {
           await resetToSignedOutState({ authMode: "signin" });
           setIsAuthInitializing(false);
-          return;
         }
-
-        const optimisticProfile = buildOptimisticProfileFromAuthUser(session.user);
-        setCurrentUserProfile(optimisticProfile);
-        setProfileDraft(optimisticProfile);
-        setSelectedProfileUsername(optimisticProfile.username);
-        setHasEnteredApp(true);
-        setIsAuthInitializing(false);
-        setAuthError("");
-        void hydrateCurrentUserFromSession(session);
-      } else {
-        await resetToSignedOutState({ authMode: "signin" });
-        setIsAuthInitializing(false);
-      }
     });
 
     return () => {
@@ -2346,7 +2328,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
       setProfileDraft(optimisticProfile);
       setSelectedProfileUsername(optimisticProfile.username);
       setHasEnteredApp(true);
-      await hydrateCurrentUserFromSession(data.session);
+      void hydrateCurrentUserFromSession(data.session);
 
       if (typeof window !== "undefined" && window.location.pathname !== "/feed") {
         window.history.replaceState({}, "", "/feed");
