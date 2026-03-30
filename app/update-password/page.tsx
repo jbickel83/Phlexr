@@ -22,6 +22,7 @@ export default function UpdatePasswordPage() {
     const supabase = getSupabaseClient();
 
     async function prepareRecoverySession() {
+      let recoverySession = null;
       const url = new URL(window.location.href);
       const tokenHash = url.searchParams.get("token_hash");
       const tokenType = url.searchParams.get("type");
@@ -29,7 +30,7 @@ export default function UpdatePasswordPage() {
       const queryRefreshToken = url.searchParams.get("refresh_token");
 
       if (tokenHash && tokenType === "recovery") {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
+        const { data, error: verifyError } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
           type: "recovery",
         });
@@ -42,10 +43,12 @@ export default function UpdatePasswordPage() {
           setError(verifyError.message);
           return;
         }
+
+        recoverySession = data?.session ?? null;
       }
 
       if (queryAccessToken && queryRefreshToken) {
-        const { error: querySessionError } = await supabase.auth.setSession({
+        const { data, error: querySessionError } = await supabase.auth.setSession({
           access_token: queryAccessToken,
           refresh_token: queryRefreshToken,
         });
@@ -58,6 +61,8 @@ export default function UpdatePasswordPage() {
           setError(querySessionError.message);
           return;
         }
+
+        recoverySession = data?.session ?? recoverySession;
       }
 
       if (window.location.hash) {
@@ -66,7 +71,7 @@ export default function UpdatePasswordPage() {
         const hashRefreshToken = hashParams.get("refresh_token");
 
         if (hashAccessToken && hashRefreshToken) {
-          const { error: hashSessionError } = await supabase.auth.setSession({
+          const { data, error: hashSessionError } = await supabase.auth.setSession({
             access_token: hashAccessToken,
             refresh_token: hashRefreshToken,
           });
@@ -79,10 +84,10 @@ export default function UpdatePasswordPage() {
             setError(hashSessionError.message);
             return;
           }
+
+          recoverySession = data?.session ?? recoverySession;
         }
       }
-
-      window.history.replaceState({}, "", "/update-password");
 
       const { data, error: sessionError } = await getCurrentSupabaseSession();
 
@@ -95,9 +100,14 @@ export default function UpdatePasswordPage() {
         return;
       }
 
-      if (data?.session) {
+      if (recoverySession || data?.session) {
+        window.history.replaceState({}, "", "/update-password");
+        setError("");
         setReady(true);
+        return;
       }
+
+      setReady(false);
     }
 
     prepareRecoverySession();
