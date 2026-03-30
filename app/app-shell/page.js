@@ -404,7 +404,7 @@ function normalizeStatus(value) {
   return "Basic";
 }
 
-function PremiumBadge({ children, tone = "premium" }) {
+function PremiumBadge({ children, tone = "premium", className = "" }) {
   const toneClass =
     tone === "basic"
       ? "border-white/15 bg-white/[0.03] text-white"
@@ -414,7 +414,7 @@ function PremiumBadge({ children, tone = "premium" }) {
 
   return (
     <span
-      className={`inline-flex h-9 w-fit items-center justify-center whitespace-nowrap rounded-full border px-3 py-0 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] sm:h-auto sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.16em] ${toneClass}`}
+      className={`inline-flex h-9 w-fit items-center justify-center whitespace-nowrap rounded-full border px-3 py-0 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] sm:h-auto sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.16em] ${toneClass} ${className}`}
     >
       {children}
     </span>
@@ -2628,12 +2628,15 @@ export default function AppShellPage() {
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <PhlexrImageLogo href="/" />
                 <div className="flex flex-wrap gap-3">
-                  <PremiumBadge tone={getStatusTone(selectedMembership.badge)}>
+                  <PremiumBadge
+                    tone={getStatusTone(selectedMembership.badge)}
+                    className="min-h-[3rem] px-5 py-3 text-sm tracking-[0.16em]"
+                  >
                     {selectedMembership.name} membership
                   </PremiumBadge>
                   <a
                     href="/"
-                    className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
+                    className="inline-flex min-h-[3rem] items-center justify-center rounded-full border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white transition hover:border-gold/30 hover:text-gold"
                   >
                     Back to landing page
                   </a>
