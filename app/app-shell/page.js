@@ -955,6 +955,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [postSafetyError, setPostSafetyError] = useState("");
   const [postLimitError, setPostLimitError] = useState("");
+  const [postSaveError, setPostSaveError] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const categoryMenuRef = useRef(null);
@@ -1352,6 +1353,31 @@ export default function AppShellPage({ initialHasAccess = false }) {
     }
 
     setNotifications((data || []).map(mapNotificationRow));
+  }
+
+  async function reloadAuthenticatedFeedState(userId) {
+    if (!supabaseReady || !userId) {
+      return { error: null };
+    }
+
+    const { data: postRows, error: postsError } = await fetchFeedPosts();
+
+    if (postsError) {
+      return { error: postsError };
+    }
+
+    const mappedPosts = (postRows || []).map((postRow) => mapPostRow(postRow, userId));
+    const postIds = mappedPosts.map((post) => post.id);
+    const { data: commentRows, error: commentsError } = await fetchCommentsForPosts(postIds);
+
+    if (commentsError) {
+      return { error: commentsError };
+    }
+
+    setPosts(mappedPosts);
+    setComments((commentRows || []).map(mapCommentRow));
+
+    return { error: null };
   }
 
   async function resolveProfileIdByUsername(username) {
@@ -3025,6 +3051,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
     event.preventDefault();
     setHasEnteredApp(true);
     setPostLimitError("");
+    setPostSaveError("");
 
     if (!draft.image) {
       return;
@@ -3042,18 +3069,30 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
     if (editingPostId) {
       if (currentUserProfile.id) {
-        const { data } = await updatePostRow(editingPostId, {
+        const { data, error } = await updatePostRow(editingPostId, {
           image_url: draft.image,
           caption: draft.caption,
           category: draft.category,
         });
 
-        if (data) {
-          setPosts((currentPosts) =>
-            currentPosts.map((post) =>
-              post.id === editingPostId ? mapPostRow(data, currentUserProfile.id) : post
-            )
-          );
+        if (error) {
+          setPostSaveError(error.message || "Unable to save your post.");
+          return;
+        }
+
+        const { error: reloadError } = await reloadAuthenticatedFeedState(currentUserProfile.id);
+
+        if (reloadError) {
+          if (data) {
+            setPosts((currentPosts) =>
+              currentPosts.map((post) =>
+                post.id === editingPostId ? mapPostRow(data, currentUserProfile.id) : post
+              )
+            );
+          } else {
+            setPostSaveError(reloadError.message || "Your post saved, but the feed did not refresh.");
+            return;
+          }
         }
       } else {
         setPosts((currentPosts) =>
@@ -3089,7 +3128,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
       };
 
       if (currentUserProfile.id) {
-        const { data } = await createPostRow({
+        const { data, error } = await createPostRow({
           user_id: currentUserProfile.id,
           username: currentUser.username,
           display_name: currentUser.displayName,
@@ -3102,8 +3141,22 @@ export default function AppShellPage({ initialHasAccess = false }) {
           fake_ai_percent: newPost.fakeAiPercent,
         });
 
-        if (data) {
-          setPosts((currentPosts) => [mapPostRow(data, currentUserProfile.id), ...currentPosts]);
+        if (error) {
+          setPostSaveError(error.message || "Unable to create your post.");
+          return;
+        }
+
+        const { error: reloadError } = await reloadAuthenticatedFeedState(currentUserProfile.id);
+
+        if (reloadError) {
+          if (data) {
+            setPosts((currentPosts) => [mapPostRow(data, currentUserProfile.id), ...currentPosts]);
+          } else {
+            setPostSaveError(
+              reloadError.message || "Your post saved, but the feed did not refresh."
+            );
+            return;
+          }
         }
       } else {
         setPosts((currentPosts) => [newPost, ...currentPosts]);
@@ -4200,6 +4253,9 @@ export default function AppShellPage({ initialHasAccess = false }) {
                         Upgrade Status
                       </button>
                     </div>
+                  ) : null}
+                  {postSaveError ? (
+                    <p className="text-sm text-[#f0b4b4]">{postSaveError}</p>
                   ) : null}
                 </div>
 
