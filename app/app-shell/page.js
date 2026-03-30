@@ -66,6 +66,8 @@ const SAFETY_STORAGE_KEY = "phlexr-app-shell-safety";
 const MEMBERSHIP_STORAGE_KEY = "phlexr-app-shell-membership";
 const FOLLOWING_STORAGE_KEY = "phlexr-app-shell-following";
 const SEED_VERSION_STORAGE_KEY = "phlexr-app-shell-seed-version";
+const AUTH_ROUTE_RESET_KEY = "phlexr-app-shell-auth-route-reset";
+const AUTH_ROUTE_CONFIRMED_KEY = "phlexr-app-shell-confirmed-return";
 const APP_SHELL_SEED_VERSION = "2026-03-28-josh-james-v11";
 const FOUNDER_USERNAME = "phlexrfounder";
 const FOUNDER_EMAIL = "phlexrapp@gmail.com";
@@ -1546,6 +1548,8 @@ export default function AppShellPage({ initialHasAccess = false }) {
         return;
       }
 
+      window.sessionStorage.setItem(AUTH_ROUTE_CONFIRMED_KEY, "1");
+
       await clearSupabaseBrowserSession();
 
       if (!active) {
@@ -1606,6 +1610,32 @@ export default function AppShellPage({ initialHasAccess = false }) {
       }
       try {
         if (typeof window !== "undefined") {
+          if (!initialHasAccess) {
+            const isConfirmedReturn =
+              window.sessionStorage.getItem(AUTH_ROUTE_CONFIRMED_KEY) === "1";
+            const hasPendingAuthReset =
+              window.sessionStorage.getItem(AUTH_ROUTE_RESET_KEY) === "1";
+
+            if (isConfirmedReturn) {
+              window.sessionStorage.removeItem(AUTH_ROUTE_CONFIRMED_KEY);
+              await resetToSignedOutState({ authMode: "signin" });
+              setAuthMessage("Email confirmed. Sign in to enter PHLEXR.");
+              setIsAuthInitializing(false);
+              return;
+            }
+
+            if (!hasPendingAuthReset) {
+              window.sessionStorage.setItem(AUTH_ROUTE_RESET_KEY, "1");
+              window.location.replace("/auth/signout");
+              return;
+            }
+
+            window.sessionStorage.removeItem(AUTH_ROUTE_RESET_KEY);
+            await resetToSignedOutState({ authMode: "signin" });
+            setIsAuthInitializing(false);
+            return;
+          }
+
           const url = new URL(window.location.href);
           if (url.searchParams.get("confirmed") === "1") {
             await clearSupabaseBrowserSession();
