@@ -102,7 +102,7 @@ const membershipTiers = [
     name: "FREE",
     price: "Free",
     cta: "Choose Free",
-    badge: "Basic",
+    badge: "Free",
     features: ["2 posts", "pays full boost price"],
     accent: "border-white/10 bg-black/30",
   },
@@ -532,7 +532,15 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
           return (
             <div
               key={tier.id}
-              className={`relative flex h-full flex-col rounded-[1.45rem] border p-4 ${isElite ? "pr-28 pt-16 sm:pr-32" : ""} ${tier.accent}`}
+              className={`relative flex h-full flex-col rounded-[1.45rem] border p-4 ${
+                isElite ? "pr-28 pt-16 sm:pr-32" : ""
+              } ${
+                isSelected
+                  ? isElite
+                    ? "border-gold/75 shadow-[0_0_26px_rgba(216,178,90,0.18)]"
+                    : "border-white/25"
+                  : ""
+              } ${tier.accent}`}
             >
               <div className="flex items-start gap-3">
                 <div>
@@ -557,17 +565,17 @@ function MembershipPlansPanel({ selectedMembershipId, setSelectedMembershipId, c
                 type="button"
                 onClick={() => setSelectedMembershipId(tier.id)}
                 disabled={isFounderAccount}
-                className={`mt-6 inline-flex min-h-[3.75rem] w-full items-center justify-center rounded-full border px-5 py-3 text-center text-sm font-semibold transition ${
-                  isSelected
-                    ? isElite
-                      ? "border-gold/55 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold shadow-[0_0_18px_rgba(216,178,90,0.12)]"
-                      : "border-white/25 bg-white/[0.05] text-white"
-                    : isElite
-                      ? "border-gold/55 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold shadow-[0_0_18px_rgba(216,178,90,0.12)] hover:border-gold/80 hover:text-[#f1cf7b]"
+                className={`mt-6 inline-flex min-h-[3.75rem] w-full items-center justify-center whitespace-nowrap rounded-full border px-5 py-3 text-center text-sm font-semibold transition ${
+                  isElite
+                    ? isSelected
+                      ? "border-gold/70 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold shadow-[0_0_18px_rgba(216,178,90,0.12)]"
+                      : "border-gold/55 bg-[linear-gradient(180deg,rgba(230,179,58,0.12),rgba(255,255,255,0.02))] text-gold shadow-[0_0_18px_rgba(216,178,90,0.12)] hover:border-gold/80 hover:text-[#f1cf7b]"
+                    : isSelected
+                      ? "border-white/25 bg-white/[0.05] text-white"
                       : "border-white/15 bg-white/[0.03] text-white hover:border-gold/30 hover:text-gold"
                 }`}
               >
-                {isSelected ? `${tier.name} selected` : tier.cta}
+                {tier.cta}
               </button>
             </div>
           );
