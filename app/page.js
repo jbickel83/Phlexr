@@ -4,19 +4,19 @@ import { PhlexrWordmark } from "@/components/brand/PhlexrLogo";
 
 const featureCards = [
   {
-    title: "Proof-first scoring",
+    title: "Post your flex",
     copy:
-      "Every flex gets broken down into a clean score, confidence signal, and credibility snapshot.",
+      "Upload your best moments — cars, wins, lifestyle, whatever you’re proud of.",
   },
   {
-    title: "Spot fake heat fast",
+    title: "Get rated instantly",
     copy:
-      "See the gap between what looks impressive and what actually holds up under scrutiny.",
+      "Other users vote: Flex, Not It, or Fake. Your score updates in real time.",
   },
   {
-    title: "Reserve your name early",
+    title: "Climb the leaderboard",
     copy:
-      "Claim your handle before launch and step into the feed with your identity locked in.",
+      "Build your score, gain followers, and compete to become one of the top profiles.",
   },
 ];
 
