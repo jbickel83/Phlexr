@@ -1046,6 +1046,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
       fakeAiAverage: 0,
       posts: [],
     };
+  const rankedProfiles = profiles.filter((profile) => profile.totalPosts > 0);
 
   const effectiveMembershipId = isFounderIdentity(currentUserProfile)
     ? "elite"
@@ -1079,7 +1080,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
     : isOwnProfile
       ? getSeededSocialCount(selectedProfile.username, 140, 780) + currentUserFollowing.length
       : getSeededSocialCount(selectedProfile.username, 140, 780);
-  const leaderboardPreview = profiles.slice(0, 5);
+  const leaderboardPreview = rankedProfiles.slice(0, 5);
   const currentUserPostCount = posts.filter((post) =>
     currentUserProfile.id ? post.userId === currentUserProfile.id : post.username === currentUser.username
   ).length;
@@ -4900,7 +4901,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
             hideHeader
           >
             <div className="grid gap-4">
-              {profiles.map((entry, index) => (
+              {rankedProfiles.map((entry, index) => (
                 <button
                   type="button"
                   key={entry.username}
