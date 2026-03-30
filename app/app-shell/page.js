@@ -1080,6 +1080,35 @@ export default function AppShellPage() {
     },
   };
 
+  function buildOptimisticProfileFromAuthUser(authUser) {
+    const metadata = authUser?.user_metadata || {};
+    const fallbackUsername =
+      metadata.username ||
+      authUser?.email?.split("@")[0]?.toLowerCase().replace(/[^a-z0-9_]/g, "") ||
+      `member${String(authUser?.id || "").slice(0, 6)}`;
+
+    const optimisticProfile = {
+      ...getProfileBase(true),
+      id: authUser?.id || null,
+      username: fallbackUsername,
+      email: authUser?.email || "",
+      displayName:
+        metadata.display_name || metadata.username || fallbackUsername || "PHLEXR member",
+      badge: isFounderIdentity({
+        username: fallbackUsername,
+        email: authUser?.email,
+      })
+        ? "Elite"
+        : emptyAuthenticatedUserProfile.badge,
+      isFounder: isFounderIdentity({
+        username: fallbackUsername,
+        email: authUser?.email,
+      }),
+    };
+
+    return optimisticProfile;
+  }
+
   async function hydrateCurrentUserFromSession(session) {
     const authUser = session?.user;
     if (!authUser) {
@@ -1519,12 +1548,13 @@ export default function AppShellPage() {
       }
 
       if (session) {
-        await hydrateCurrentUserFromSession(session);
-        if (!isMounted) {
-          return;
-        }
+        const optimisticProfile = buildOptimisticProfileFromAuthUser(session.user);
+        setCurrentUserProfile(optimisticProfile);
+        setProfileDraft(optimisticProfile);
+        setSelectedProfileUsername(optimisticProfile.username);
         setHasEnteredApp(true);
         setAuthError("");
+        void hydrateCurrentUserFromSession(session);
       } else {
         setHasEnteredApp(false);
         setCurrentView("feed");
@@ -2146,10 +2176,14 @@ export default function AppShellPage() {
     }
 
     if (data?.session) {
+      const optimisticProfile = buildOptimisticProfileFromAuthUser(data.session.user);
       setCurrentView("feed");
-      await hydrateCurrentUserFromSession(data.session);
+      setCurrentUserProfile(optimisticProfile);
+      setProfileDraft(optimisticProfile);
+      setSelectedProfileUsername(optimisticProfile.username);
       setHasEnteredApp(true);
       setAuthLoading(false);
+      void hydrateCurrentUserFromSession(data.session);
       if (typeof window !== "undefined" && window.location.pathname !== "/feed") {
         window.location.assign("/feed");
         return;
