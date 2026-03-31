@@ -948,6 +948,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const [isAuthPasswordVisible, setIsAuthPasswordVisible] = useState(false);
   const [signupCaptchaToken, setSignupCaptchaToken] = useState("");
   const [signupCaptchaResetCount, setSignupCaptchaResetCount] = useState(0);
+  const [signupCaptchaFailed, setSignupCaptchaFailed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -2419,6 +2420,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
     if (authMode !== "signup") {
       setAuthMode("signup");
       setAuthError("");
+      setSignupCaptchaFailed(false);
       setAuthMessage("Complete verification to create your account.");
       return;
     }
@@ -2438,7 +2440,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
       return;
     }
 
-    if (!signupCaptchaToken) {
+    if (!signupCaptchaToken && !signupCaptchaFailed) {
       setAuthError("Complete verification to create your account.");
       return;
     }
@@ -2448,14 +2450,16 @@ export default function AppShellPage({ initialHasAccess = false }) {
     setAuthError("");
     setAuthMessage("");
 
-    try {
-      await verifyCaptchaToken(signupCaptchaToken);
-    } catch (error) {
-      setAuthLoading(false);
-      setSignupCaptchaToken("");
-      setSignupCaptchaResetCount((count) => count + 1);
-      setAuthError(error instanceof Error ? error.message : "Verification failed. Try again.");
-      return;
+    if (signupCaptchaToken) {
+      try {
+        await verifyCaptchaToken(signupCaptchaToken);
+      } catch (error) {
+        setAuthLoading(false);
+        setSignupCaptchaToken("");
+        setSignupCaptchaResetCount((count) => count + 1);
+        setAuthError(error instanceof Error ? error.message : "Verification failed. Try again.");
+        return;
+      }
     }
 
     const { data, error } = await signUpWithEmail({
@@ -2472,6 +2476,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
     if (error) {
       setAuthLoading(false);
       setSignupCaptchaToken("");
+      setSignupCaptchaFailed(false);
       setSignupCaptchaResetCount((count) => count + 1);
       setAuthError(error.message);
       return;
@@ -2487,6 +2492,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
     setAuthLoading(false);
     setSignupCaptchaToken("");
+    setSignupCaptchaFailed(false);
     setSignupCaptchaResetCount((count) => count + 1);
     setAuthMode("check-email");
     setAuthMessage("We sent you a confirmation link to finish creating your account.");
@@ -3717,12 +3723,19 @@ export default function AppShellPage({ initialHasAccess = false }) {
                               resetKey={signupCaptchaResetCount}
                               onVerify={(token) => {
                                 setSignupCaptchaToken(token);
+                                setSignupCaptchaFailed(false);
                                 setAuthError("");
                               }}
-                              onExpire={() => setSignupCaptchaToken("")}
+                              onExpire={() => {
+                                setSignupCaptchaToken("");
+                                setSignupCaptchaFailed(false);
+                              }}
                               onError={() => {
                                 setSignupCaptchaToken("");
-                                setAuthError("Verification failed. Try again.");
+                                setSignupCaptchaFailed(true);
+                                setAuthError(
+                                  "Verification failed to load. You can continue creating your account."
+                                );
                               }}
                             />
                           </>
