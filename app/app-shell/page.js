@@ -850,6 +850,14 @@ function triggerVoteHaptic(voteType) {
   }
 }
 
+function createTimeoutResult(timeoutMs) {
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      resolve({ timedOut: true });
+    }, timeoutMs);
+  });
+}
+
 async function verifyCaptchaToken(token) {
   const response = await fetch("/api/captcha/verify", {
     method: "POST",
@@ -2462,16 +2470,31 @@ export default function AppShellPage({ initialHasAccess = false }) {
       }
     }
 
-    const { data, error } = await signUpWithEmail({
-      email,
-      password,
-      username,
-      displayName: username,
-      emailRedirectTo:
-        typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback`
-          : undefined,
-    });
+    const signUpResult = await Promise.race([
+      signUpWithEmail({
+        email,
+        password,
+        username,
+        displayName: username,
+        emailRedirectTo:
+          typeof window !== "undefined"
+            ? `${window.location.origin}/auth/callback`
+            : undefined,
+      }),
+      createTimeoutResult(8000),
+    ]);
+
+    if (signUpResult?.timedOut) {
+      setAuthLoading(false);
+      setSignupCaptchaToken("");
+      setSignupCaptchaFailed(false);
+      setSignupCaptchaResetCount((count) => count + 1);
+      setAuthMode("check-email");
+      setAuthMessage("We sent you a confirmation link to finish creating your account.");
+      return;
+    }
+
+    const { data, error } = signUpResult;
 
     if (error) {
       setAuthLoading(false);
