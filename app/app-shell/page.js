@@ -2482,16 +2482,16 @@ export default function AppShellPage({ initialHasAccess = false }) {
       return;
     }
 
-    if (data?.session) {
-      await clearSupabaseBrowserSession();
-    }
-
     setAuthLoading(false);
     setSignupCaptchaToken("");
     setSignupCaptchaFailed(false);
     setSignupCaptchaResetCount((count) => count + 1);
     setAuthMode("check-email");
     setAuthMessage("We sent you a confirmation link to finish creating your account.");
+
+    if (data?.session) {
+      void clearSupabaseBrowserSession();
+    }
   }
 
   async function handleSignIn() {
