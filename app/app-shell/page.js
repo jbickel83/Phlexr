@@ -2483,11 +2483,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
     }
 
     if (data?.session) {
-      await hydrateCurrentUserFromSession(data.session);
-      setHasEnteredApp(true);
-      setCurrentView("feed");
-      setAuthLoading(false);
-      return;
+      await clearSupabaseBrowserSession();
     }
 
     setAuthLoading(false);
