@@ -922,7 +922,7 @@ function moderateComment(text, isAdult) {
 }
 
 export default function AppShellPage({ initialHasAccess = false }) {
-  const [posts, setPosts] = useState(initialHasAccess ? [] : seededPosts);
+  const [posts, setPosts] = useState([]);
   const [hasEnteredApp, setHasEnteredApp] = useState(initialHasAccess);
   const [isAuthInitializing, setIsAuthInitializing] = useState(initialHasAccess);
   const [currentView, setCurrentView] = useState("feed");
@@ -930,7 +930,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const [editingPostId, setEditingPostId] = useState(null);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [votedPosts, setVotedPosts] = useState({});
-  const [comments, setComments] = useState(initialHasAccess ? [] : seededComments);
+  const [comments, setComments] = useState([]);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [commentErrors, setCommentErrors] = useState({});
   const [commentReportReasons, setCommentReportReasons] = useState({});
@@ -1706,32 +1706,30 @@ export default function AppShellPage({ initialHasAccess = false }) {
         setIsAuthInitializing(false);
       }
       try {
-        if (typeof window !== "undefined") {
-          if (!initialHasAccess) {
-            const isConfirmedReturn =
-              window.sessionStorage.getItem(AUTH_ROUTE_CONFIRMED_KEY) === "1";
-            const hasPendingAuthReset =
-              window.sessionStorage.getItem(AUTH_ROUTE_RESET_KEY) === "1";
+          if (typeof window !== "undefined") {
+            if (!initialHasAccess) {
+              const isConfirmedReturn =
+                window.sessionStorage.getItem(AUTH_ROUTE_CONFIRMED_KEY) === "1";
 
-            if (isConfirmedReturn) {
-              window.sessionStorage.removeItem(AUTH_ROUTE_CONFIRMED_KEY);
+              if (isConfirmedReturn) {
+                window.sessionStorage.removeItem(AUTH_ROUTE_CONFIRMED_KEY);
+                await resetToSignedOutState({ authMode: "signin" });
+                setAuthMessage("Email confirmed. Sign in to enter PHLEXR.");
+                setIsAuthInitializing(false);
+                return;
+              }
+
+              const userData = await getCurrentSupabaseUser();
+
+              if (userData?.user) {
+                window.location.replace("/feed");
+                return;
+              }
+
               await resetToSignedOutState({ authMode: "signin" });
-              setAuthMessage("Email confirmed. Sign in to enter PHLEXR.");
               setIsAuthInitializing(false);
               return;
             }
-
-            if (!hasPendingAuthReset) {
-              window.sessionStorage.setItem(AUTH_ROUTE_RESET_KEY, "1");
-              window.location.replace("/auth/signout");
-              return;
-            }
-
-            window.sessionStorage.removeItem(AUTH_ROUTE_RESET_KEY);
-            await resetToSignedOutState({ authMode: "signin" });
-            setIsAuthInitializing(false);
-            return;
-          }
 
           const url = new URL(window.location.href);
           if (url.searchParams.get("confirmed") === "1") {
@@ -2880,7 +2878,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
         bio: normalizedNextProfile.bio,
         location: normalizedNextProfile.location,
         avatar_url: normalizedNextProfile.avatar,
-        membership_tier: isFounderIdentity(currentUserProfile) ? "Elite" : selectedMembership.name,
+        membership_tier: isFounderIdentity(currentUserProfile) ? "Elite" : selectedMembership.badge,
       });
 
       if (error || !data) {
