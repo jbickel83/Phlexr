@@ -16,13 +16,14 @@ import {
   createPostRow,
   deleteCommentRow,
   deleteFollowRow,
-  deletePostRow,
-  fetchCommentsForPosts,
-  fetchFeedPosts,
-  fetchNotifications,
-  fetchProfileByUsername,
-  fetchProfileRow,
-  fetchVoteRows,
+    deletePostRow,
+    fetchCommentsForPosts,
+    fetchFeedPosts,
+    fetchNotifications,
+    fetchProfileByUsername,
+    fetchProfilesByUserIds,
+    fetchProfileRow,
+    fetchVoteRows,
   getCurrentSupabaseSession,
   getCurrentSupabaseUser,
   markAllNotificationsAsRead,
@@ -468,9 +469,14 @@ function Avatar({ src, alt, sizeClass, borderClass = "border-gold/45", imageClas
       className={`overflow-hidden rounded-full border ${borderClass} ${sizeClass}`}
     >
       <img
-        src={src}
+        src={src || DEFAULT_PROFILE_AVATAR}
         alt={alt}
         className={`h-full w-full object-cover object-center ${imageClass}`}
+        onError={(event) => {
+          if (event.currentTarget.src !== DEFAULT_PROFILE_AVATAR) {
+            event.currentTarget.src = DEFAULT_PROFILE_AVATAR;
+          }
+        }}
       />
     </div>
   );
@@ -943,6 +949,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const [selectedMembershipId, setSelectedMembershipId] = useState("free");
   const [currentUserFollowing, setCurrentUserFollowing] = useState([]);
   const [followRows, setFollowRows] = useState([]);
+  const [profileRowsByUsername, setProfileRowsByUsername] = useState({});
   const [notifications, setNotifications] = useState([]);
   const [authForm, setAuthForm] = useState({
     username: "",
@@ -994,12 +1001,24 @@ export default function AppShellPage({ initialHasAccess = false }) {
   const cameraStreamRef = useRef(null);
   const profileIdCacheRef = useRef({});
 
+  const resolvedProfileDirectory = useMemo(() => {
+    return {
+      ...profileDirectory,
+      ...profileRowsByUsername,
+      [currentUserProfile.username]: {
+        avatar: currentUserProfile.avatar || DEFAULT_PROFILE_AVATAR,
+        location: currentUserProfile.location,
+        bio: currentUserProfile.bio,
+      },
+    };
+  }, [currentUserProfile, profileRowsByUsername]);
+
   const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
       if (!accumulator[post.username]) {
         const profile = post.owner
           ? currentUserProfile
-          : profileDirectory[post.username] ||
+          : resolvedProfileDirectory[post.username] ||
             (isFounderUsername(post.username)
               ? demoCurrentUserProfile
               : {
@@ -1044,7 +1063,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
           : 0,
       }))
       .sort((left, right) => right.averageScore - left.averageScore);
-  }, [currentUserProfile, posts]);
+  }, [currentUserProfile, posts, resolvedProfileDirectory]);
 
   const currentUser =
     profiles.find((profile) => profile.username === currentUserProfile.username) || {
@@ -1403,14 +1422,73 @@ export default function AppShellPage({ initialHasAccess = false }) {
     }
 
     const nextFollowRows = data || [];
-    setFollowRows(nextFollowRows);
+    const relatedProfileIds = [...new Set(
+      nextFollowRows.flatMap((row) => [row.follower_user_id, row.following_user_id]).filter(Boolean)
+    )];
+    const { data: relatedProfiles } = await fetchProfilesByUserIds(relatedProfileIds);
+    const usernamesById = (relatedProfiles || []).reduce((accumulator, profile) => {
+      if (profile?.id && profile?.username) {
+        accumulator[profile.id] = profile.username;
+      }
+      return accumulator;
+    }, {});
+    const enrichedFollowRows = nextFollowRows.map((row) => ({
+      ...row,
+      follower_username: row.follower_username || usernamesById[row.follower_user_id] || "",
+      following_username: row.following_username || usernamesById[row.following_user_id] || "",
+    }));
+
+    if (relatedProfiles?.length) {
+      setProfileRowsByUsername((currentProfiles) => ({
+        ...currentProfiles,
+        ...relatedProfiles.reduce((accumulator, profile) => {
+          if (profile?.username) {
+            accumulator[profile.username] = {
+              avatar: profile.avatar_url || DEFAULT_PROFILE_AVATAR,
+              location: profile.location || "",
+              bio: profile.bio || "",
+            };
+          }
+          return accumulator;
+        }, {}),
+      }));
+    }
+    setFollowRows(enrichedFollowRows);
     setCurrentUserFollowing(
-      nextFollowRows
+      enrichedFollowRows
         .filter((row) => row.follower_user_id === userId)
         .map((row) => row.following_username)
+        .filter(Boolean)
     );
 
     return { error: null };
+  }
+
+  async function loadFeedProfileDirectory(postRows) {
+    const relatedUserIds = [...new Set((postRows || []).map((postRow) => postRow.user_id).filter(Boolean))];
+
+    if (relatedUserIds.length === 0) {
+      return;
+    }
+
+    const { data: profileRows } = await fetchProfilesByUserIds(relatedUserIds);
+    if (!profileRows?.length) {
+      return;
+    }
+
+    setProfileRowsByUsername((currentProfiles) => ({
+      ...currentProfiles,
+      ...profileRows.reduce((accumulator, profile) => {
+        if (profile?.username) {
+          accumulator[profile.username] = {
+            avatar: profile.avatar_url || DEFAULT_PROFILE_AVATAR,
+            location: profile.location || "",
+            bio: profile.bio || "",
+          };
+        }
+        return accumulator;
+      }, {}),
+    }));
   }
 
   async function reloadAuthenticatedFeedState(userId) {
@@ -1425,6 +1503,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
     }
 
     const mappedPosts = (postRows || []).map((postRow) => mapPostRow(postRow, userId));
+    await loadFeedProfileDirectory(postRows || []);
     const postIds = mappedPosts.map((post) => post.id);
     const { data: commentRows, error: commentsError } = await fetchCommentsForPosts(postIds);
 
@@ -1511,18 +1590,19 @@ export default function AppShellPage({ initialHasAccess = false }) {
       return;
     }
 
-    if (initialHasAccess) {
-      setCurrentUserProfile(emptyAuthenticatedUserProfile);
-      setProfileDraft(emptyAuthenticatedUserProfile);
-      setSelectedProfileUsername("");
-      setSelectedMembershipId("free");
-      setHasEnteredApp(true);
-      setPosts([]);
-      setComments([]);
-      setVotedPosts({});
-      setCurrentUserFollowing([]);
-      return;
-    }
+      if (initialHasAccess) {
+        setCurrentUserProfile(emptyAuthenticatedUserProfile);
+        setProfileDraft(emptyAuthenticatedUserProfile);
+        setSelectedProfileUsername("");
+        setSelectedMembershipId("free");
+        setHasEnteredApp(true);
+        setPosts([]);
+        setComments([]);
+        setVotedPosts({});
+        setCurrentUserFollowing([]);
+        setProfileRowsByUsername({});
+        return;
+      }
 
     try {
       const savedSeedVersion = window.localStorage.getItem(SEED_VERSION_STORAGE_KEY);
@@ -1537,11 +1617,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
         const savedProfile = window.localStorage.getItem(PROFILE_STORAGE_KEY);
         let shouldUseDemoStorage = true;
-        setCurrentUserProfile(emptyAuthenticatedUserProfile);
-        setProfileDraft(emptyAuthenticatedUserProfile);
-        setSelectedProfileUsername("");
-        setSelectedMembershipId("free");
-        setHasEnteredApp(false);
+          setCurrentUserProfile(emptyAuthenticatedUserProfile);
+          setProfileDraft(emptyAuthenticatedUserProfile);
+          setSelectedProfileUsername("");
+          setSelectedMembershipId("free");
+          setHasEnteredApp(false);
+          setProfileRowsByUsername({});
 
         if (savedProfile) {
           const parsedProfile = JSON.parse(savedProfile);
@@ -1587,12 +1668,13 @@ export default function AppShellPage({ initialHasAccess = false }) {
         } else {
           setComments(seededComments);
         }
-      } else {
-        setPosts([]);
-        setComments([]);
-        setVotedPosts({});
-        setCurrentUserFollowing([]);
-      }
+        } else {
+          setPosts([]);
+          setComments([]);
+          setVotedPosts({});
+          setCurrentUserFollowing([]);
+          setProfileRowsByUsername({});
+        }
 
       const savedSafety = window.localStorage.getItem(SAFETY_STORAGE_KEY);
       if (savedSafety) {
@@ -1659,6 +1741,7 @@ export default function AppShellPage({ initialHasAccess = false }) {
       setSelectedProfileUsername("");
       setCurrentUserProfile(emptyAuthenticatedUserProfile);
       setProfileDraft(emptyAuthenticatedUserProfile);
+      setProfileRowsByUsername({});
       setAuthMode("signin");
       setAuthError("");
       setAuthMessage("Email confirmed. Sign in to enter PHLEXR.");
@@ -1869,8 +1952,9 @@ export default function AppShellPage({ initialHasAccess = false }) {
         return;
       }
 
-      const mappedPosts = (postRows || []).map((postRow) => mapPostRow(postRow, currentUserProfile.id));
-      const postIds = mappedPosts.map((post) => post.id);
+        const mappedPosts = (postRows || []).map((postRow) => mapPostRow(postRow, currentUserProfile.id));
+        await loadFeedProfileDirectory(postRows || []);
+        const postIds = mappedPosts.map((post) => post.id);
       const { data: commentRows } = await fetchCommentsForPosts(postIds);
 
       if (!active) {
@@ -2174,11 +2258,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
     setHasEnteredApp(false);
     setCurrentView("feed");
-    setSelectedMembershipId("free");
-    setSelectedProfileUsername("");
-    setCurrentUserProfile(emptyAuthenticatedUserProfile);
-    setProfileDraft(emptyAuthenticatedUserProfile);
-    setAuthMode(authMode);
+      setSelectedMembershipId("free");
+      setSelectedProfileUsername("");
+      setCurrentUserProfile(emptyAuthenticatedUserProfile);
+      setProfileDraft(emptyAuthenticatedUserProfile);
+      setProfileRowsByUsername({});
+      setAuthMode(authMode);
     normalizeLoggedOutRoute();
   }
 
