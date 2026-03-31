@@ -2416,6 +2416,13 @@ export default function AppShellPage({ initialHasAccess = false }) {
     const email = authForm.email.trim();
     const password = authForm.password;
 
+    if (authMode !== "signup") {
+      setAuthMode("signup");
+      setAuthError("");
+      setAuthMessage("Complete verification to create your account.");
+      return;
+    }
+
     if (!username || !email || !password) {
       setAuthError("Username, email, and password are required.");
       return;
