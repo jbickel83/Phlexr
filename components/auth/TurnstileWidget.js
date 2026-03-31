@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 
 const TURNSTILE_SCRIPT_ID = "phlexr-turnstile-script";
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
@@ -45,11 +45,10 @@ export default function TurnstileWidget({
 }) {
   const containerId = useId().replace(/:/g, "");
   const widgetIdRef = useRef(null);
+  const containerRef = useRef(null);
   const latestHandlersRef = useRef({ onVerify, onError, onExpire });
 
   latestHandlersRef.current = { onVerify, onError, onExpire };
-
-  const containerSelector = useMemo(() => `#${containerId}`, [containerId]);
 
   useEffect(() => {
     if (!TURNSTILE_SITE_KEY || typeof window === "undefined") {
@@ -57,15 +56,16 @@ export default function TurnstileWidget({
     }
 
     function renderWidget() {
-      if (!window.turnstile || widgetIdRef.current !== null) {
+      if (!window.turnstile || widgetIdRef.current !== null || !containerRef.current) {
         return;
       }
 
-      widgetIdRef.current = window.turnstile.render(containerSelector, {
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: TURNSTILE_SITE_KEY,
         theme: "dark",
-        size: "flexible",
-        appearance: "interaction-only",
+        size: "normal",
+        retry: "auto",
+        "refresh-expired": "auto",
         callback(token) {
           latestHandlersRef.current.onVerify?.(token);
         },
@@ -80,7 +80,7 @@ export default function TurnstileWidget({
 
     const cleanupScriptListener = loadTurnstileScript(renderWidget);
     return cleanupScriptListener;
-  }, [containerSelector]);
+  }, []);
 
   useEffect(() => {
     if (widgetIdRef.current === null || typeof window === "undefined" || !window.turnstile) {
@@ -98,7 +98,7 @@ export default function TurnstileWidget({
     <div
       className={`overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] p-2 ${className}`}
     >
-      <div id={containerId} className="min-h-[72px]" />
+      <div id={containerId} ref={containerRef} className="min-h-[72px]" />
     </div>
   );
 }
