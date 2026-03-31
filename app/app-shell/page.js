@@ -482,6 +482,35 @@ function Avatar({ src, alt, sizeClass, borderClass = "border-gold/45", imageClas
   );
 }
 
+function PostImage({ src, alt, className }) {
+  const [imageSrc, setImageSrc] = useState(src || "");
+
+  useEffect(() => {
+    setImageSrc(src || "");
+  }, [src]);
+
+  if (!imageSrc) {
+    return (
+      <div
+        className={`grid place-items-center bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] text-center text-sm text-white/45 ${className}`}
+      >
+        Image unavailable
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      className={className}
+      onError={() => {
+        setImageSrc("");
+      }}
+    />
+  );
+}
+
 function PasswordVisibilityIcon({ visible }) {
   return visible ? (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-[1.8]">
@@ -1005,7 +1034,18 @@ export default function AppShellPage({ initialHasAccess = false }) {
     return {
       ...profileDirectory,
       ...profileRowsByUsername,
+      [currentUserProfile.id]: {
+        username: currentUserProfile.username,
+        displayName: currentUserProfile.displayName,
+        badge: currentUserProfile.badge,
+        avatar: currentUserProfile.avatar || DEFAULT_PROFILE_AVATAR,
+        location: currentUserProfile.location,
+        bio: currentUserProfile.bio,
+      },
       [currentUserProfile.username]: {
+        username: currentUserProfile.username,
+        displayName: currentUserProfile.displayName,
+        badge: currentUserProfile.badge,
         avatar: currentUserProfile.avatar || DEFAULT_PROFILE_AVATAR,
         location: currentUserProfile.location,
         bio: currentUserProfile.bio,
@@ -1015,21 +1055,28 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
   const profiles = useMemo(() => {
     const grouped = posts.reduce((accumulator, post) => {
-      if (!accumulator[post.username]) {
+      const profileKey = post.userId || post.username;
+      if (!accumulator[profileKey]) {
         const profile = post.owner
           ? currentUserProfile
-          : resolvedProfileDirectory[post.username] ||
+          : resolvedProfileDirectory[post.userId] ||
+            resolvedProfileDirectory[post.username] ||
             (isFounderUsername(post.username)
               ? demoCurrentUserProfile
               : {
+                  username: post.username,
+                  displayName: post.displayName,
+                  badge: post.badge,
                   avatar: DEFAULT_PROFILE_AVATAR,
                   location: "",
                   bio: "",
                 });
-        accumulator[post.username] = {
-          username: post.username,
-          displayName: post.owner ? currentUserProfile.displayName : post.displayName,
-          badge: post.owner ? currentUserProfile.badge : post.badge,
+        accumulator[profileKey] = {
+          userId: post.userId || null,
+          username: profile.username || post.username,
+          displayName:
+            profile.displayName || (post.owner ? currentUserProfile.displayName : post.displayName),
+          badge: profile.badge || (post.owner ? currentUserProfile.badge : post.badge),
           avatar: profile.avatar,
           location: profile.location,
           bio: profile.bio || "",
@@ -1037,12 +1084,13 @@ export default function AppShellPage({ initialHasAccess = false }) {
         };
       }
 
-      accumulator[post.username].posts.push(post);
+      accumulator[profileKey].posts.push(post);
       return accumulator;
     }, {});
 
-    if (currentUserProfile.username && !grouped[currentUserProfile.username]) {
-      grouped[currentUserProfile.username] = {
+    const currentUserProfileKey = currentUserProfile.id || currentUserProfile.username;
+    if (currentUserProfileKey && !grouped[currentUserProfileKey]) {
+      grouped[currentUserProfileKey] = {
         ...currentUserProfile,
         posts: [],
       };
@@ -1443,11 +1491,16 @@ export default function AppShellPage({ initialHasAccess = false }) {
         ...currentProfiles,
         ...relatedProfiles.reduce((accumulator, profile) => {
           if (profile?.username) {
-            accumulator[profile.username] = {
+            const normalizedProfile = {
+              username: profile.username,
+              displayName: profile.display_name,
+              badge: normalizeStatus(profile.membership_tier),
               avatar: profile.avatar_url || DEFAULT_PROFILE_AVATAR,
               location: profile.location || "",
               bio: profile.bio || "",
             };
+            accumulator[profile.username] = normalizedProfile;
+            accumulator[profile.id] = normalizedProfile;
           }
           return accumulator;
         }, {}),
@@ -1480,11 +1533,16 @@ export default function AppShellPage({ initialHasAccess = false }) {
       ...currentProfiles,
       ...profileRows.reduce((accumulator, profile) => {
         if (profile?.username) {
-          accumulator[profile.username] = {
+          const normalizedProfile = {
+            username: profile.username,
+            displayName: profile.display_name,
+            badge: normalizeStatus(profile.membership_tier),
             avatar: profile.avatar_url || DEFAULT_PROFILE_AVATAR,
             location: profile.location || "",
             bio: profile.bio || "",
           };
+          accumulator[profile.username] = normalizedProfile;
+          accumulator[profile.id] = normalizedProfile;
         }
         return accumulator;
       }, {}),
@@ -3998,12 +4056,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
                 <article
                   key={post.id}
                   className="flex h-full min-h-[42rem] flex-col overflow-hidden rounded-[1.7rem] border border-white/8 bg-black/35"
-                >
-                  <img
-                    src={post.image}
-                    alt={post.displayName}
-                    className="h-64 w-full object-cover sm:h-72"
-                  />
+                  >
+                    <PostImage
+                      src={post.image}
+                      alt={post.displayName}
+                      className="h-64 w-full object-cover sm:h-72"
+                    />
                     <div className="grid flex-1 grid-rows-[6.5rem_5.5rem_auto_auto_auto_auto_auto_auto] gap-y-5 p-4 sm:grid-rows-[6.5rem_5.5rem_auto_auto_minmax(0,7.75rem)_4.5rem_auto_auto] sm:p-5">
                     <div className="relative pr-32">
                       <div className="min-w-0">
@@ -4518,12 +4576,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
               <div className="rounded-[1.6rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))] p-4 sm:p-5">
                 <p className="text-xs uppercase tracking-[0.24em] text-gold/75">Live preview</p>
                 <div className="mt-5 overflow-hidden rounded-[1.6rem] border border-white/8 bg-black/35">
-                  {draft.image ? (
-                    <img
-                      src={draft.image}
-                      alt="Post preview"
-                      className="h-72 w-full object-cover"
-                    />
+                    {draft.image ? (
+                      <PostImage
+                        src={draft.image}
+                        alt="Post preview"
+                        className="h-72 w-full object-cover"
+                      />
                   ) : (
                     <div className="grid h-72 place-items-center bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] px-6 text-center">
                       <div>
@@ -4695,12 +4753,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
 
               {selectedProfileTopFlex ? (
                 <div className="overflow-hidden rounded-[1.6rem] border border-gold/16 bg-[linear-gradient(180deg,rgba(230,179,58,0.08),rgba(255,255,255,0.02))]">
-                  <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-                    <img
-                      src={selectedProfileTopFlex.image}
-                      alt={selectedProfileTopFlex.caption}
-                      className="h-72 w-full object-cover"
-                    />
+                    <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+                      <PostImage
+                        src={selectedProfileTopFlex.image}
+                        alt={selectedProfileTopFlex.caption}
+                        className="h-72 w-full object-cover"
+                      />
                     <div className="p-5 sm:p-6">
                       <p className="text-xs uppercase tracking-[0.2em] text-gold/75">Top Flex</p>
                       <div className="mt-4 flex items-center gap-3">
@@ -4741,8 +4799,12 @@ export default function AppShellPage({ initialHasAccess = false }) {
                     <div
                       key={post.id}
                       className="overflow-hidden rounded-[1.5rem] border border-white/8 bg-black/35"
-                    >
-                      <img src={post.image} alt={post.caption} className="h-56 w-full object-cover" />
+                      >
+                        <PostImage
+                          src={post.image}
+                          alt={post.caption}
+                          className="h-56 w-full object-cover"
+                        />
                       <div className="p-4">
                         <p className="text-lg font-semibold text-white">{post.category}</p>
                         <p className="mt-2 text-sm text-white/60">{post.caption}</p>
